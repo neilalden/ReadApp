@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "675697621447",
+    "project_id": "readapp-b7d18",
+    "storage_bucket": "readapp-b7d18.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:675697621447:android:cca97e0859d40b797201e2",
+        "android_client_info": {
+          "package_name": "com.readapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "675697621447-pbovrphbs3ln9ta86nmlvaths055k972.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.readapp",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "675697621447-hnqborisfr948gm59iddbfjo707ff0ek.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwWCSCbRcfA8PmZ1l0rf93-Zj0t6YSqVc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "675697621447-hnqborisfr948gm59iddbfjo707ff0ek.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

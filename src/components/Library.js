@@ -1,46 +1,51 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  BackHandler,
+  Alert,
+} from 'react-native';
 import FileViewer from 'react-native-file-viewer';
 import RNFS from 'react-native-fs';
+import Nav from './Nav';
 
 const Library = () => {
-  const [files, setFiles] = useState([]);
-  useEffect(() => {
-    RNFS.readdir(RNFS.DocumentDirectoryPath)
-      .then(res => {
-        setFiles([]);
-        for (let i in res) {
-          if (res[i] != 'ReactNativeDevBundle.js') {
-            setFiles(data => [...data, res[i]]);
-          }
-        }
-      })
-      .catch(e => {
-        console.log(e);
-      });
-  }, []);
+  const [files, setFiles] = useState(['Module 2.docx', 'Spanning tree.pptx']);
+
+  BackHandler.addEventListener('hardwareBackPress', function () {
+    alert('Close app', 'Are you sure you want to leave Read App?');
+  });
+
   return (
-    <View>
-      <View style={styles.materialContainer}>
+    <>
+      <ScrollView>
         {files.map((item, index) => {
           return (
             <TouchableOpacity
               key={index}
               onPress={() => {
-                openFile('CHAP12.docx');
+                openFile(item);
               }}>
               <Text style={styles.item}>{item}</Text>
             </TouchableOpacity>
           );
         })}
-      </View>
-    </View>
+      </ScrollView>
+      <Nav />
+    </>
   );
 };
 
+const alert = (title = 'Error', msg) =>
+  Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
+    {text: 'OK', onPress: () => console.log('OK Pressed')},
+  ]);
+
 const openFile = file => {
   const dest = `${RNFS.DocumentDirectoryPath}/${file}`;
-
   RNFS.copyFileAssets(file, dest)
     .then(() => FileViewer.open(dest))
     .then(() => {
@@ -76,7 +81,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     fontFamily: 'monospace',
     marginHorizontal: 10,
-    marginTop: 5,
+    marginVertical: 3,
   },
 });
 
