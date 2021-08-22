@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -10,47 +10,66 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
-import ClassroomHeader from './ClassroomHeader';
 import storage from '@react-native-firebase/storage';
-import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
+import DocumentPicker from 'react-native-document-picker';
 import FileViewer from 'react-native-file-viewer';
-const Classwork = ({classroomId, userInfo, classworkInfo, courseCode}) => {
+import {
+  ClassContext,
+  fetchSubmissionList,
+  fetchSubmision,
+} from '../context/ClassContext';
+import ClassroomHeader from './ClassroomHeader';
+const Classwork = ({userInfo}) => {
   const [classwork, setClasswork] = useState({});
-  const [classworkList, setClassworkList] = useState([]);
   const [files, setFiles] = useState([]);
   const [text, onChangeText] = useState('');
-  const [reload, setReload] = useState(true);
   const [userAnswers, setUserAnswers] = useState({});
+  const [reload, setReload] = useState(true);
   const [isEdit, setIsEdit] = useState(false);
+
+  const {classNumber, classworkNumber, classList, setClassList} =
+    useContext(ClassContext);
+
   useEffect(() => {
-    console.log('classwork 27', classworkInfo);
     if (userInfo.isStudent) {
-      fetchStudentClasswork(
-        classworkInfo.id,
-        classroomId,
-        userInfo.id,
-        setClasswork,
-      );
+      !classList[classNumber].classworkList[classworkNumber].submission &&
+        fetchSubmision(
+          classNumber,
+          classworkNumber,
+          classList,
+          setClassList,
+          userInfo,
+        );
     } else {
-      fetchClassworkList(classworkInfo.id, classroomId, setClassworkList);
+      !classList[classNumber].classworkList[classworkNumber].submissionList &&
+        fetchSubmissionList(
+          classNumber,
+          classworkNumber,
+          classList,
+          setClassList,
+        );
     }
   }, [reload]);
   return (
     <>
       <ClassroomHeader
-        classroomId={courseCode}
+        classCode={classList[classNumber].classCode}
         backTo={'/Classroom'}
         isStudent={userInfo.isStudent}
       />
 
       <ScrollView>
         {!userInfo.isStudent ? (
-          // if user is a teacher show component ViewClassworkList
-          <ViewClassworkList classworkList={classworkList} />
+          // if user is a teacher show component
+          <SubmissionList
+            classList={classList}
+            classNumber={classNumber}
+            classworkNumber={classworkNumber}
+          />
         ) : classworkInfo.isActivity ? (
-          // if user is a student and the classwork is an activity show component ViewStudentActivity
-          <ViewStudentActivity
+          // if user is a student and the classwork is an activity show component
+          <ActivitySubmission
             userInfo={userInfo}
             classworkInfo={classworkInfo}
             classwork={classwork}
@@ -65,8 +84,8 @@ const Classwork = ({classroomId, userInfo, classworkInfo, courseCode}) => {
             setIsEdit={setIsEdit}
           />
         ) : (
-          // if user is a student and the classwork is a quiz show component ViewStudentQuiz
-          <ViewStudentQuiz
+          // if user is a student and the classwork is a quiz show component
+          <QuizSubmission
             userInfo={userInfo}
             classworkInfo={classworkInfo}
             classwork={classwork}
@@ -82,16 +101,8 @@ const Classwork = ({classroomId, userInfo, classworkInfo, courseCode}) => {
   );
 };
 
-const getPathForFirebaseStorage = async uri => {
-  if (Platform.OS === 'ios') {
-    return uri;
-  }
-  const stat = await RNFetchBlob.fs.stat(uri);
-  return stat.path;
-};
-
 // if user is a student and the classwork is an activity, show this
-const ViewStudentActivity = ({
+const ActivitySubmission = ({
   userInfo,
   classworkInfo,
   classwork,
@@ -512,7 +523,7 @@ const ViewStudentActivity = ({
 };
 
 // if user is a student and the classwork is a quiz, show this
-const ViewStudentQuiz = ({
+const QuizSubmission = ({
   userInfo,
   classworkInfo,
   classwork,
@@ -682,77 +693,25 @@ const ViewStudentQuiz = ({
 };
 
 // if the user is a teacher show the list of every students with a status of submitted or missing
-const ViewClassworkList = ({classworkList}) => {
+const SubmissionList = ({classList, classNumber, classworkNumber}) => {
   return (
     <>
       <Text style={styles.header}>list of student works</Text>
-      {classworkList &&
-        classworkList.map((item, index) => {
+      {classList[classNumber].classworkList[classworkNumber].submissionList &&
+        classList[classNumber].classworkList[
+          classworkNumber
+        ].submissionList.map((item, index) => {
           return (
             <View key={index} style={styles.item}>
-              <Text>{item.id}</Text>
+              <Text>{item.submittedBy}</Text>
               <Text style={styles.itemSubtitle}>
-                {item.didComply ? 'Complied' : 'Missing'}
+                {item.files || item.work ? 'Complied' : 'Missing'}
               </Text>
             </View>
           );
         })}
     </>
   );
-};
-
-// if user is a student, app will fetch the student's work(s) and score
-const fetchStudentClasswork = (
-  classworkId,
-  classroomId,
-  studenId,
-  setClasswork,
-) => {
-  firestore()
-    .collection(`classes/${classroomId}/classworks/${classworkId}/submissions`)
-    .doc(studenId)
-    .get()
-    .then(res => {
-      setClasswork({
-        work: res.data().work,
-        score: res.data().score,
-        files: res.data().files,
-      });
-    })
-    .catch(e => alert(e));
-};
-
-// if user is a teacher, app will fetch all students who submitted
-const fetchClassworkList = (classworkId, classroomId, setClassList) => {
-  console.log('727');
-  firestore()
-    .collection(`classes/${classroomId}/classworks/${classworkId}/submissions`)
-    .get()
-    .then(querySS => {
-      setClassList([]);
-      querySS.forEach(docuSS => {
-        let didComply = true;
-        if (docuSS.data().files || docuSS.data().work) {
-          if (docuSS.data().files !== [] || docuSS.data().work !== '')
-            didComply = true;
-          else {
-            didComply = false;
-          }
-        } else {
-          didComply = false;
-        }
-        setClassList(prev => [
-          ...prev,
-          {
-            id: docuSS.id,
-            didComply:
-              docuSS.data().work !== undefined ||
-              docuSS.data().files !== undefined,
-          },
-        ]);
-      });
-    })
-    .catch(e => alert(e));
 };
 
 const alert = e =>

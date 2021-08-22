@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -11,20 +11,17 @@ import {
 import ClassroomHeader from './ClassroomHeader';
 import firestore from '@react-native-firebase/firestore';
 import RBSheet from 'react-native-raw-bottom-sheet';
+import {ClassContext} from '../context/ClassContext';
 
-const People = ({classroomId, courseCode}) => {
-  const [students, setStudents] = useState([]);
-  const [teachers, setTeachers] = useState([]);
+const People = () => {
+  const {classList, classNumber} = useContext(ClassContext);
   const [addType, setAddType] = useState('');
   const [idString, setIdString] = useState('');
   const refRBSheet = useRef();
-  useEffect(() => {
-    fetchPeople(classroomId, setStudents, setTeachers);
-  }, []);
   return (
     <ScrollView>
       <ClassroomHeader
-        classroomId={courseCode}
+        classCode={classList[classNumber].classCode}
         backTo={'/Classroom'}
         isStudent={false}
       />
@@ -39,8 +36,8 @@ const People = ({classroomId, courseCode}) => {
           <Text style={styles.addIcon}>+</Text>
         </TouchableOpacity>
       </View>
-      {teachers &&
-        teachers.map((item, index) => {
+      {classList[classNumber].teachers &&
+        classList[classNumber].teachers.map((item, index) => {
           return (
             <View style={styles.item} key={index}>
               <Text>{item}</Text>
@@ -58,8 +55,8 @@ const People = ({classroomId, courseCode}) => {
           <Text style={styles.addIcon}>+</Text>
         </TouchableOpacity>
       </View>
-      {students &&
-        students.map((item, index) => {
+      {classList[classNumber].students &&
+        classList[classNumber].students.map((item, index) => {
           return (
             <View style={styles.item} key={index}>
               <Text>{item}</Text>
@@ -88,9 +85,7 @@ const People = ({classroomId, courseCode}) => {
           addType={addType}
           idString={idString}
           setIdString={setIdString}
-          classroomId={classroomId}
-          setStudents={setStudents}
-          setTeachers={setTeachers}
+          classroomId={classList[classNumber].classId}
           refRBSheet={refRBSheet}
         />
       </RBSheet>
@@ -124,8 +119,6 @@ const AddPeople = ({
             addType,
             idString,
             classroomId,
-            setStudents,
-            setTeachers,
             setIdString,
             refRBSheet,
           );
@@ -145,8 +138,6 @@ const addPersonToClass = (
   accountType,
   accountId,
   classroomId,
-  setStudents,
-  setTeachers,
   setIdString,
   refRBSheet,
 ) => {

@@ -2,11 +2,11 @@ import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import {Link} from 'react-router-native';
 
-const ClassroomHeader = ({classroomId, backTo, isStudent}) => {
+const ClassroomHeader = ({classCode = 'undefined', backTo, isStudent}) => {
   return (
     <View style={styles.header}>
       <View style={styles.headerTextContainer}>
-        <Text style={styles.headerText}>{classroomId}</Text>
+        <Text style={styles.headerText}>{classCode}</Text>
         <Link to={backTo} style={styles.back} underlayColor="#f0f4f7">
           <Text>back</Text>
         </Link>

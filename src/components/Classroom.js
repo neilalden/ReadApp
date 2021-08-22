@@ -1,37 +1,27 @@
-import React, {useEffect, useState} from 'react';
-import {
-  View,
-  Text,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  BackHandler,
-} from 'react-native';
+import React, {useContext, useEffect, useState} from 'react';
+import {View, Text, StyleSheet, ScrollView, BackHandler} from 'react-native';
 import ClassroomHeader from './ClassroomHeader';
-import firestore from '@react-native-firebase/firestore';
 import {Link} from 'react-router-native';
+import {ClassContext, fetchClassworkList} from '../context/ClassContext';
 
-const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'June',
-  'July',
-  'Aug',
-  'Sept',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-const Classroom = ({classroomId, userInfo, setClassworkInfo, courseCode}) => {
-  const [classworkList, setClassworkList] = useState([]);
+// CLASSROOM IS THE SAME FOR BOTH STUDENT AND TEACHER ACCOUNT TYPE
+
+const Classroom = ({userInfo}) => {
+  // CLASSNUMBER IS THE POSITION OF THE OPENNED CLASS IN THE CLASSLIST ARRAY
+  const {classNumber, classList, setClassList, setClassworkNumber} =
+    useContext(ClassContext);
 
   useEffect(() => {
-    setClassworkList([]);
-    fetchClassworkList(classroomId, setClassworkList);
+    // FETCH CLASSWORK LIST OF THE OPENNED CLASS IF IT DOES NOT EXIST YET
+    !classList[classNumber].classworkList &&
+      fetchClassworkList(
+        classNumber,
+        classList,
+        setClassList,
+        setClassworkNumber,
+      );
+
+    // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
@@ -40,14 +30,13 @@ const Classroom = ({classroomId, userInfo, setClassworkInfo, courseCode}) => {
   return (
     <>
       <ClassroomHeader
-        classroomId={courseCode}
+        classCode={classList[classNumber].classCode}
         backTo={'/ClassList'}
         isStudent={userInfo.isStudent}
       />
-      <View></View>
       <ScrollView>
-        {classworkList &&
-          classworkList.map((item, index) => {
+        {classList[classNumber].classworkList &&
+          classList[classNumber].classworkList.map((item, index) => {
             const dt = new Date(item.deadline.toDate());
             const day = dt.getDate();
             const month = dt.getMonth();
@@ -62,12 +51,7 @@ const Classroom = ({classroomId, userInfo, setClassworkInfo, courseCode}) => {
                 key={index}
                 style={styles.item}
                 onPress={() => {
-                  setClassworkInfo({
-                    id: item.id,
-                    isActivity: item.isActivity,
-                    instruction: item.instruction,
-                    questions: item.questions,
-                  });
+                  setClassworkNumber(index);
                 }}>
                 <View>
                   <Text>{item.title}</Text>
@@ -84,32 +68,20 @@ const Classroom = ({classroomId, userInfo, setClassworkInfo, courseCode}) => {
   );
 };
 
-const fetchClassworkList = (classroomId, setClassworkList) => {
-  firestore()
-    .collection(`classes/${classroomId}/classworks`)
-    .get()
-    .then(documentSnapshot =>
-      documentSnapshot.forEach(res => {
-        console.log('classroom 93', res.data());
-        setClassworkList(prev => [
-          ...prev,
-          {
-            id: res.id,
-            title: res.data().title,
-            instruction: res.data().instruction,
-            deadline: res.data().deadline,
-            isActivity: res.data().isActivity,
-            questions: res.data().questions,
-          },
-        ]);
-      }),
-    )
-    .catch(e => alert(e));
-};
-const alert = e =>
-  Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
-  ]);
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'June',
+  'July',
+  'Aug',
+  'Sept',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 const styles = StyleSheet.create({
   item: {

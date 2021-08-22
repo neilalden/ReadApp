@@ -11,33 +11,38 @@ import {
 } from 'react-native';
 import Login from './Login';
 import {AuthContext} from '../context/AuthContext';
+import {ClassContext, fetchClassList} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import {Link} from 'react-router-native';
 import Nav from './Nav';
 import RBSheet from 'react-native-raw-bottom-sheet';
 
-export default function ClassList({
-  classList,
-  userInfo,
-  setClassList,
-  setUserInfo,
-  setClassroomId,
-  setCourseCode,
-}) {
-  const {user} = useContext(AuthContext);
+// STUDENT ACCOUNT TYPE SEES: TEACHER NAME IN THE SUBJECT
+// TEACHER ACCOUNT TYPE SEES: SECTION NAME IN THE SUBJECT
+//                          : BUTTON TO SHOW ADD CLASS COMPONENT
+//                          : ADD CLASS COMPONENT (REACT BOTTOM SHEET)
+
+export default function ClassList({userInfo, setUserInfo}) {
   const refRBSheet = useRef();
+  const {user} = useContext(AuthContext);
+  const {classList, setClassList, setClassNumber} = useContext(ClassContext);
+
+  // FOR THE TEXT INPUT
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
+
+  // TO REFETCH CLASSES AFTER ADDING A NEW ONE
   const [reload, setReload] = useState(false);
+
   useEffect(() => {
     if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo);
     } else {
       if (userInfo && classList.length === 0) {
-        fetchClasses(userInfo.classes, setClassList);
+        fetchClassList(userInfo, setClassList);
       }
     }
-
+    // TO STOP THE BACK BUTTON FROM CLOSING APP
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
@@ -53,13 +58,12 @@ export default function ClassList({
           {userInfo && userInfo.isStudent ? (
             <StudentClasses
               classList={classList}
-              setClassroomId={setClassroomId}
+              setClassNumber={setClassNumber}
             />
           ) : (
             <TeacherClasses
               classList={classList}
-              setClassroomId={setClassroomId}
-              setCourseCode={setCourseCode}
+              setClassNumber={setClassNumber}
             />
           )}
         </ScrollView>
@@ -92,12 +96,12 @@ export default function ClassList({
             },
           }}>
           <AddClass
+            userInfo={userInfo}
+            refRBSheet={refRBSheet}
             subject={subject}
             setSubject={setSubject}
             section={section}
             setSection={setSection}
-            userInfo={userInfo}
-            refRBSheet={refRBSheet}
             reload={reload}
             setReload={setReload}
           />
@@ -108,7 +112,7 @@ export default function ClassList({
   }
 }
 
-const StudentClasses = ({classList, setClassroomId}) => {
+const StudentClasses = ({classList, setClassNumber}) => {
   return (
     <>
       {classList &&
@@ -119,9 +123,11 @@ const StudentClasses = ({classList, setClassroomId}) => {
               underlayColor="#f0f4f7"
               key={index}
               style={styles.item}
-              onPress={() => setClassroomId(item.classId)}>
+              onPress={() => {
+                setClassNumber(index);
+              }}>
               <>
-                <Text style={styles.header}>{item.courseCode}</Text>
+                <Text style={styles.header}>{item.classCode}</Text>
                 {item.teachers.length > 1 ? (
                   <View style={styles.teachersNameContainer}>
                     {item.teachers.map((itm, idx) => {
@@ -150,7 +156,7 @@ const StudentClasses = ({classList, setClassroomId}) => {
     </>
   );
 };
-const TeacherClasses = ({classList, setClassroomId, setCourseCode}) => {
+const TeacherClasses = ({classList, setClassNumber}) => {
   return (
     <>
       {classList &&
@@ -162,11 +168,10 @@ const TeacherClasses = ({classList, setClassroomId, setCourseCode}) => {
               key={index}
               style={styles.item}
               onPress={() => {
-                setClassroomId(item.classId);
-                setCourseCode(item.courseCode);
+                setClassNumber(index);
               }}>
               <>
-                <Text style={styles.header}>{item.courseCode}</Text>
+                <Text style={styles.header}>{item.classCode}</Text>
                 <Text style={styles.itemSubtitle}>{item.section}</Text>
               </>
             </Link>
@@ -177,15 +182,17 @@ const TeacherClasses = ({classList, setClassroomId, setCourseCode}) => {
 };
 
 const AddClass = ({
+  userInfo,
+  refRBSheet,
   subject,
   setSubject,
   section,
   setSection,
-  userInfo,
-  refRBSheet,
   reload,
   setReload,
 }) => {
+  // CREATE CLASS COMPONENT (IT'S BETTER TO LEAVE THIS MF BE FOR NOW)
+
   const createClass = () => {
     const id = firestore().collection('classes').doc().id;
     let classes = userInfo.classes;
@@ -196,7 +203,7 @@ const AddClass = ({
       .set({
         teachers: [userInfo.id],
         students: [],
-        courseCode: subject,
+        classCode: subject,
         classId: id,
         section: section,
       })
@@ -226,7 +233,7 @@ const AddClass = ({
     <View style={styles.addPeopleContainer}>
       <Text style={styles.header}>Create class</Text>
       <TextInput
-        placeholder="Subject / Course code"
+        placeholder="Subject / Class code"
         value={subject}
         style={styles.addPeopleInput}
         onChangeText={text => setSubject(text)}
@@ -254,6 +261,8 @@ const alert = (title = 'Error', msg) =>
     },
   ]);
 
+// USEFUL FUNCTIONS
+
 const fetchUser = (id, setUserInfo) => {
   firestore()
     .collection('users')
@@ -271,19 +280,7 @@ const fetchUser = (id, setUserInfo) => {
     .catch(e => alert(e));
 };
 
-const fetchClasses = (classes, setClassList) => {
-  for (let i in classes) {
-    firestore()
-      .collection('classes')
-      .doc(classes[i])
-      .get()
-      .then(res => {
-        fetchClassTeachersInfo(res, res.data().teachers, setClassList);
-      })
-      .catch(e => alert(e));
-  }
-};
-
+//  MAY OR MAY NOT USE IN THE FUTURE
 const fetchClassTeachersInfo = (data, teachersArray, setClassList) => {
   let teachers = [];
 
@@ -299,7 +296,7 @@ const fetchClassTeachersInfo = (data, teachersArray, setClassList) => {
             ...prev,
             {
               classId: data.data().classId,
-              courseCode: data.data().courseCode,
+              classCode: data.data().classCode,
               subject: data.data().subject,
               section: data.data().section,
               students: data.data().students,
@@ -346,7 +343,6 @@ const styles = StyleSheet.create({
     height: 40,
     width: 40,
     borderRadius: 50,
-    // to make the button float
     position: 'absolute',
     bottom: 70,
     right: 10,
