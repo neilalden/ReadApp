@@ -1,4 +1,4 @@
-import React, {useCallback, useContext, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
 import {View, Text, StyleSheet, ScrollView, RefreshControl} from 'react-native';
 import {ClassContext, fetchSubmissionList} from '../context/ClassContext';
 
@@ -14,9 +14,21 @@ const SubmissionList = () => {
     fetchSubmissionList(classNumber, classworkNumber, classList, setClassList);
     wait(1000).then(() => setRefreshing(false));
   }, []);
+  useEffect(() => {
+    if (!classList[classNumber].classworkList[classworkNumber].submission) {
+      fetchSubmissionList(
+        classNumber,
+        classworkNumber,
+        classList,
+        setClassList,
+      );
+    }
+  }, []);
   return (
     <>
-      <Text style={styles.header}>list of student works</Text>
+      <Text style={styles.header}>
+        {classList[classNumber].classworkList[classworkNumber].title}
+      </Text>
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -25,13 +37,26 @@ const SubmissionList = () => {
           classList[classNumber].classworkList[
             classworkNumber
           ].submissionList.map((item, index) => {
+            console.log(item.work);
+            console.log(item.files);
+            // let didComply = false;
+            // if (item.files === undefined || item.work === undefined) {
+            //   didComply = false;
+            //   console.log('44');
+            // } else if (item.files.length === 0 || item.work === '') {
+            //   didComply = false;
+            //   console.log('47');
+            // } else {
+            //   didComply = true;
+            // }
             return (
               <View key={index} style={styles.item}>
                 <Text>{item.submittedBy}</Text>
                 <Text style={styles.itemSubtitle}>
-                  {(item.files || item.work) &&
-                  (item.files.length !== 0 || item.work !== '')
-                    ? 'Complied'
+                  {item.work || item.files
+                    ? item.work != '' || item.files.length != 0
+                      ? 'Complied'
+                      : 'Missing'
                     : 'Missing'}
                 </Text>
               </View>
