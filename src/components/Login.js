@@ -11,13 +11,13 @@ import {
 } from 'react-native';
 import {Link} from 'react-router-native';
 import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
-import firestore from '@react-native-firebase/firestore';
+// import firestore from '@react-native-firebase/firestore';
 import Nav from './Nav';
 import {useHistory} from 'react-router';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
 const Login = () => {
-  const [code, setCode] = useState('');
+  // const [code, setCode] = useState('');
   const [confirm, setConfirm] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const {user} = useContext(AuthContext);
@@ -53,7 +53,7 @@ const Login = () => {
           <Text style={styles.span}>Phone number</Text>
           <TextInput
             style={styles.numberInput}
-            value={id}
+            value={phoneNumber}
             placeholder="+639976447771"
             keyboardType="numeric"
             onChangeText={text => setPhoneNumber(text)}

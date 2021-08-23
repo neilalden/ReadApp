@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Login from './Login';
 import {AuthContext} from '../context/AuthContext';
 import {ClassContext, fetchClassList} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
@@ -42,8 +41,9 @@ export default function ClassList({userInfo, setUserInfo}) {
     } else if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo);
     } else {
-      if (userInfo && classList.length === 0) {
+      if ((userInfo && classList.length === 0) || reload) {
         fetchClassList(userInfo, setClassList);
+        setReload(false);
       }
     }
     // TO STOP THE BACK BUTTON FROM CLOSING APP
@@ -189,7 +189,6 @@ const AddClass = ({
   setSubject,
   section,
   setSection,
-  reload,
   setReload,
 }) => {
   // CREATE CLASS COMPONENT (IT'S BETTER TO LEAVE THIS MF BE FOR NOW)
@@ -217,14 +216,14 @@ const AddClass = ({
           .catch(e => {
             console.log(e);
           });
-        setReload(!reload);
+        setReload(true);
         setSubject('');
         setSection('');
         refRBSheet.current.close();
       })
       .catch(e => {
         refRBSheet.current.close();
-        setReload(!reload);
+        setReload(true);
         setSubject('');
         setSection('');
         console.log(e);
