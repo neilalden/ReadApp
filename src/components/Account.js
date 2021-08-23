@@ -5,44 +5,43 @@ import firestore from '@react-native-firebase/firestore';
 import Login from './Login';
 import Nav from './Nav';
 import {signOut} from '../context/AuthContext';
+import {useHistory} from 'react-router';
 
 const Account = ({userInfo, setUserInfo}) => {
+  let {user} = useContext(AuthContext);
+  let history = useHistory();
   useEffect(() => {
-    if (Object.keys(userInfo).length === 0 && user) {
+    if (!user) {
+      history.push('/Login');
+    } else if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo);
     }
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, []);
-  let {user} = useContext(AuthContext);
-
+  }, [user]);
   return (
     <>
-      {Object.keys(userInfo).length !== 0 && user ? (
-        <>
-          <ScrollView>
-            <View>
-              <Text>ID: {userInfo.id}</Text>
-              <Text>Name: {userInfo.name}</Text>
-              <Text>Phone Number: {userInfo.phoneNumber}</Text>
-              <Text>
-                Account tyype: {userInfo.isStudent ? 'Student' : 'Teacher'}
-              </Text>
-              <Text>Classes: {userInfo.classes.toString()}</Text>
-              <Button
-                title="Logout"
-                onPress={() => {
-                  signOut();
-                }}
-              />
-            </View>
-          </ScrollView>
-          <Nav />
-        </>
-      ) : (
-        <Login />
-      )}
+      <ScrollView>
+        <View>
+          <Text>ID: {userInfo.id}</Text>
+          <Text>Name: {userInfo.name}</Text>
+          <Text>Phone Number: {userInfo.phoneNumber}</Text>
+          <Text>
+            Account tyype: {userInfo.isStudent ? 'Student' : 'Teacher'}
+          </Text>
+          <Text>
+            Classes: {userInfo.classes ? userInfo.classes.toString() : ''}
+          </Text>
+          <Button
+            title="Logout"
+            onPress={() => {
+              signOut();
+            }}
+          />
+        </View>
+      </ScrollView>
+      <Nav />
     </>
   );
 };
@@ -59,11 +58,11 @@ const fetchUser = (id, setUserInfo) => {
     .get()
     .then(res => {
       setUserInfo({
-        classes: res.data().classes,
         id: res.data().id,
         isStudent: res.data().isStudent,
-        phoneNumber: res.data().phoneNumber,
         name: res.data().name,
+        phoneNumber: res.data().phoneNumber,
+        classes: res.data().classes,
       });
     })
     .catch(e => alert(e));

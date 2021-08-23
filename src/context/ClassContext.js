@@ -141,6 +141,7 @@ export const fetchSubmision = (
   setClassList,
   userInfo,
 ) => {
+  console.log('FETCHING CLASSWORK SUBMISSION...');
   const classworkId = classList[classNumber].classworkList[classworkNumber].id;
   const classId = classList[classNumber].classId;
   const studenId = userInfo.id;
@@ -151,11 +152,20 @@ export const fetchSubmision = (
     .doc(studenId)
     .get()
     .then(res => {
-      setClasswork({
-        work: res.data().work,
-        score: res.data().score,
-        files: res.data().files,
-      });
+      if (res.data()) {
+        submission = {
+          work: res.data().work,
+          score: res.data().score,
+          files: res.data().files,
+        };
+      } else {
+        submission = {};
+      }
+      classListCopy[classNumber].classworkList[classworkNumber].submission =
+        submission;
+      setClassList(classListCopy);
     })
-    .catch(e => alert(e));
+    .catch(e =>
+      console.error('error in fetching user classwork submission', e),
+    );
 };

@@ -14,12 +14,12 @@ import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
 import Nav from './Nav';
 import {useHistory} from 'react-router';
+import OTPInputView from '@twotalltotems/react-native-otp-input';
 
 const Login = () => {
   const [code, setCode] = useState('');
   const [confirm, setConfirm] = useState(null);
-  const [id, setId] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const {user} = useContext(AuthContext);
   let history = useHistory();
   useEffect(() => {
@@ -34,40 +34,39 @@ const Login = () => {
           })
           .catch(e => console.log(e));
       }
-
-      history.push('/ClassList');
+      // history.push('/ClassList');
     }
-  }, [confirm, isLoading]);
+  }, [confirm]);
 
-  async function confirmCode() {
-    try {
-      await confirm.confirm(code);
-      setIsLoading(false);
-    } catch (error) {
-      createTwoButtonAlert(error);
-      setIsLoading(false);
-    }
-  }
+  // async function confirmCode() {
+  //   try {
+  //     await confirm.confirm(code);
+  //   } catch (error) {
+  //     createTwoButtonAlert(error);
+  //   }
+  // }
 
   if (!confirm) {
     return (
       <>
         <ScrollView>
-          <Text style={styles.span}>ID</Text>
+          <Text style={styles.span}>Phone number</Text>
           <TextInput
             style={styles.numberInput}
             value={id}
-            placeholder="04180622"
+            placeholder="+639976447771"
             keyboardType="numeric"
-            onChangeText={text => setId(text)}
+            onChangeText={text => setPhoneNumber(text)}
           />
           <View style={styles.button}>
             <Button
               title="Log in"
-              disabled={isLoading}
               onPress={() => {
-                setIsLoading(true);
-                handleLogin(id, setConfirm, setIsLoading);
+                signInWithPhoneNumber(
+                  phoneNumber,
+                  setConfirm,
+                  createTwoButtonAlert,
+                );
               }}
             />
           </View>
@@ -85,7 +84,38 @@ const Login = () => {
   return (
     <>
       <ScrollView>
-        <TextInput
+        <View
+          style={{
+            alignItems: 'center',
+          }}>
+          <Text
+            style={[
+              styles.header,
+              {fontSize: 26, fontWeight: 'bold', top: 100},
+            ]}>
+            OTP Code
+          </Text>
+          <OTPInputView
+            style={{
+              width: '80%',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 400,
+            }}
+            pinCount={6}
+            autoFocusOnLoad
+            codeInputFieldStyle={styles.underlineStyleBase}
+            codeInputHighlightStyle={styles.underlineStyleHighLighted}
+            onCodeFilled={async code => {
+              try {
+                await confirm.confirm(code);
+              } catch (error) {
+                createTwoButtonAlert(error);
+              }
+            }}
+          />
+        </View>
+        {/* <TextInput
           keyboardType="numeric"
           value={code}
           style={styles.numberInput}
@@ -93,7 +123,7 @@ const Login = () => {
         />
         <View style={styles.button}>
           <Button title="Confirm Code" onPress={() => confirmCode()} />
-        </View>
+        </View> */}
       </ScrollView>
       <Nav />
     </>
@@ -104,26 +134,6 @@ const createTwoButtonAlert = e =>
   Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => console.log('OK Pressed')},
   ]);
-
-const handleLogin = (id, setConfirm, setIsLoading) => {
-  console.log('fetching user...');
-  firestore()
-    .collection('users')
-    .doc(id)
-    .get()
-    .then(res => {
-      signInWithPhoneNumber(
-        res._data.phoneNumber,
-        setConfirm,
-        createTwoButtonAlert,
-        setIsLoading(),
-      );
-    })
-    .catch(e => {
-      createTwoButtonAlert(e);
-      setIsLoading(false);
-    });
-};
 
 const styles = StyleSheet.create({
   numberInput: {
@@ -153,6 +163,27 @@ const styles = StyleSheet.create({
   button: {
     marginHorizontal: 20,
     marginVertical: 10,
+  },
+  borderStyleBase: {
+    width: 30,
+    height: 45,
+  },
+
+  borderStyleHighLighted: {
+    borderColor: '#03DAC6',
+  },
+
+  underlineStyleBase: {
+    width: 30,
+    height: 45,
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    color: 'black',
+    fontWeight: 'bold',
+  },
+
+  underlineStyleHighLighted: {
+    borderColor: '#03DAC6',
   },
 });
 

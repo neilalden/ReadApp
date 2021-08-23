@@ -1,0 +1,266 @@
+import React, {useContext, useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import {ClassContext, fetchSubmision} from '../context/ClassContext';
+import firestore from '@react-native-firebase/firestore';
+
+const QuizSubmission = ({userInfo}) => {
+  const {classNumber, classworkNumber, classList, setClassList} =
+    useContext(ClassContext);
+  const [userAnswers, setUserAnswers] = useState({});
+  const [reload, setReload] = useState(false);
+
+  const classwork = classList[classNumber].classworkList[classworkNumber];
+  const classId = classList[classNumber].classId;
+  const submission = classwork.submission;
+  useEffect(() => {
+    if (
+      !classList[classNumber].classworkList[classworkNumber].submission ||
+      reload
+    ) {
+      fetchSubmision(
+        classNumber,
+        classworkNumber,
+        classList,
+        setClassList,
+        userInfo,
+      );
+      setReload(false);
+    }
+  }, [reload]);
+  return (
+    <View>
+      <View>
+        <Text style={styles.header}>Instruction</Text>
+        <Text style={styles.item}>{classwork.instruction}</Text>
+      </View>
+      <View
+        style={{
+          paddingBottom: 5,
+          borderBottomWidth: 2,
+          borderBottomColor: '#666',
+        }}>
+        <Text style={styles.header}>Score</Text>
+        <Text style={styles.item}>
+          {submission && submission.score
+            ? `${submission.score}/${Object.keys(classwork.questions).length}`
+            : 'no grades yet'}
+        </Text>
+      </View>
+
+      {/* Student Quiz screen has two (2) states */}
+      {/* > Student has taken the quiz */}
+      {/* > Student has NOT taken the quiz */}
+
+      {(() => {
+        if (submission && Object.keys(submission).length !== 0) {
+          return (
+            <ScrollView>
+              {classwork.questions.map((item, index) => {
+                return (
+                  <View key={index} style={styles.questionContainer}>
+                    <Text style={styles.header}>
+                      Question number {index + 1}
+                    </Text>
+                    <Text style={styles.item}>{item[index + 1]}</Text>
+                    <View>
+                      <Text style={styles.header}>Correct answer</Text>
+                      <Text style={styles.item}>{item['answer']}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.header}>Your answer</Text>
+                      <Text
+                        style={[
+                          styles.item,
+                          item['answer'] == submission.work[index]
+                            ? {backgroundColor: 'forestgreen'}
+                            : {backgroundColor: 'crimson'},
+                        ]}>
+                        {submission.work[index]}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          );
+        } else {
+          return (
+            <>
+              <ScrollView>
+                {classwork.questions.map((item, index) => {
+                  let options = item.options
+                    ? [...item.options, item.answer]
+                    : undefined;
+                  if (options) options.sort();
+                  return (
+                    <View key={index} style={styles.questionContainer}>
+                      <Text style={styles.header}>
+                        Question number {index + 1}
+                      </Text>
+                      <Text style={styles.item}>{item[index + 1]}</Text>
+                      {options ? (
+                        <View style={styles.optionsContainer}>
+                          {options.map((itm, idx) => {
+                            return (
+                              <TouchableOpacity
+                                key={idx}
+                                style={[
+                                  styles.item,
+                                  userAnswers[index] &&
+                                  userAnswers[index] == itm
+                                    ? {
+                                        borderColor: 'teal',
+                                        borderWidth: 3,
+                                        padding: 12,
+                                      }
+                                    : {},
+                                ]}
+                                onPress={() =>
+                                  handleAnswer(
+                                    userAnswers,
+                                    setUserAnswers,
+                                    itm,
+                                    index,
+                                  )
+                                }>
+                                <Text>{itm}</Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      ) : (
+                        <TextInput
+                          placeholder="Write your answers here.."
+                          style={styles.item}
+                          value={userAnswers[index]}
+                          onChangeText={text => {
+                            handleAnswer(
+                              userAnswers,
+                              setUserAnswers,
+                              text.toLowerCase(),
+                              index,
+                            );
+                          }}
+                        />
+                      )}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+              <TouchableOpacity
+                style={[styles.editButton, {backgroundColor: 'teal'}]}
+                onPress={() =>
+                  handleFinishQuiz(
+                    userInfo,
+                    userAnswers,
+                    classwork,
+                    classId,
+                    setReload,
+                  )
+                }>
+                <Text>Finish</Text>
+              </TouchableOpacity>
+            </>
+          );
+        }
+      })()}
+    </View>
+  );
+};
+
+const handleAnswer = (userAnswers, setUserAnswers, value, index) => {
+  let copyOfUserAnswers = {...userAnswers};
+  copyOfUserAnswers[index] = value;
+  setUserAnswers(copyOfUserAnswers);
+};
+const handleFinishQuiz = (
+  userInfo,
+  userAnswers,
+  classwork,
+  classId,
+  setReload,
+) => {
+  // FIRST VERIFY IF EVERY QUESTION IS ANSWERED
+  if (Object.keys(userAnswers).length !== classwork.questions.length) {
+    alert('Please answer every question');
+  } else {
+    for (const [key, value] of Object.entries(userAnswers)) {
+      if (value == '') {
+        const qn = parseInt(key) + 1;
+        alert(`You have'nt answered question number ${qn}`);
+        return;
+      }
+    }
+    // USER HAS ANSWERED EVERY QUESTION
+    console.log('student has answered every question');
+    // SCORING USER
+    let score = 0;
+    for (const i in classwork.questions) {
+      score =
+        classwork.questions[i]['answer'] === userAnswers[i] ? score + 1 : score;
+    }
+    // SAVE TO DB USER SUBMISSION
+    firestore()
+      .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
+      .doc(userInfo.id)
+      .set({
+        work: userAnswers,
+        score: score,
+        submittedAt: firestore.FieldValue.serverTimestamp(),
+      })
+      .then(res => {
+        console.log('success');
+
+        setReload(true);
+      })
+      .catch(e => alert(e));
+  }
+};
+const alert = e =>
+  Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
+    {text: 'OK', onPress: () => console.log('OK Pressed')},
+  ]);
+
+const styles = StyleSheet.create({
+  item: {
+    justifyContent: 'space-between',
+    backgroundColor: '#E8EAED',
+    fontFamily: 'monospace',
+    marginHorizontal: 5,
+    marginVertical: 3,
+    borderRadius: 10,
+    padding: 15,
+  },
+  header: {
+    fontSize: 18,
+    fontFamily: 'monospace',
+    margin: 5,
+  },
+  questionContainer: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#666',
+    margin: 5,
+    paddingBottom: 5,
+  },
+  editButton: {
+    alignSelf: 'center',
+    backgroundColor: 'gold',
+    borderRadius: 5,
+    marginVertical: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+});
+export default QuizSubmission;

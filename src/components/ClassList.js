@@ -13,7 +13,7 @@ import Login from './Login';
 import {AuthContext} from '../context/AuthContext';
 import {ClassContext, fetchClassList} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
-import {Link} from 'react-router-native';
+import {Link, useHistory} from 'react-router-native';
 import Nav from './Nav';
 import RBSheet from 'react-native-raw-bottom-sheet';
 
@@ -23,6 +23,7 @@ import RBSheet from 'react-native-raw-bottom-sheet';
 //                          : ADD CLASS COMPONENT (REACT BOTTOM SHEET)
 
 export default function ClassList({userInfo, setUserInfo}) {
+  const history = useHistory();
   const refRBSheet = useRef();
   const {user} = useContext(AuthContext);
   const {classList, setClassList, setClassNumber} = useContext(ClassContext);
@@ -35,7 +36,10 @@ export default function ClassList({userInfo, setUserInfo}) {
   const [reload, setReload] = useState(false);
 
   useEffect(() => {
-    if (Object.keys(userInfo).length === 0 && user) {
+    if (!user) {
+      setClassList([]);
+      history.push('/Login');
+    } else if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo);
     } else {
       if (userInfo && classList.length === 0) {
@@ -48,68 +52,64 @@ export default function ClassList({userInfo, setUserInfo}) {
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [userInfo, user, reload]);
 
-  if (Object.keys(userInfo).length === 0 && !user) {
-    return <Login />;
-  } else {
-    return (
-      <>
-        <View style={styles.addButtonContainer}></View>
-        <ScrollView>
-          {userInfo && userInfo.isStudent ? (
-            <StudentClasses
-              classList={classList}
-              setClassNumber={setClassNumber}
-            />
-          ) : (
-            <TeacherClasses
-              classList={classList}
-              setClassNumber={setClassNumber}
-            />
-          )}
-        </ScrollView>
-        {!userInfo.isStudent ? (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              refRBSheet.current.open();
-            }}>
-            <Text style={styles.addIcon}>+</Text>
-          </TouchableOpacity>
-        ) : (
-          <></>
-        )}
-        <RBSheet
-          ref={refRBSheet}
-          closeOnDragDown={true}
-          closeOnPressMask={true}
-          animationType="slide"
-          customStyles={{
-            wrapper: {
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            },
-            draggableIcon: {
-              backgroundColor: '#000',
-            },
-            container: {
-              borderTopLeftRadius: 15,
-              borderTopRightRadius: 15,
-            },
-          }}>
-          <AddClass
-            userInfo={userInfo}
-            refRBSheet={refRBSheet}
-            subject={subject}
-            setSubject={setSubject}
-            section={section}
-            setSection={setSection}
-            reload={reload}
-            setReload={setReload}
+  return (
+    <>
+      <View style={styles.addButtonContainer}></View>
+      <ScrollView>
+        {userInfo && userInfo.isStudent ? (
+          <StudentClasses
+            classList={classList}
+            setClassNumber={setClassNumber}
           />
-        </RBSheet>
-        <Nav />
-      </>
-    );
-  }
+        ) : (
+          <TeacherClasses
+            classList={classList}
+            setClassNumber={setClassNumber}
+          />
+        )}
+      </ScrollView>
+      {!userInfo.isStudent ? (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            refRBSheet.current.open();
+          }}>
+          <Text style={styles.addIcon}>+</Text>
+        </TouchableOpacity>
+      ) : (
+        <></>
+      )}
+      <RBSheet
+        ref={refRBSheet}
+        closeOnDragDown={true}
+        closeOnPressMask={true}
+        animationType="slide"
+        customStyles={{
+          wrapper: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+          draggableIcon: {
+            backgroundColor: '#000',
+          },
+          container: {
+            borderTopLeftRadius: 15,
+            borderTopRightRadius: 15,
+          },
+        }}>
+        <AddClass
+          userInfo={userInfo}
+          refRBSheet={refRBSheet}
+          subject={subject}
+          setSubject={setSubject}
+          section={section}
+          setSection={setSection}
+          reload={reload}
+          setReload={setReload}
+        />
+      </RBSheet>
+      <Nav />
+    </>
+  );
 }
 
 const StudentClasses = ({classList, setClassNumber}) => {
@@ -117,6 +117,7 @@ const StudentClasses = ({classList, setClassNumber}) => {
     <>
       {classList &&
         classList.map((item, index) => {
+          console.log(item.teachers);
           return (
             <Link
               to="/Classroom"

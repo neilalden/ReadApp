@@ -2,16 +2,16 @@ import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {Link} from 'react-router-native';
 
-const Nav = ({isLoading}) => {
+const Nav = () => {
   return (
     <View style={styles.header}>
-      <Link to="/" underlayColor="#f0f4f7" disabled={isLoading}>
+      <Link to="/" underlayColor="#f0f4f7">
         <Text style={styles.headerText}>Library</Text>
       </Link>
-      <Link to="/ClassList" underlayColor="#f0f4f7" disabled={isLoading}>
+      <Link to="/ClassList" underlayColor="#f0f4f7">
         <Text style={styles.headerText}>Classes</Text>
       </Link>
-      <Link to="/Account" underlayColor="#f0f4f7" disabled={isLoading}>
+      <Link to="/Account" underlayColor="#f0f4f7">
         <Text style={styles.headerText}>Account</Text>
       </Link>
     </View>

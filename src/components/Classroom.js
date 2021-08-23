@@ -1,7 +1,7 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {View, Text, StyleSheet, ScrollView, BackHandler} from 'react-native';
 import ClassroomHeader from './ClassroomHeader';
-import {Link} from 'react-router-native';
+import {Link, useHistory} from 'react-router-native';
 import {ClassContext, fetchClassworkList} from '../context/ClassContext';
 
 // CLASSROOM IS THE SAME FOR BOTH STUDENT AND TEACHER ACCOUNT TYPE
@@ -10,9 +10,9 @@ const Classroom = ({userInfo}) => {
   // CLASSNUMBER IS THE POSITION OF THE OPENNED CLASS IN THE CLASSLIST ARRAY
   const {classNumber, classList, setClassList, setClassworkNumber} =
     useContext(ClassContext);
-
+  const history = useHistory();
   useEffect(() => {
-    // FETCH CLASSWORK LIST OF THE OPENNED CLASS IF IT DOES NOT EXIST YET
+    // FETCH CLASSWORKLIST OF THE OPENNED CLASS IF IT DOES NOT EXIST YET
     !classList[classNumber].classworkList &&
       fetchClassworkList(
         classNumber,
@@ -22,7 +22,9 @@ const Classroom = ({userInfo}) => {
       );
 
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
-    BackHandler.addEventListener('hardwareBackPress', () => true);
+    BackHandler.addEventListener('hardwareBackPress', () =>
+      history.push('/ClassList'),
+    );
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);

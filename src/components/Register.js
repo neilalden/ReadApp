@@ -13,12 +13,14 @@ import {useHistory} from 'react-router';
 import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
 import Nav from './Nav';
+import OTPInputView from '@twotalltotems/react-native-otp-input';
 
-const Register = ({isLoading, setIsLoading}) => {
+const Register = () => {
   const [code, setCode] = useState('');
   const [confirm, setConfirm] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [id, setId] = useState('');
+  const [name, setName] = useState('');
   const [isStudent, setIsStudent] = useState(true);
   const [state, setState] = useState(false);
   const {user} = useContext(AuthContext);
@@ -35,36 +37,37 @@ const Register = ({isLoading, setIsLoading}) => {
         })
         .catch(e => console.log(e));
     }
-  }, [user, confirm, state, isLoading]);
+  }, [user, confirm, state]);
 
-  function confirmCode() {
-    confirm
-      .confirm(code)
-      .then(res => {
-        firestore()
-          .collection('users')
-          .doc(id)
-          .set({
-            id: id,
-            isStudent: isStudent,
-            phoneNumber: phoneNumber,
-            classes: [],
-          })
-          .then(() => {
-            setState(true);
-            console.log(user);
-            setIsLoading(false);
-          })
-          .catch(e => {
-            setIsLoading(false);
-            console.log(e);
-          });
-      })
-      .catch(e => {
-        setIsLoading(false);
-        console.log(e);
-      });
-  }
+  // function confirmCode() {
+  //   confirm
+  //     .confirm(code)
+  //     .then(res => {
+  //       firestore()
+  //         .collection('users')
+  //         .doc(id)
+  //         .set({
+  //           id: id,
+  //           name: name,
+  //           isStudent: isStudent,
+  //           phoneNumber: phoneNumber,
+  //           classes: [],
+  //         })
+  //         .then(() => {
+  //           setState(true);
+  //           console.log(user);
+  //           false;
+  //         })
+  //         .catch(e => {
+  //           false;
+  //           console.log(e);
+  //         });
+  //     })
+  //     .catch(e => {
+  //       false;
+  //       console.log(e);
+  //     });
+  // }
 
   if (!confirm) {
     return (
@@ -77,6 +80,13 @@ const Register = ({isLoading, setIsLoading}) => {
             placeholder="04210001"
             keyboardType="numeric"
             onChangeText={text => setId(text)}
+          />
+          <Text style={styles.span}>Full name</Text>
+          <TextInput
+            style={styles.numberInput}
+            value={name}
+            placeholder="Juan Dela Cruz"
+            onChangeText={text => setName(text)}
           />
           <Text style={styles.span}>Phone number</Text>
           <TextInput
@@ -99,13 +109,11 @@ const Register = ({isLoading, setIsLoading}) => {
             </Text>
             <Button
               title="Student"
-              disabled={isLoading}
               color={isStudent ? 'dodgerblue' : '#ccc'}
               onPress={() => setIsStudent(true)}
             />
             <Button
               title="Teacher"
-              disabled={isLoading}
               color={!isStudent ? 'dodgerblue' : '#ccc'}
               onPress={() => setIsStudent(false)}
             />
@@ -114,31 +122,79 @@ const Register = ({isLoading, setIsLoading}) => {
           <View style={styles.button}>
             <Button
               title="Sign up"
-              disabled={isLoading}
               onPress={() => {
                 signInWithPhoneNumber(
                   phoneNumber,
                   setConfirm,
                   createTwoButtonAlert,
-                  setIsLoading,
                 );
               }}
             />
           </View>
-          <Link to="/Login" underlayColor="#f0f4f7" disabled={isLoading}>
+          <Link to="/Login" underlayColor="#f0f4f7">
             <Text style={styles.link}>
               already have an account? Log in here
             </Text>
           </Link>
         </ScrollView>
-        <Nav isLoading={isLoading} />
+        <Nav />
       </>
     );
   }
   return (
     <>
       <ScrollView>
-        <TextInput
+        <View
+          style={{
+            alignItems: 'center',
+          }}>
+          <Text
+            style={[
+              styles.header,
+              {fontSize: 26, fontWeight: 'bold', top: 100},
+            ]}>
+            OTP Code
+          </Text>
+          <OTPInputView
+            style={{
+              width: '80%',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 400,
+            }}
+            pinCount={6}
+            autoFocusOnLoad
+            codeInputFieldStyle={styles.underlineStyleBase}
+            codeInputHighlightStyle={styles.underlineStyleHighLighted}
+            onCodeFilled={code => {
+              confirm
+                .confirm(code)
+                .then(res => {
+                  firestore()
+                    .collection('users')
+                    .doc(id)
+                    .set({
+                      id: id,
+                      name: name,
+                      isStudent: isStudent,
+                      phoneNumber: phoneNumber,
+                      classes: [],
+                    })
+                    .then(() => {
+                      setState(true);
+                      console.log(user);
+                    })
+                    .catch(e => {
+                      console.log(e);
+                    });
+                })
+                .catch(e => {
+                  console.log(e.message);
+                });
+            }}
+          />
+        </View>
+        {/* <TextInput
           keyboardType="numeric"
           value={code}
           style={styles.numberInput}
@@ -146,9 +202,9 @@ const Register = ({isLoading, setIsLoading}) => {
         />
         <View style={styles.button}>
           <Button title="Confirm Code" onPress={() => confirmCode()} />
-        </View>
+        </View> */}
       </ScrollView>
-      <Nav isLoading={isLoading} />
+      <Nav />
     </>
   );
 };
@@ -189,6 +245,27 @@ const styles = StyleSheet.create({
   toggle: {
     marginVertical: 10,
     flexDirection: 'row',
+  },
+  borderStyleBase: {
+    width: 30,
+    height: 45,
+  },
+
+  borderStyleHighLighted: {
+    borderColor: '#03DAC6',
+  },
+
+  underlineStyleBase: {
+    width: 30,
+    height: 45,
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    color: 'black',
+    fontWeight: 'bold',
+  },
+
+  underlineStyleHighLighted: {
+    borderColor: '#03DAC6',
   },
 });
 

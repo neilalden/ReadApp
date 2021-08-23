@@ -20,11 +20,6 @@ import People from './src/components/People';
 import {BackHandler} from 'react-native';
 
 const App = () => {
-  // const [classroomId, setClassroomId] = useState('');
-  // const [classList, setClassList] = useState([]);
-  // const [classworkInfo, setClassworkInfo] = useState({});
-  // const [courseCode, setCourseCode] = useState('');
-  // const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({});
 
   useEffect(() => {
@@ -33,8 +28,8 @@ const App = () => {
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
   return (
-    <AuthContextProvider>
-      <NativeRouter>
+    <NativeRouter>
+      <AuthContextProvider>
         <Route exact path="/" component={() => <Library />} />
         <Route
           exact
@@ -44,13 +39,7 @@ const App = () => {
           )}
         />
         <Route exact path="/Login" component={Login} />
-        <Route
-          exact
-          path="/Register"
-          component={() => (
-            <Register isLoading={isLoading} setIsLoading={setIsLoading} />
-          )}
-        />
+        <Route exact path="/Register" component={Register} />
         <ClassContextProvider>
           <Route
             exact
@@ -72,8 +61,8 @@ const App = () => {
           />
           <Route exact path="/People" component={() => <People />} />
         </ClassContextProvider>
-      </NativeRouter>
-    </AuthContextProvider>
+      </AuthContextProvider>
+    </NativeRouter>
   );
 };
 
