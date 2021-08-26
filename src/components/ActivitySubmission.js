@@ -49,7 +49,6 @@ const ActivitySubmission = ({userInfo}) => {
 
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => {
-      history.push('/Classroom');
       return true;
     });
     return () =>
@@ -135,7 +134,7 @@ const ActivitySubmission = ({userInfo}) => {
                       setFiles(filesCopy);
                     }}>
                     <Text>{item.fileName}</Text>
-                    <Text style={{marginRight: 5, color: 'red'}}>✖️</Text>
+                    <IconRemove height={30} width={30} color={'red'} />
                   </TouchableOpacity>
                 );
               })}
@@ -257,7 +256,7 @@ const ActivitySubmission = ({userInfo}) => {
                             setFiles(filesCopy);
                           }}>
                           <Text>{item.fileName}</Text>
-                          <Text style={{marginRight: 5, color: 'red'}}>✖️</Text>
+                          <IconRemove height={30} width={30} color={'red'} />
                         </TouchableOpacity>
                       );
                     })}

@@ -36,7 +36,11 @@ const Account = ({userInfo, setUserInfo}) => {
       }
     }
 
-    BackHandler.addEventListener('hardwareBackPress', () => true);
+    // TO STOP THE BACK BUTTON FROM CLOSING APP
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      alert('Exit', 'Do you want to leave?');
+      return true;
+    });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [user, userInfo, classList]);
@@ -93,10 +97,24 @@ const Account = ({userInfo, setUserInfo}) => {
     );
   }
 };
-const alert = (title = 'Error', msg) =>
-  Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
-  ]);
+
+const alert = (title = 'Error', msg) => {
+  if (title == 'Exit') {
+    Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
+      {text: 'Yes', onPress: () => BackHandler.exitApp()},
+      {
+        text: 'No',
+        onPress: () => {
+          console.log('No Presses');
+        },
+      },
+    ]);
+  } else {
+    Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
+      {text: 'OK', onPress: () => console.log('OK Pressed')},
+    ]);
+  }
+};
 
 const fetchUser = (id, setUserInfo) => {
   firestore()
@@ -112,7 +130,7 @@ const fetchUser = (id, setUserInfo) => {
         classes: res.data().classes,
       });
     })
-    .catch(e => alert(e));
+    .catch(e => alert('error', e));
 };
 
 const styles = StyleSheet.create({

@@ -99,7 +99,7 @@ export const fetchSubmissionList = (
   for (let i in classList[classNumber].students) {
     firestore()
       .collection(`classes/${classId}/classworks/${classworkId}/submissions`)
-      .doc(classList[classNumber].students[i])
+      .doc(classList[classNumber].students[i].id)
       .get()
       .then(res => {
         let data = {};

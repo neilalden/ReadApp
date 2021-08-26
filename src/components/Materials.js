@@ -1,47 +1,48 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
   BackHandler,
-  Alert,
 } from 'react-native';
-import Nav from './Nav';
-import IconLib from '../../assets/books.svg';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {useHistory} from 'react-router';
+import IconLib from '../../assets/books.svg';
+import IconGoBack from '../../assets/goback.svg';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import Nav from './Nav';
+import FileViewer from 'react-native-file-viewer';
+import RNFS from 'react-native-fs';
 
-const Library = ({subjects, subjectNumber, setSubjectNumber}) => {
-  // const [files, setFiles] = useState(['Module 2.docx', 'Spanning tree.pptx']);
+const Materials = ({subjects, subjectNumber}) => {
   const history = useHistory();
   useEffect(() => {
     BackHandler.addEventListener('hardwareBackPress', () => {
-      alert('Exit', 'Do you want to leave?');
+      history.push('/');
       return true;
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
-
   return (
     <>
       <View style={styles.header}>
         <IconLib height={40} width={40} color={Colors.black} />
         <Text style={styles.headerText}>Library</Text>
+        <TouchableOpacity onPress={() => history.push('/')}>
+          <IconGoBack height={25} width={40} color={Colors.black} />
+        </TouchableOpacity>
       </View>
       <ScrollView>
-        {subjects.map((item, index) => {
+        {subjects[subjectNumber].materials.map((item, index) => {
           return (
             <TouchableOpacity
-              style={styles.item}
               key={index}
               onPress={() => {
-                setSubjectNumber(index);
-                history.push('/Materials');
+                openFile(item);
               }}>
-              <Text style={styles.item}>{item.subject}</Text>
+              <Text style={styles.item}>{item}</Text>
             </TouchableOpacity>
           );
         })}
@@ -50,23 +51,21 @@ const Library = ({subjects, subjectNumber, setSubjectNumber}) => {
     </>
   );
 };
+const alert = (title = 'Error', msg) =>
+  Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
+    {text: 'OK', onPress: () => console.log('OK Pressed')},
+  ]);
 
-const alert = (title = 'Error', msg) => {
-  if (title == 'Exit') {
-    Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
-      {text: 'Yes', onPress: () => BackHandler.exitApp()},
-      {
-        text: 'No',
-        onPress: () => {
-          console.log('No Presses');
-        },
-      },
-    ]);
-  } else {
-    Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
-      {text: 'OK', onPress: () => console.log('OK Pressed')},
-    ]);
-  }
+const openFile = file => {
+  const dest = `${RNFS.DocumentDirectoryPath}/${file}`;
+  RNFS.copyFileAssets(file, dest)
+    .then(() => FileViewer.open(dest))
+    .then(() => {
+      console.log('file openned');
+    })
+    .catch(error => {
+      alert("Can't open file", error);
+    });
 };
 
 const styles = StyleSheet.create({
@@ -100,4 +99,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Library;
+export default Materials;

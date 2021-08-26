@@ -66,7 +66,10 @@ export default function ClassList({userInfo, setUserInfo}) {
       }
     }
     // TO STOP THE BACK BUTTON FROM CLOSING APP
-    BackHandler.addEventListener('hardwareBackPress', () => true);
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      alert('Exit', 'Do you want to leave?');
+      return true;
+    });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [userInfo, user, reload]);
@@ -171,6 +174,10 @@ const StudentClasses = ({classList, setClassNumber}) => {
     <>
       {classList &&
         classList.map((item, index) => {
+          const teachers = [];
+          for (const i in item.teachers) {
+            teachers.push(item.teachers[i].name);
+          }
           return (
             <Link
               to="/Classroom"
@@ -185,7 +192,7 @@ const StudentClasses = ({classList, setClassNumber}) => {
                   <Text style={styles.header}>{item.classCode}</Text>
                   <View style={styles.teachersNameContainer}>
                     <Text style={styles.itemSubtitle}>
-                      {item.teachers ? item.teachers.toString() : ''}
+                      {teachers ? teachers.toString() : ''}
                     </Text>
                   </View>
                 </View>
@@ -300,13 +307,23 @@ const AddClass = ({
   );
 };
 
-const alert = (title = 'Error', msg) =>
-  Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
-    {
-      text: 'OK',
-      onPress: () => {},
-    },
-  ]);
+const alert = (title = 'Error', msg) => {
+  if (title == 'Exit') {
+    Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
+      {text: 'Yes', onPress: () => BackHandler.exitApp()},
+      {
+        text: 'No',
+        onPress: () => {
+          console.log('No Presses');
+        },
+      },
+    ]);
+  } else {
+    Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
+      {text: 'OK', onPress: () => console.log('OK Pressed')},
+    ]);
+  }
+};
 
 // USEFUL FUNCTIONS
 
@@ -324,36 +341,7 @@ const fetchUser = (id, setUserInfo) => {
         name: res.data().name,
       });
     })
-    .catch(e => alert(e));
-};
-
-//  MAY OR MAY NOT USE IN THE FUTURE
-const fetchClassTeachersInfo = (data, teachersArray, setClassList) => {
-  let teachers = [];
-
-  for (let i in teachersArray) {
-    firestore()
-      .collection('users')
-      .doc(teachersArray[i])
-      .get()
-      .then(res => {
-        teachers.push(res.data().name);
-        if (teachers.length == teachersArray.length) {
-          setClassList(prev => [
-            ...prev,
-            {
-              classId: data.data().classId,
-              classCode: data.data().classCode,
-              subject: data.data().subject,
-              section: data.data().section,
-              students: data.data().students,
-              teachers: teachers,
-            },
-          ]);
-        }
-      })
-      .catch(e => alert(e));
-  }
+    .catch(e => alert('error', e));
 };
 
 const styles = StyleSheet.create({
@@ -386,7 +374,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addPeopleInput: {
-    minWidth: 150,
+    minWidth: 200,
     borderBottomColor: 'black',
     borderBottomWidth: 3,
     padding: 0,
@@ -396,8 +384,8 @@ const styles = StyleSheet.create({
   addPeopleButton: {
     backgroundColor: '#ADD8E6',
     marginTop: 15,
-    paddingVertical: 5,
-    paddingHorizontal: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 45,
   },
   addText: {

@@ -16,15 +16,19 @@ import {ClassContext} from '../context/ClassContext';
 import IconAddClass from '../../assets/addClass.svg';
 import IconRemove from '../../assets/x-circle.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-import {red} from 'chalk';
+import {useHistory} from 'react-router';
 
-const People = () => {
+const People = ({userInfo}) => {
   const {classNumber, classList, setClassList} = useContext(ClassContext);
   const [isStudent, setIsStudent] = useState(true);
   const [accountId, setAccountId] = useState('');
   const refRBSheet = useRef();
+  const history = useHistory();
   useEffect(() => {
-    BackHandler.addEventListener('hardwareBackPress', () => true);
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      history.push('/Classroom');
+      return true;
+    });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
@@ -48,25 +52,41 @@ const People = () => {
       </View>
       {classList[classNumber].teachers &&
         classList[classNumber].teachers.map((item, index) => {
-          return (
-            <TouchableOpacity
-              style={styles.item}
-              key={index}
-              onPress={() =>
-                deletePersonFromClass(
-                  false,
-                  item,
-                  classNumber,
-                  classList,
-                  setClassList,
-                )
-              }>
-              <View style={styles.deleteButton}>
-                <Text>{item}</Text>
-                <IconRemove height={30} width={30} color={'red'} />
+          if (item.id === userInfo.id) {
+            return (
+              <View style={styles.item} key={index}>
+                <View style={styles.deleteButton}>
+                  <View>
+                    <Text>{item.name}</Text>
+                    <Text style={styles.subtitle}>{item.id}</Text>
+                  </View>
+                </View>
               </View>
-            </TouchableOpacity>
-          );
+            );
+          } else {
+            return (
+              <TouchableOpacity
+                style={styles.item}
+                key={index}
+                onPress={() =>
+                  deletePersonFromClass(
+                    false,
+                    item,
+                    classNumber,
+                    classList,
+                    setClassList,
+                  )
+                }>
+                <View style={styles.deleteButton}>
+                  <View>
+                    <Text>{item.name}</Text>
+                    <Text style={styles.subtitle}>{item.id}</Text>
+                  </View>
+                  <IconRemove height={30} width={30} color={'red'} />
+                </View>
+              </TouchableOpacity>
+            );
+          }
         })}
       <View style={styles.itemSubtitleContainer}>
         <Text style={styles.header}>Students</Text>
@@ -95,7 +115,10 @@ const People = () => {
                 )
               }>
               <View style={styles.deleteButton}>
-                <Text>{item}</Text>
+                <View>
+                  <Text>{item.name}</Text>
+                  <Text style={styles.subtitle}>{item.id}</Text>
+                </View>
                 <IconRemove height={30} width={30} color={'red'} />
               </View>
             </TouchableOpacity>
@@ -171,81 +194,98 @@ const AddPeople = ({
   );
 };
 
-const alert = e =>
-  Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
-  ]);
+const alert = (title = 'Error', msg) => {
+  Alert.alert(
+    `${title ? title : 'Errpr'}`,
+    `${msg ? msg : 'Fill up the form properly'}`,
+    [{text: 'OK', onPress: () => console.log('OK Pressed')}],
+  );
+};
 
 const deletePersonFromClass = (
   isStudent,
-  accountId,
+  account,
   classNumber,
   classList,
   setClassList,
 ) => {
-  const classId = classList[classNumber].classId;
-  let students = [...classList[classNumber].students];
-  let teachers = [...classList[classNumber].teachers];
-  // UPDATE CLASS COLLECTION
-  if (isStudent) {
-    for (const i in students) {
-      if (students[i] === accountId) {
-        students.splice(i, 1);
-      }
-    }
-  } else {
-    for (const i in teachers) {
-      if (teachers[i] === accountId) {
-        teachers.splice(i, 1);
-      }
-    }
-  }
-  let data = {};
-  isStudent ? (data = {students: students}) : (data = {teachers: teachers});
-  // UPDATE THE CLASS COLLECTION WITH DELETE USER
-  firestore()
-    .collection(`classes`)
-    .doc(classId)
-    .update(data)
-    .then(() => {
-      console.log('CLASS UPDATED');
-      let classListCopy = [...classList];
-      if (isStudent) {
-        classListCopy[classNumber].students = students;
-      } else {
-        classListCopy[classNumber].teachers = teachers;
-      }
-      setClassList(classListCopy);
-      // FETCH AND UPDATE THE REMOVED USER'S CLASS
-      firestore()
-        .collection(`users`)
-        .doc(accountId)
-        .get()
-        .then(res => {
-          let userClasses = res.data().classes;
-          for (const i in userClasses) {
-            if (userClasses[i] === classId) {
-              userClasses.splice(i, 1);
+  Alert.alert(
+    'Are you sure?',
+    `Remove ${account.name} to ${classList[classNumber].classCode}`,
+    [
+      {
+        text: 'Yes',
+        onPress: () => {
+          const classId = classList[classNumber].classId;
+          let students = [...classList[classNumber].students];
+          let teachers = [...classList[classNumber].teachers];
+          // UPDATE CLASS COLLECTION
+          if (isStudent) {
+            for (const i in students) {
+              if (students[i].id === account.id) {
+                students.splice(i, 1);
+              }
+            }
+          } else {
+            for (const i in teachers) {
+              if (teachers[i].id === account.id) {
+                teachers.splice(i, 1);
+              }
             }
           }
+          let data = {};
+          isStudent
+            ? (data = {students: students})
+            : (data = {teachers: teachers});
+          // UPDATE THE CLASS COLLECTION WITH DELETE USER
           firestore()
-            .collection(`users`)
-            .doc(accountId)
-            .update({classes: userClasses})
+            .collection(`classes`)
+            .doc(classId)
+            .update(data)
             .then(() => {
-              console.log('USER CLASSES UPDATED');
+              console.log('CLASS UPDATED');
+              let classListCopy = [...classList];
+              if (isStudent) {
+                classListCopy[classNumber].students = students;
+              } else {
+                classListCopy[classNumber].teachers = teachers;
+              }
+              setClassList(classListCopy);
+              // FETCH AND UPDATE THE REMOVED USER'S CLASS
+              firestore()
+                .collection(`users`)
+                .doc(account.id)
+                .get()
+                .then(res => {
+                  let userClasses = res.data().classes;
+                  for (const i in userClasses) {
+                    if (userClasses[i] === classId) {
+                      userClasses.splice(i, 1);
+                    }
+                  }
+                  firestore()
+                    .collection(`users`)
+                    .doc(account.id)
+                    .update({classes: userClasses})
+                    .then(() => {
+                      console.log('USER CLASSES UPDATED');
+                    })
+                    .catch(e => {
+                      console.error('error in updating user classes', e);
+                    });
+                })
+                .catch(e => {
+                  console.log('error in fetching removed user details', e);
+                });
             })
             .catch(e => {
-              console.error('error in updating user classes', e);
+              console.error('error in updating class', e);
             });
-        })
-        .catch(e => {
-          console.log('error in fetching removed user details', e);
-        });
-    })
-    .catch(e => {
-      console.error('error in updating class', e);
-    });
+        },
+      },
+      {text: 'No', onPress: () => console.log('OK Pressed')},
+    ],
+  );
 };
 
 const addPersonToClass = (
@@ -267,61 +307,111 @@ const addPersonToClass = (
     .get()
     .then(res => {
       if (!res.data()) {
-        alert('user does not exist');
+        // USER DOES NOT EXIST
+        alert('Error', 'user does not exist');
       } else if (res.data().isStudent !== isStudent) {
+        // USER ACCOUNT TYPE DOES NOT MATCH
         alert(
+          'Error',
           `${res.data().name} is not a ${isStudent ? 'Student' : 'Teacher'}`,
         );
       } else {
-        // USER DOES EXIST AND THEY FIT THE ACCOUNT TYPE
+        // USER ALREADY IN CLASS
+        if (res.data().isStudent) {
+          for (const i in students) {
+            if (students[i].id === accountId) {
+              alert('Error', `${students[i].name} is already in class`);
+              return;
+            }
+          }
+        } else if (!res.data().isStudent) {
+          for (const i in teachers) {
+            if (teachers[i].id === accountId) {
+              alert('Error', `${teachers[i].name} is already in class`);
+              return;
+            }
+          }
+        }
+        // USER DOES EXIST, THEY FIT THE ACCOUNT TYPE, AND IS NOT YET IN CLASS
         // UPDATE THE CLASS COLLECTION WITH ADD USER
-        const userClasses = res.data().classes ? res.data().classes : [];
-        const data = isStudent
-          ? {students: [...students, accountId]}
-          : {teachers: [...teachers, accountId]};
-        firestore()
-          .collection(`classes`)
-          .doc(classId)
-          .update(data)
-          .then(() => {
-            console.log('CLASS UPDATED!');
-            // NOW UPDATE THE PERSON'S CLASSES
-            firestore()
-              .collection(`users`)
-              .doc(accountId)
-              .update({classes: [...userClasses, classId]})
-              .then(() => {
-                // EVERYTHING WENT WELL
-                console.log('USER CLASSES UPDATE');
-                refRBSheet.current.close();
-                setAccountId('');
+        Alert.alert(
+          'Are you sure?',
+          `Add ${res.data().name} as a ${
+            isStudent ? 'student' : 'teacher'
+          } to ${classList[classNumber].classCode}`,
+          [
+            {
+              text: 'Yes',
+              onPress: () => {
+                const userClasses = res.data().classes
+                  ? res.data().classes
+                  : [];
+                const data = isStudent
+                  ? {
+                      students: [
+                        ...students,
+                        {id: accountId, name: res.data().name},
+                      ],
+                    }
+                  : {
+                      teachers: [
+                        ...teachers,
+                        {id: accountId, name: res.data().name},
+                      ],
+                    };
+                firestore()
+                  .collection(`classes`)
+                  .doc(classId)
+                  .update(data)
+                  .then(() => {
+                    console.log('CLASS UPDATED!');
+                    // NOW UPDATE THE PERSON'S CLASSES
+                    firestore()
+                      .collection(`users`)
+                      .doc(accountId)
+                      .update({classes: [...userClasses, classId]})
+                      .then(() => {
+                        // EVERYTHING WENT WELL
+                        console.log('USER CLASSES UPDATE');
+                        refRBSheet.current.close();
+                        setAccountId('');
 
-                let classListCopy = [...classList];
+                        let classListCopy = [...classList];
 
-                if (isStudent) {
-                  classListCopy[classNumber].students = [
-                    ...students,
-                    accountId,
-                  ];
-                } else {
-                  classListCopy[classNumber].teachers = [
-                    ...teachers,
-                    accountId,
-                  ];
-                }
-                setClassList(classListCopy);
-              })
-              .catch(e => {
-                console.error('error in updating user classes', e);
-                refRBSheet.current.close();
-                setAccountId('');
-              });
-          })
-          .catch(e => {
-            console.log('error in updating class', e);
-            refRBSheet.current.close();
-            setAccountId('');
-          });
+                        if (isStudent) {
+                          classListCopy[classNumber].students = [
+                            ...students,
+                            {id: accountId, name: res.data().name},
+                          ];
+                        } else {
+                          classListCopy[classNumber].teachers = [
+                            ...teachers,
+                            {id: accountId, name: res.data().name},
+                          ];
+                        }
+                        setClassList(classListCopy);
+                      })
+                      .catch(e => {
+                        console.error('error in updating user classes', e);
+                        refRBSheet.current.close();
+                        setAccountId('');
+                      });
+                  })
+                  .catch(e => {
+                    console.log('error in updating class', e);
+                    refRBSheet.current.close();
+                    setAccountId('');
+                  });
+              },
+            },
+            {
+              text: 'No',
+              onPress: () => {
+                console.log('No Presses');
+              },
+            },
+          ],
+        );
       }
     })
     .catch(e => {
@@ -344,6 +434,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato-Regular',
     fontSize: 18,
     margin: 15,
+  },
+  subtitle: {
+    fontSize: 10,
   },
   itemSubtitle: {
     fontFamily: 'Lato-Regular',
@@ -373,16 +466,18 @@ const styles = StyleSheet.create({
   },
   addPeopleInput: {
     minWidth: 200,
-    borderBottomColor: 'teal',
+    borderBottomColor: 'black',
     borderBottomWidth: 3,
     padding: 0,
+    width: 200,
+    marginTop: 5,
   },
   addPeopleButton: {
-    backgroundColor: 'teal',
+    backgroundColor: '#ADD8E6',
     marginTop: 15,
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 45,
   },
   deleteButton: {
     flexDirection: 'row',

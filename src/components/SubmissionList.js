@@ -48,9 +48,10 @@ const SubmissionList = () => {
           classList[classNumber].classworkList[
             classworkNumber
           ].submissionList.map((item, index) => {
+            console.log(item);
             return (
               <View key={index} style={styles.item}>
-                <Text>{item.submittedBy}</Text>
+                <Text>{item.submittedBy.name}</Text>
                 <Text style={styles.itemSubtitle}>
                   {item.work || item.files
                     ? item.work != '' || item.files.length != 0

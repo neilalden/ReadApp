@@ -46,44 +46,40 @@ const Login = () => {
   if (!confirm) {
     return (
       <>
-        <View style={styles.iconLogin}>
-          <IconLib height={250} width={400} />
-          <Text style={styles.iconText}>Read App</Text>
-        </View>
-        <KeyboardAvoidingView>
-          <ScrollView>
-            <Text style={styles.span}>Phone number</Text>
-            <TextInput
-              selectionColor="black"
-              style={styles.numberInput}
-              value={phoneNumber}
-              placeholder="+639976447771"
-              keyboardType="numeric"
-              onChangeText={text => setPhoneNumber(text)}
+        <ScrollView style={{height: '90%'}}>
+          <View style={styles.iconLogin}>
+            <IconLib height={250} width={400} />
+            <Text style={styles.iconText}>Read App</Text>
+          </View>
+          <Text style={styles.span}>Phone number</Text>
+          <TextInput
+            selectionColor="black"
+            style={styles.numberInput}
+            value={phoneNumber}
+            placeholder="+639976447771"
+            keyboardType="numeric"
+            onChangeText={text => setPhoneNumber(text)}
+          />
+          <View style={styles.button}>
+            <Button
+              color="#ADD8E6"
+              title="Log in"
+              onPress={() => {
+                signInWithPhoneNumber(
+                  phoneNumber,
+                  setConfirm,
+                  createTwoButtonAlert,
+                );
+              }}
             />
-            <View style={styles.button}>
-              <Button
-                color="#ADD8E6"
-                title="Log in"
-                onPress={() => {
-                  signInWithPhoneNumber(
-                    phoneNumber,
-                    setConfirm,
-                    createTwoButtonAlert,
-                  );
-                }}
-              />
-            </View>
-            <Link to="/Register" underlayColor="#f0f4f7">
-              <Text style={styles.link}>
-                Don't have an account yet? Sign up here
-              </Text>
-            </Link>
-          </ScrollView>
-        </KeyboardAvoidingView>
-        <View style={styles.nav}>
-          <Nav />
-        </View>
+          </View>
+          <Link to="/Register" underlayColor="#f0f4f7">
+            <Text style={styles.link}>
+              Don't have an account yet? Sign up here
+            </Text>
+          </Link>
+        </ScrollView>
+        <Nav />
       </>
     );
   }
@@ -122,15 +118,6 @@ const Login = () => {
             }}
           />
         </View>
-        {/* <TextInput
-          keyboardType="numeric"
-          value={code}
-          style={styles.numberInput}
-          onChangeText={text => setCode(text)}
-        />
-        <View style={styles.button}>
-          <Button title="Confirm Code" onPress={() => confirmCode()} />
-        </View> */}
       </ScrollView>
       <Nav />
     </>
@@ -203,9 +190,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   nav: {
+    flexDirection: 'row',
     position: 'absolute',
     bottom: 0,
-    flexDirection: 'row',
   },
 });
 
