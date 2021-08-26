@@ -37,22 +37,19 @@ const QuizSubmission = ({userInfo}) => {
   }, [reload]);
   return (
     <View>
-      <View>
-        <Text style={styles.header}>Instruction</Text>
-        <Text style={styles.item}>{classwork.instruction}</Text>
-      </View>
-      <View
-        style={{
-          paddingBottom: 5,
-          borderBottomWidth: 2,
-          borderBottomColor: '#666',
-        }}>
-        <Text style={styles.header}>Score</Text>
-        <Text style={styles.item}>
-          {submission && submission.score
-            ? `${submission.score}/${Object.keys(classwork.questions).length}`
-            : 'no grades yet'}
-        </Text>
+      <View style={styles.questionContainer}>
+        <View>
+          <Text style={styles.header}>Instruction</Text>
+          <Text style={styles.item}>{classwork.instruction}</Text>
+        </View>
+        <View>
+          <Text style={styles.header}>Score</Text>
+          <Text style={styles.item}>
+            {submission && submission.score
+              ? `${submission.score}/${Object.keys(classwork.questions).length}`
+              : 'no grades yet'}
+          </Text>
+        </View>
       </View>
 
       {/* Student Quiz screen has two (2) states */}
@@ -61,6 +58,7 @@ const QuizSubmission = ({userInfo}) => {
 
       {(() => {
         if (submission && Object.keys(submission).length !== 0) {
+          // STUDENT HAS TAKEN THE QUIZ
           return (
             <ScrollView>
               {classwork.questions.map((item, index) => {
@@ -92,6 +90,7 @@ const QuizSubmission = ({userInfo}) => {
             </ScrollView>
           );
         } else {
+          // STUDENT HAS NOT TAKEN THE QUIZ YET
           return (
             <>
               <ScrollView>
@@ -117,7 +116,7 @@ const QuizSubmission = ({userInfo}) => {
                                   userAnswers[index] &&
                                   userAnswers[index] == itm
                                     ? {
-                                        borderColor: 'teal',
+                                        borderColor: '#3ca1c3',
                                         borderWidth: 3,
                                         padding: 12,
                                       }
@@ -145,7 +144,7 @@ const QuizSubmission = ({userInfo}) => {
                             handleAnswer(
                               userAnswers,
                               setUserAnswers,
-                              text.toLowerCase(),
+                              text,
                               index,
                             );
                           }}
@@ -156,7 +155,7 @@ const QuizSubmission = ({userInfo}) => {
                 })}
               </ScrollView>
               <TouchableOpacity
-                style={[styles.editButton, {backgroundColor: 'teal'}]}
+                style={styles.submitButton}
                 onPress={() =>
                   handleFinishQuiz(
                     userInfo,
@@ -233,34 +232,39 @@ const styles = StyleSheet.create({
   item: {
     justifyContent: 'space-between',
     backgroundColor: '#E8EAED',
-    fontFamily: 'monospace',
-    marginHorizontal: 5,
+    fontFamily: 'Lato-Regular',
+    marginHorizontal: 15,
     marginVertical: 3,
     borderRadius: 10,
     padding: 15,
+    alignItems: 'center',
+    fontSize: 15,
   },
   header: {
     fontSize: 18,
-    fontFamily: 'monospace',
-    margin: 5,
+    fontFamily: 'Lato-Regular',
+    marginHorizontal: 15,
+    marginVertical: 3,
+    padding: 3,
   },
   questionContainer: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#666',
-    margin: 5,
-    paddingBottom: 5,
+    backgroundColor: '#ADD8E6',
+    borderRadius: 15,
+    marginHorizontal: 15,
+    marginVertical: 5,
+    paddingVertical: 10,
   },
-  editButton: {
-    alignSelf: 'center',
-    backgroundColor: 'gold',
-    borderRadius: 5,
-    marginVertical: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
+  submitButton: {
+    backgroundColor: '#ADD8E6',
+    borderRadius: 10,
+    marginTop: 5,
+    marginBottom: 20,
+    marginHorizontal: 20,
+    padding: 15,
+    alignItems: 'center',
   },
   optionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    padding: 0,
   },
 });
 export default QuizSubmission;

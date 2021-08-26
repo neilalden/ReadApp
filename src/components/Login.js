@@ -8,6 +8,7 @@ import {
   Alert,
   TouchableOpacity,
   ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {Link} from 'react-router-native';
 import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
@@ -15,6 +16,7 @@ import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
 import Nav from './Nav';
 import {useHistory} from 'react-router';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
+import IconLib from '../../assets/login.svg';
 
 const Login = () => {
   // const [code, setCode] = useState('');
@@ -49,34 +51,44 @@ const Login = () => {
   if (!confirm) {
     return (
       <>
-        <ScrollView>
-          <Text style={styles.span}>Phone number</Text>
-          <TextInput
-            style={styles.numberInput}
-            value={phoneNumber}
-            placeholder="+639976447771"
-            keyboardType="numeric"
-            onChangeText={text => setPhoneNumber(text)}
-          />
-          <View style={styles.button}>
-            <Button
-              title="Log in"
-              onPress={() => {
-                signInWithPhoneNumber(
-                  phoneNumber,
-                  setConfirm,
-                  createTwoButtonAlert,
-                );
-              }}
+        <View style={styles.iconLogin}>
+          <IconLib height={250} width={400} />
+          <Text style={styles.iconText}>Read App</Text>
+        </View>
+        <KeyboardAvoidingView>
+          <ScrollView>
+            <Text style={styles.span}>Phone number</Text>
+            <TextInput
+              selectionColor="black"
+              style={styles.numberInput}
+              value={phoneNumber}
+              placeholder="+639976447771"
+              keyboardType="numeric"
+              onChangeText={text => setPhoneNumber(text)}
             />
-          </View>
-          <Link to="/Register" underlayColor="#f0f4f7">
-            <Text style={styles.link}>
-              Don't have an account yet? Sign up here
-            </Text>
-          </Link>
-        </ScrollView>
-        <Nav />
+            <View style={styles.button}>
+              <Button
+                color="#ADD8E6"
+                title="Log in"
+                onPress={() => {
+                  signInWithPhoneNumber(
+                    phoneNumber,
+                    setConfirm,
+                    createTwoButtonAlert,
+                  );
+                }}
+              />
+            </View>
+            <Link to="/Register" underlayColor="#f0f4f7">
+              <Text style={styles.link}>
+                Don't have an account yet? Sign up here
+              </Text>
+            </Link>
+          </ScrollView>
+        </KeyboardAvoidingView>
+        <View style={styles.nav}>
+          <Nav />
+        </View>
       </>
     );
   }
@@ -139,7 +151,7 @@ const styles = StyleSheet.create({
   numberInput: {
     marginHorizontal: 20,
     borderBottomWidth: 3,
-    borderBottomColor: 'teal',
+    borderBottomColor: '#D6D6D6',
     padding: 0,
   },
   header2: {
@@ -149,9 +161,10 @@ const styles = StyleSheet.create({
   },
   span: {
     color: '#666',
-    fontSize: 12,
+    fontSize: 15,
     marginTop: 10,
     marginLeft: 20,
+    fontFamily: 'Lato-Regular',
   },
   link: {
     color: 'dodgerblue',
@@ -184,6 +197,20 @@ const styles = StyleSheet.create({
 
   underlineStyleHighLighted: {
     borderColor: '#03DAC6',
+  },
+  iconLogin: {
+    alignSelf: 'center',
+    padding: 15,
+  },
+  iconText: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 30,
+    textAlign: 'center',
+  },
+  nav: {
+    position: 'absolute',
+    bottom: 0,
+    flexDirection: 'row',
   },
 });
 

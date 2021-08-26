@@ -75,6 +75,7 @@ const Register = () => {
         <ScrollView>
           <Text style={styles.span}>ID</Text>
           <TextInput
+            selectionColor="black"
             style={styles.numberInput}
             value={id}
             placeholder="04210001"
@@ -83,6 +84,7 @@ const Register = () => {
           />
           <Text style={styles.span}>Full name</Text>
           <TextInput
+            selectionColor="black"
             style={styles.numberInput}
             value={name}
             placeholder="Juan Dela Cruz"
@@ -90,6 +92,7 @@ const Register = () => {
           />
           <Text style={styles.span}>Phone number</Text>
           <TextInput
+            selectionColor="black"
             style={styles.numberInput}
             value={phoneNumber}
             placeholder="+6399876543210"
@@ -101,7 +104,8 @@ const Register = () => {
             <Text
               style={{
                 color: '#666',
-                fontSize: 12,
+                fontFamily: 'Lato-Regular',
+                fontSize: 15,
                 marginTop: 10,
                 marginHorizontal: 20,
               }}>
@@ -109,18 +113,19 @@ const Register = () => {
             </Text>
             <Button
               title="Student"
-              color={isStudent ? 'dodgerblue' : '#ccc'}
+              color={isStudent ? '#ADD8E6' : '#ccc'}
               onPress={() => setIsStudent(true)}
             />
             <Button
               title="Teacher"
-              color={!isStudent ? 'dodgerblue' : '#ccc'}
+              color={!isStudent ? '#ADD8E6' : '#ccc'}
               onPress={() => setIsStudent(false)}
             />
           </View>
 
           <View style={styles.button}>
             <Button
+              color="#ADD8E6"
               title="Sign up"
               onPress={() => {
                 signInWithPhoneNumber(
@@ -217,7 +222,7 @@ const styles = StyleSheet.create({
   numberInput: {
     marginHorizontal: 20,
     borderBottomWidth: 3,
-    borderBottomColor: 'teal',
+    borderBottomColor: '#D6D6D6',
     padding: 0,
   },
   header2: {
@@ -227,9 +232,10 @@ const styles = StyleSheet.create({
   },
   span: {
     color: '#666',
-    fontSize: 12,
+    fontSize: 15,
     marginTop: 10,
     marginLeft: 20,
+    fontFamily: 'Lato-Regular',
   },
   link: {
     color: 'dodgerblue',

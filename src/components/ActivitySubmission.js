@@ -15,6 +15,9 @@ import storage from '@react-native-firebase/storage';
 import RNFS from 'react-native-fs';
 import DocumentPicker from 'react-native-document-picker';
 import FileViewer from 'react-native-file-viewer';
+import IconUpload from '../../assets/uploadFile.svg';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import IconRemove from '../../assets/x-circle.svg';
 
 const ActivitySubmission = ({userInfo}) => {
   const [files, setFiles] = useState([]);
@@ -55,11 +58,9 @@ const ActivitySubmission = ({userInfo}) => {
   const filePath = `${classId}/classworks/${classwork.id}/`;
   return (
     <View>
-      <View>
+      <View style={styles.questionContainer}>
         <Text style={styles.header}>Instruction</Text>
         <Text style={styles.item}>{classwork.instruction}</Text>
-      </View>
-      <View>
         <Text style={styles.header}>Score</Text>
         <Text style={styles.item}>
           {submission && submission.score ? submission.score : 'no grades yet'}
@@ -80,18 +81,29 @@ const ActivitySubmission = ({userInfo}) => {
           // student is yet to comply
           return (
             <>
-              <Text style={styles.header}>Answer/Comment</Text>
-              <TextInput
-                style={styles.item}
-                placeholder="type your answer or comment here.."
-                onChangeText={val => onChangeText(val)}
-                value={text}
-              />
+              <View style={styles.questionContainer}>
+                <Text style={styles.header}>Answer/Comment</Text>
+                <TextInput
+                  style={styles.item}
+                  placeholder="type your answer or comment here.."
+                  onChangeText={val => onChangeText(val)}
+                  value={text}
+                />
+              </View>
+
               <View style={styles.buttonsContainer}>
                 <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={() => openFile(setFiles)}>
-                  <Text>Upload file 📤</Text>
+                  <View style={styles.uploadView}>
+                    <Text style={styles.uploadText}>Upload file </Text>
+                    <IconUpload
+                      style={styles.icon}
+                      height={20}
+                      width={20}
+                      color={Colors.black}
+                    />
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.submitButton}
@@ -141,8 +153,10 @@ const ActivitySubmission = ({userInfo}) => {
                 <>
                   {submission.work ? (
                     <>
-                      <Text style={styles.header}>Answer/Comment</Text>
-                      <Text style={styles.item}>{submission.work}</Text>
+                      <View style={styles.questionContainer}>
+                        <Text style={styles.header}>Answer/Comment</Text>
+                        <Text style={styles.item}>{submission.work}</Text>
+                      </View>
                     </>
                   ) : (
                     <></>
@@ -150,7 +164,7 @@ const ActivitySubmission = ({userInfo}) => {
                   {submission.files && submission.files.length !== 0 ? (
                     <View>
                       <Text style={styles.header}>File submission(s)</Text>
-                      <View style={styles.item}>
+                      <View style={[styles.item, {backgroundColor: '#ADD8E6'}]}>
                         {submission.files.map((item, index) => {
                           return (
                             <TouchableOpacity
@@ -180,41 +194,47 @@ const ActivitySubmission = ({userInfo}) => {
               ) : (
                 // student is editting their submission
                 <>
-                  <Text style={styles.header}>Answer/Comment</Text>
-                  <TextInput
-                    style={styles.item}
-                    value={text}
-                    onChangeText={onChangeText}
-                    defaultValue={submission.work}
-                  />
+                  <View style={styles.questionContainer}>
+                    <Text style={styles.header}>Answer/Comment</Text>
+                    <TextInput
+                      style={styles.item}
+                      value={text}
+                      onChangeText={onChangeText}
+                      placeholder="type your answer or comment here.."
+                      defaultValue={submission.work}
+                    />
+                  </View>
+
                   {submission.files && submission.files.length !== 0 ? (
-                    <View>
+                    <View
+                      style={[
+                        styles.questionContainer,
+                        {backgroundColor: '#ADD8E6'},
+                      ]}>
                       <Text style={styles.header}>File submission(s)</Text>
-                      <View style={styles.item}>
-                        {submission.files.map((item, index) => {
-                          return (
-                            <TouchableOpacity
-                              style={styles.fileItem}
-                              key={index}
-                              onPress={() =>
-                                handleDeleteFile(
-                                  submission.files[index],
-                                  submission.files,
-                                  text,
-                                  classId,
-                                  classwork,
-                                  userInfo,
-                                  setReload,
-                                )
-                              }>
-                              <Text>{item.replace(filePath, '')}</Text>
-                              <Text style={{marginRight: 5, color: 'red'}}>
-                                ✖️
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                      {submission.files.map((item, index) => {
+                        return (
+                          <TouchableOpacity
+                            style={styles.fileItem}
+                            key={index}
+                            onPress={() =>
+                              handleDeleteFile(
+                                submission.files[index],
+                                submission.files,
+                                text,
+                                classId,
+                                classwork,
+                                userInfo,
+                                setReload,
+                              )
+                            }>
+                            <Text style={{alignSelf: 'center'}}>
+                              {item.replace(filePath, '')}
+                            </Text>
+                            <IconRemove height={30} width={30} color={'red'} />
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
                   ) : (
                     <></>
@@ -244,7 +264,15 @@ const ActivitySubmission = ({userInfo}) => {
                     <TouchableOpacity
                       style={styles.uploadButton}
                       onPress={() => openFile(setFiles)}>
-                      <Text>Upload file 📤</Text>
+                      <View style={styles.uploadView}>
+                        <Text style={styles.uploadText}>Upload file </Text>
+                        <IconUpload
+                          style={styles.icon}
+                          height={20}
+                          width={20}
+                          color={Colors.black}
+                        />
+                      </View>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.submitButton}
@@ -280,14 +308,14 @@ const ActivitySubmission = ({userInfo}) => {
           // student has complied and graded
           return (
             <>
-              <View>
+              <View style={styles.questionContainer}>
                 <Text style={styles.header}>Answer/Comment</Text>
                 <Text style={styles.item}>{submission.work}</Text>
               </View>
 
               {/* this is repeating code, honestly i should make it a component */}
               {submission.files ? (
-                <View>
+                <View style={styles.questionContainer}>
                   <Text style={styles.header}>File submission(s)</Text>
                   <View style={styles.item}>
                     {submission.files.map((item, index) => {
@@ -410,7 +438,7 @@ const saveToDb = (
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
       .set({
-        date: firestore.FieldValue.serverTimestamp(),
+        submittedAt: firestore.FieldValue.serverTimestamp(),
         files: urls,
         work: text,
       })
@@ -429,7 +457,7 @@ const saveToDb = (
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
-      .set({date: firestore.FieldValue.serverTimestamp(), files: urls})
+      .set({submittedAt: firestore.FieldValue.serverTimestamp(), files: urls})
       .then(res => {
         console.log('success', res);
 
@@ -447,7 +475,7 @@ const saveToDb = (
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
       .set({
-        date: firestore.FieldValue.serverTimestamp(),
+        submittedAt: firestore.FieldValue.serverTimestamp(),
         work: text,
       })
       .then(res => {
@@ -462,7 +490,7 @@ const saveToDb = (
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
       .set({
-        date: firestore.FieldValue.serverTimestamp(),
+        submittedAt: firestore.FieldValue.serverTimestamp(),
         work: '',
         files: [],
       })
@@ -526,7 +554,7 @@ const handleDeleteFile = (
         .set({
           files: filesCopy,
           work: text ? text : '',
-          date: firestore.FieldValue.serverTimestamp(),
+          submittedAt: firestore.FieldValue.serverTimestamp(),
         })
         .then(() => {
           console.log('files updated successfully');
@@ -546,57 +574,70 @@ const styles = StyleSheet.create({
   item: {
     justifyContent: 'space-between',
     backgroundColor: '#E8EAED',
-    fontFamily: 'monospace',
-    marginHorizontal: 5,
+    fontFamily: 'Lato-Regular',
+    marginHorizontal: 15,
     marginVertical: 3,
     borderRadius: 10,
     padding: 15,
   },
   itemSubtitle: {
-    fontFamily: 'monospace',
+    fontFamily: 'Lato-Regular',
     marginRight: 5,
     color: '#666',
   },
   header: {
     fontSize: 18,
-    fontFamily: 'monospace',
-    margin: 5,
+    fontFamily: 'Lato-Regular',
+    marginHorizontal: 15,
   },
   buttonsContainer: {
-    flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 15,
   },
   uploadButton: {
-    borderColor: 'teal',
-    borderWidth: 3,
+    borderColor: '#ADD8E6',
+    borderWidth: 5,
+    marginVertical: 5,
     marginHorizontal: 20,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    padding: 10,
+    borderRadius: 10,
+  },
+  uploadView: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    marginHorizontal: 85,
   },
   submitButton: {
-    backgroundColor: 'teal',
+    marginVertical: 5,
+    backgroundColor: '#ADD8E6',
     marginHorizontal: 20,
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 5,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   fileItem: {
     justifyContent: 'space-between',
+    backgroundColor: '#E8EAED',
     flexDirection: 'row',
-    borderColor: '#ccc',
-    margin: 4,
-    padding: 4,
-    borderWidth: 3,
-    borderRadius: 5,
+    marginHorizontal: 15,
+    marginVertical: 3,
+    padding: 15,
+    borderRadius: 10,
   },
   editButton: {
-    alignSelf: 'center',
     backgroundColor: 'gold',
     borderRadius: 5,
-    marginVertical: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
+    marginHorizontal: 20,
+    marginVertical: 5,
+    padding: 15,
+    alignItems: 'center',
+  },
+  questionContainer: {
+    backgroundColor: '#ADD8E6',
+    borderRadius: 15,
+    marginHorizontal: 15,
+    marginVertical: 5,
+    paddingVertical: 10,
   },
 });
 export default ActivitySubmission;

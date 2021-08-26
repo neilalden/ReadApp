@@ -12,6 +12,10 @@ import ClassroomHeader from './ClassroomHeader';
 import firestore from '@react-native-firebase/firestore';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import {ClassContext} from '../context/ClassContext';
+import IconAddClass from '../../assets/addClass.svg';
+import IconRemove from '../../assets/x-circle.svg';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import {red} from 'chalk';
 
 const People = () => {
   const {classNumber, classList, setClassList} = useContext(ClassContext);
@@ -33,7 +37,7 @@ const People = () => {
             setIsStudent(false);
             refRBSheet.current.open();
           }}>
-          <Text style={styles.addIcon}>+</Text>
+          <IconAddClass height={30} width={30} color={Colors.black} />
         </TouchableOpacity>
       </View>
       {classList[classNumber].teachers &&
@@ -51,8 +55,10 @@ const People = () => {
                   setClassList,
                 )
               }>
-              <Text>{item}</Text>
-              <Text style={{color: 'crimson'}}>x</Text>
+              <View style={styles.deleteButton}>
+                <Text>{item}</Text>
+                <IconRemove height={30} width={30} color={'red'} />
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -64,7 +70,7 @@ const People = () => {
             setIsStudent(true);
             refRBSheet.current.open();
           }}>
-          <Text style={styles.addIcon}>+</Text>
+          <IconAddClass height={30} width={30} color={Colors.black} />
         </TouchableOpacity>
       </View>
       {classList[classNumber].students &&
@@ -82,8 +88,10 @@ const People = () => {
                   setClassList,
                 )
               }>
-              <Text>{item}</Text>
-              <Text style={{color: 'crimson'}}>x</Text>
+              <View style={styles.deleteButton}>
+                <Text>{item}</Text>
+                <IconRemove height={30} width={30} color={'red'} />
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -319,23 +327,20 @@ const addPersonToClass = (
 
 const styles = StyleSheet.create({
   item: {
-    backgroundColor: '#E8EAED',
+    backgroundColor: '#ADD8E6',
     padding: 15,
     borderRadius: 10,
     justifyContent: 'space-between',
-    flexDirection: 'row',
     marginHorizontal: 10,
     marginVertical: 3,
   },
   header: {
-    fontFamily: 'monospace',
-    fontWeight: 'bold',
+    fontFamily: 'Lato-Regular',
     fontSize: 18,
-    marginVertical: 14,
-    marginHorizontal: 5,
+    margin: 15,
   },
   itemSubtitle: {
-    fontFamily: 'monospace',
+    fontFamily: 'Lato-Regular',
     marginVertical: 15,
     marginHorizontal: 5,
   },
@@ -346,13 +351,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   addButton: {
-    backgroundColor: '#ccc',
     alignContent: 'center',
     justifyContent: 'center',
-    margin: 5,
-    height: 40,
-    width: 40,
-    borderRadius: 50,
+    margin: 10,
   },
   addIcon: {
     marginLeft: 14.5,
@@ -376,6 +377,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 15,
     borderRadius: 5,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 });
 export default People;

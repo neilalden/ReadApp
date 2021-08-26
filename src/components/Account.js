@@ -1,51 +1,98 @@
-import React, {useContext, useEffect} from 'react';
-import {View, Text, Button, BackHandler, Alert, ScrollView} from 'react-native';
+import React, {useContext, useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  Button,
+  BackHandler,
+  Alert,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import {AuthContext} from '../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
-import Login from './Login';
 import Nav from './Nav';
 import {signOut} from '../context/AuthContext';
 import {useHistory} from 'react-router';
-
+import {ClassContext, fetchClassList} from '../context/ClassContext';
+import IconProfile from '../../assets/profile.svg';
 const Account = ({userInfo, setUserInfo}) => {
-  let {user} = useContext(AuthContext);
   let history = useHistory();
+  let {user} = useContext(AuthContext);
+  const {classList, setClassList} = useContext(ClassContext);
+  const [classCodes, setClassCodes] = useState([]);
   useEffect(() => {
     if (!user) {
+      setUserInfo({});
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo);
+    } else if (userInfo && classList.length === 0) {
+      fetchClassList(userInfo, setClassList);
     }
+    if (classList) {
+      setClassCodes([]);
+      for (const i in classList) {
+        setClassCodes(prev => [...prev, classList[i].classCode]);
+      }
+    }
+
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [user]);
-  return (
-    <>
-      <ScrollView>
-        <View>
-          <Text>ID: {userInfo.id}</Text>
-          <Text>Name: {userInfo.name}</Text>
-          <Text>Phone Number: {userInfo.phoneNumber}</Text>
-          <Text>
-            Account tyype: {userInfo.isStudent ? 'Student' : 'Teacher'}
-          </Text>
-          <Text>
-            Classes: {userInfo.classes ? userInfo.classes.toString() : ''}
-          </Text>
-          <Button
-            title="Logout"
-            onPress={() => {
-              signOut();
-            }}
-          />
-        </View>
-      </ScrollView>
-      <Nav />
-    </>
-  );
-};
+  }, [user, userInfo, classList]);
 
+  if (classList.length === 0) {
+    return (
+      <View style={styles.textCenterContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  } else {
+    return (
+      <>
+        <ScrollView style={styles.scrollView}>
+          <View style={styles.iconContainer}>
+            <IconProfile style={styles.icon} height={150} width={150} />
+          </View>
+          <View style={styles.accountContainer}>
+            <Text style={styles.accountType}>
+              {userInfo.isStudent ? 'Student' : 'Teacher'}
+            </Text>
+          </View>
+          <Text style={styles.accountName}>{userInfo.name}</Text>
+
+          <View style={styles.accountInfoContainer}>
+            <View style={styles.accountInfo}>
+              <Text style={styles.accountText}>ID:</Text>
+              <Text style={styles.accountText}>{userInfo.id}</Text>
+            </View>
+            <View style={styles.accountInfo}>
+              <Text style={styles.accountText}>Phone Number:</Text>
+              <Text style={styles.accountText}>{userInfo.phoneNumber}</Text>
+            </View>
+          </View>
+
+          <View style={styles.accountInfoContainer2}>
+            <Text style={styles.classesText}>Classes</Text>
+            <Text style={styles.accountText}>
+              {classCodes ? classCodes.toString() : ''}
+            </Text>
+          </View>
+
+          <View style={styles.buttonView}>
+            <Button
+              title="Logout"
+              onPress={() => {
+                signOut();
+              }}
+            />
+          </View>
+        </ScrollView>
+        <Nav />
+      </>
+    );
+  }
+};
 const alert = (title = 'Error', msg) =>
   Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => console.log('OK Pressed')},
@@ -67,4 +114,71 @@ const fetchUser = (id, setUserInfo) => {
     })
     .catch(e => alert(e));
 };
+
+const styles = StyleSheet.create({
+  scrollView: {
+    backgroundColor: '#ADD8E6',
+  },
+  iconContainer: {
+    padding: 15,
+  },
+  icon: {
+    alignSelf: 'center',
+  },
+  accountContainer: {
+    backgroundColor: '#333333',
+    width: 'auto',
+    marginHorizontal: 90,
+    justifyContent: 'center',
+  },
+  accountType: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 20,
+    padding: 10,
+    textAlign: 'center',
+    color: 'white',
+  },
+  accountName: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 20,
+    padding: 15,
+    textAlign: 'center',
+  },
+  accountInfoContainer: {
+    backgroundColor: 'white',
+    padding: 15,
+    marginHorizontal: 15,
+    borderRadius: 10,
+  },
+  accountInfoContainer2: {
+    marginTop: 5,
+    backgroundColor: 'white',
+    padding: 15,
+    marginHorizontal: 15,
+    borderRadius: 10,
+  },
+  accountInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    fontFamily: 'Lato-Regular',
+  },
+  accountText: {
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+    marginVertical: 10,
+  },
+  buttonView: {
+    padding: 15,
+    borderRadius: 10,
+  },
+  classesText: {
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+  },
+  textCenterContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 export default Account;

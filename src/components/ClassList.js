@@ -1,7 +1,15 @@
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   BackHandler,
+  RefreshControl,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,11 +23,14 @@ import firestore from '@react-native-firebase/firestore';
 import {Link, useHistory} from 'react-router-native';
 import Nav from './Nav';
 import RBSheet from 'react-native-raw-bottom-sheet';
-
+import IconAddClass from '../../assets/addClass.svg';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import IconProfile from '../../assets/profile.svg';
+import IconClassPic from '../../assets/classpic.svg';
 // STUDENT ACCOUNT TYPE SEES: TEACHER NAME IN THE SUBJECT
 // TEACHER ACCOUNT TYPE SEES: SECTION NAME IN THE SUBJECT
 //                          : BUTTON TO SHOW ADD CLASS COMPONENT
-//                          : ADD CLASS COMPONENT (REACT BOTTOM SHEET)
+//                          : CREATE CLASS COMPONENT (REACT BOTTOM SHEET)
 
 export default function ClassList({userInfo, setUserInfo}) {
   const history = useHistory();
@@ -27,16 +38,24 @@ export default function ClassList({userInfo, setUserInfo}) {
   const {user} = useContext(AuthContext);
   const {classList, setClassList, setClassNumber} = useContext(ClassContext);
 
-  // FOR THE TEXT INPUT
+  // FOR THE TEXT INPUT OF CREATING A NEW CLASS
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
 
   // TO REFETCH CLASSES AFTER ADDING A NEW ONE
   const [reload, setReload] = useState(false);
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setClassList([]);
+    fetchClassList(userInfo, setClassList);
+    wait(1000).then(() => setRefreshing(false));
+  }, []);
   useEffect(() => {
     if (!user) {
       setClassList([]);
+      setUserInfo({});
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo);
@@ -51,105 +70,126 @@ export default function ClassList({userInfo, setUserInfo}) {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [userInfo, user, reload]);
+  if (classList.length === 0) {
+    return (
+      <View style={styles.textCenterContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  } else {
+    return (
+      <>
+        <View style={styles.classHeader}>
+          <View style={styles.profileContainer}>
+            <Link to="/Account" underlayColor="#ADD8E6">
+              <IconProfile height={50} width={60} />
+            </Link>
+          </View>
 
-  return (
-    <>
-      <View style={styles.addButtonContainer}></View>
-      <ScrollView>
-        {userInfo && userInfo.isStudent ? (
-          <StudentClasses
-            classList={classList}
-            setClassNumber={setClassNumber}
-          />
-        ) : (
-          <TeacherClasses
-            classList={classList}
-            setClassNumber={setClassNumber}
-          />
-        )}
-      </ScrollView>
-      {!userInfo.isStudent ? (
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            refRBSheet.current.open();
+          <Text style={styles.classHeaderText}>Welcome,</Text>
+          <Text style={styles.classHeaderText}>{userInfo.name}</Text>
+          <View style={styles.userID}>
+            <Text style={styles.userText}>{userInfo.id}</Text>
+            <Text style={styles.userText}>
+              {userInfo.isStudent ? 'Student' : 'Teacher'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={{backgroundColor: '#ADD8E6'}}>
+          <View style={styles.backgroundView}>
+            <Text style={[styles.header, {marginVertical: 15, marginLeft: 20}]}>
+              Classes
+            </Text>
+            {!userInfo.isStudent ? (
+              <TouchableOpacity
+                style={{marginVertical: 10, marginRight: 20}}
+                onPress={() => {
+                  refRBSheet.current.open();
+                }}>
+                <IconAddClass height={30} width={30} color={Colors.black} />
+              </TouchableOpacity>
+            ) : (
+              <></>
+            )}
+          </View>
+        </View>
+        <ScrollView
+          style={{backgroundColor: '#fff'}}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
+          {userInfo && userInfo.isStudent ? (
+            <StudentClasses
+              classList={classList}
+              setClassNumber={setClassNumber}
+            />
+          ) : (
+            <TeacherClasses
+              classList={classList}
+              setClassNumber={setClassNumber}
+              setClassNumber={setClassNumber}
+            />
+          )}
+        </ScrollView>
+
+        <RBSheet
+          ref={refRBSheet}
+          closeOnDragDown={true}
+          closeOnPressMask={true}
+          animationType="slide"
+          customStyles={{
+            wrapper: {
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+            draggableIcon: {
+              backgroundColor: '#000',
+            },
+            container: {
+              borderTopLeftRadius: 15,
+              borderTopRightRadius: 15,
+            },
           }}>
-          <Text style={styles.addIcon}>+</Text>
-        </TouchableOpacity>
-      ) : (
-        <></>
-      )}
-      <RBSheet
-        ref={refRBSheet}
-        closeOnDragDown={true}
-        closeOnPressMask={true}
-        animationType="slide"
-        customStyles={{
-          wrapper: {
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          },
-          draggableIcon: {
-            backgroundColor: '#000',
-          },
-          container: {
-            borderTopLeftRadius: 15,
-            borderTopRightRadius: 15,
-          },
-        }}>
-        <AddClass
-          userInfo={userInfo}
-          refRBSheet={refRBSheet}
-          subject={subject}
-          setSubject={setSubject}
-          section={section}
-          setSection={setSection}
-          reload={reload}
-          setReload={setReload}
-        />
-      </RBSheet>
-      <Nav />
-    </>
-  );
+          <AddClass
+            subject={subject}
+            setSubject={setSubject}
+            section={section}
+            setSection={setSection}
+            userInfo={userInfo}
+            refRBSheet={refRBSheet}
+            reload={reload}
+            setReload={setReload}
+          />
+        </RBSheet>
+        <Nav />
+      </>
+    );
+  }
 }
-
 const StudentClasses = ({classList, setClassNumber}) => {
   return (
     <>
       {classList &&
         classList.map((item, index) => {
-          console.log(item.teachers);
           return (
             <Link
               to="/Classroom"
-              underlayColor="#f0f4f7"
+              underlayColor="#C1E1EC"
               key={index}
               style={styles.item}
               onPress={() => {
                 setClassNumber(index);
               }}>
               <>
-                <Text style={styles.header}>{item.classCode}</Text>
-                {item.teachers.length > 1 ? (
+                <View>
+                  <Text style={styles.header}>{item.classCode}</Text>
                   <View style={styles.teachersNameContainer}>
-                    {item.teachers.map((itm, idx) => {
-                      if (idx == item.teachers.length - 1) {
-                        return (
-                          <Text style={styles.itemSubtitle} key={idx}>
-                            {itm}
-                          </Text>
-                        );
-                      } else {
-                        return (
-                          <Text style={styles.itemSubtitle} key={idx}>
-                            {itm},
-                          </Text>
-                        );
-                      }
-                    })}
+                    <Text style={styles.itemSubtitle}>
+                      {item.teachers ? item.teachers.toString() : ''}
+                    </Text>
                   </View>
-                ) : (
-                  <Text style={styles.itemSubtitle}>{item.teachers[0]}</Text>
-                )}
+                </View>
+                <IconClassPic style={styles.itemPic} height={50} width={60} />
               </>
             </Link>
           );
@@ -165,21 +205,28 @@ const TeacherClasses = ({classList, setClassNumber}) => {
           return (
             <Link
               to="/Classroom"
-              underlayColor="#f0f4f7"
+              underlayColor="#C1E1EC"
               key={index}
               style={styles.item}
               onPress={() => {
                 setClassNumber(index);
               }}>
               <>
-                <Text style={styles.header}>{item.classCode}</Text>
-                <Text style={styles.itemSubtitle}>{item.section}</Text>
+                <View>
+                  <Text style={styles.header}>{item.classCode}</Text>
+                  <Text style={styles.itemSubtitle}>{item.section}</Text>
+                </View>
+                <IconClassPic style={styles.itemPic} height={50} width={60} />
               </>
             </Link>
           );
         })}
     </>
   );
+};
+
+const wait = timeout => {
+  return new Promise(resolve => setTimeout(resolve, timeout));
 };
 
 const AddClass = ({
@@ -311,63 +358,94 @@ const fetchClassTeachersInfo = (data, teachersArray, setClassList) => {
 
 const styles = StyleSheet.create({
   item: {
-    backgroundColor: '#E8EAED',
+    backgroundColor: '#ADD8E6',
     padding: 15,
     borderRadius: 10,
     justifyContent: 'space-between',
+    flexDirection: 'row',
     marginHorizontal: 10,
     marginVertical: 3,
   },
   header: {
-    fontFamily: 'monospace',
-    fontWeight: 'bold',
-    fontSize: 20,
+    fontFamily: 'Lato-Regular',
+    fontSize: 15,
+    textAlign: 'left',
   },
   itemSubtitle: {
-    fontFamily: 'monospace',
+    fontFamily: 'Lato-Regular',
+    marginTop: 5,
     marginRight: 5,
-    color: '#666',
+    color: '#000',
+    fontSize: 10,
+    textAlign: 'left',
   },
   teachersNameContainer: {
     flexDirection: 'row',
-  },
-  addButtonContainer: {
-    justifyContent: 'flex-end',
-    flexDirection: 'row',
-  },
-  addButton: {
-    backgroundColor: '#ccc',
-    alignContent: 'center',
-    justifyContent: 'center',
-    margin: 5,
-    height: 40,
-    width: 40,
-    borderRadius: 50,
-    position: 'absolute',
-    bottom: 70,
-    right: 10,
-  },
-  addIcon: {
-    marginLeft: 14.5,
-    marginBottom: 1,
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#fff',
   },
   addPeopleContainer: {
     alignItems: 'center',
   },
   addPeopleInput: {
-    minWidth: 200,
-    borderBottomColor: 'teal',
+    minWidth: 150,
+    borderBottomColor: 'black',
     borderBottomWidth: 3,
     padding: 0,
+    width: 200,
+    marginTop: 5,
   },
   addPeopleButton: {
-    backgroundColor: 'teal',
+    backgroundColor: '#ADD8E6',
     marginTop: 15,
     paddingVertical: 5,
     paddingHorizontal: 15,
-    borderRadius: 5,
+    borderRadius: 45,
+  },
+  addText: {
+    textAlign: 'center',
+  },
+  addHeader: {
+    fontSize: 25,
+    fontFamily: 'Lato-Regular',
+    padding: 15,
+  },
+  classHeader: {
+    backgroundColor: '#ADD8E6',
+    fontFamily: 'Lato-Regular',
+    padding: 15,
+  },
+  classHeaderText: {
+    fontSize: 25,
+    fontFamily: 'Lato-Regular',
+  },
+  userID: {
+    marginTop: 50,
+    fontSize: 12,
+  },
+  classText: {
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+  },
+  backgroundView: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+  },
+  userText: {
+    fontSize: 12,
+  },
+  itemPic: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  profileContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  textCenterContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

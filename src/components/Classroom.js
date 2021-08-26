@@ -1,8 +1,19 @@
-import React, {useContext, useEffect, useState} from 'react';
-import {View, Text, StyleSheet, ScrollView, BackHandler} from 'react-native';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  BackHandler,
+  RefreshControl,
+} from 'react-native';
 import ClassroomHeader from './ClassroomHeader';
 import {Link, useHistory} from 'react-router-native';
-import {ClassContext, fetchClassworkList} from '../context/ClassContext';
+import {
+  ClassContext,
+  fetchClassworkList,
+  fetchSubmissionList,
+} from '../context/ClassContext';
 
 // CLASSROOM IS THE SAME FOR BOTH STUDENT AND TEACHER ACCOUNT TYPE
 
@@ -11,6 +22,17 @@ const Classroom = ({userInfo}) => {
   const {classNumber, classList, setClassList, setClassworkNumber} =
     useContext(ClassContext);
   const history = useHistory();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchClassworkList(
+      classNumber,
+      classList,
+      setClassList,
+      setClassworkNumber,
+    );
+    wait(1000).then(() => setRefreshing(false));
+  }, []);
   useEffect(() => {
     // FETCH CLASSWORKLIST OF THE OPENNED CLASS IF IT DOES NOT EXIST YET
     !classList[classNumber].classworkList &&
@@ -36,7 +58,10 @@ const Classroom = ({userInfo}) => {
         backTo={'/ClassList'}
         isStudent={userInfo.isStudent}
       />
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         {classList[classNumber].classworkList &&
           classList[classNumber].classworkList.map((item, index) => {
             const dt = new Date(item.deadline.toDate());
@@ -49,15 +74,15 @@ const Classroom = ({userInfo}) => {
             return (
               <Link
                 to="/Classwork"
-                underlayColor="#f0f4f7"
+                underlayColor="#C1E1EC"
                 key={index}
                 style={styles.item}
                 onPress={() => {
                   setClassworkNumber(index);
                 }}>
                 <View>
-                  <Text>{item.title}</Text>
-                  <Text>
+                  <Text style={styles.itemText}>{item.title}</Text>
+                  <Text style={styles.itemTextSubs}>
                     Deadline: {MONTHS[month]}/{day}/{year}{' '}
                     {hour >= 12 ? hour - 12 : hour}:{minute} {ampm}
                   </Text>
@@ -68,6 +93,10 @@ const Classroom = ({userInfo}) => {
       </ScrollView>
     </>
   );
+};
+
+const wait = timeout => {
+  return new Promise(resolve => setTimeout(resolve, timeout));
 };
 
 const MONTHS = [
@@ -87,15 +116,25 @@ const MONTHS = [
 
 const styles = StyleSheet.create({
   item: {
-    backgroundColor: '#E8EAED',
+    backgroundColor: '#ADD8E6',
     padding: 15,
     borderRadius: 10,
     justifyContent: 'space-between',
-    fontFamily: 'monospace',
-    marginHorizontal: 10,
+    fontFamily: 'Lato-Regular',
+    marginHorizontal: 15,
     marginVertical: 3,
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  itemText: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 20,
+    paddingBottom: 3,
+  },
+  itemTextSubs: {
+    fontFamily: 'Lato-Regular',
+    paddingTop: 3,
+    paddingBottom: 3,
   },
 });
 export default Classroom;

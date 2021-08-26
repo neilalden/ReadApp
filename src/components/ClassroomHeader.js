@@ -1,27 +1,38 @@
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import {Link} from 'react-router-native';
+import IconGoBack from '../../assets/goback.svg';
+import IconPeople from '../../assets/people-fill.svg';
+import IconFile from '../../assets/file-earmark-text.svg';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 const ClassroomHeader = ({classCode = 'undefined', backTo, isStudent}) => {
   return (
     <View style={styles.header}>
       <View style={styles.headerTextContainer}>
         <Text style={styles.headerText}>{classCode}</Text>
-        <Link to={backTo} style={styles.back} underlayColor="#f0f4f7">
-          <Text>back</Text>
+        <Link to={backTo} style={styles.back} underlayColor="#ADD8E6">
+          <IconGoBack height={25} width={40} color={Colors.black} />
         </Link>
       </View>
       {isStudent ? (
-        <View style={styles.subtitleContainer}>
-          <Text style={styles.subtitle}>classroom</Text>
+        <View style={styles.subtitleContainer2}>
+          <IconFile height={25} width={25} color={Colors.black} />
+          <Text style={styles.subtitleText}>Classroom</Text>
         </View>
       ) : (
         <View style={styles.subtitleContainer}>
-          <Link to="/Classroom" underlayColor="#f0f4f7">
-            <Text style={styles.subtitle}>classroom</Text>
+          <Link to="/Classroom" underlayColor="#C1E1EC">
+            <View style={styles.subtitle}>
+              <IconFile height={25} width={25} color={Colors.black} />
+              <Text style={styles.subtitleText}>Classwork</Text>
+            </View>
           </Link>
-          <Link to="/People" underlayColor="#f0f4f7">
-            <Text style={styles.subtitle}>people</Text>
+          <Link to="/People" underlayColor="#C1E1EC">
+            <View style={styles.subtitle}>
+              <IconPeople height={25} width={25} color={Colors.black} />
+              <Text style={styles.subtitleText}>People</Text>
+            </View>
           </Link>
         </View>
       )}
@@ -30,33 +41,41 @@ const ClassroomHeader = ({classCode = 'undefined', backTo, isStudent}) => {
 };
 const styles = StyleSheet.create({
   back: {
-    marginTop: 15,
-    borderRadius: 5,
     padding: 5,
   },
   header: {
-    width: '100%',
-    backgroundColor: '#ccc',
-    borderBottomLeftRadius: 5,
-    borderBottomRightRadius: 5,
+    margin: 15,
+    backgroundColor: '#ADD8E6',
+    borderRadius: 15,
+    padding: 15,
   },
   headerText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    marginTop: 10,
+    fontFamily: 'Lato-Regular',
   },
   headerTextContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 30,
+    padding: 5,
   },
-  subtitleContainer: {flexDirection: 'row', marginLeft: 20},
+  subtitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  subtitleContainer2: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
   subtitle: {
-    fontFamily: 'monospace',
-    color: '#666666',
-    marginVertical: 5,
-    marginHorizontal: 10,
+    marginTop: 5,
+    flexDirection: 'row',
+    color: 'black',
+    padding: 5,
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+  },
+  subtitleText: {
+    paddingLeft: 8,
   },
 });
 export default ClassroomHeader;

@@ -30,17 +30,17 @@ const App = () => {
   return (
     <NativeRouter>
       <AuthContextProvider>
-        <Route exact path="/" component={() => <Library />} />
-        <Route
-          exact
-          path="/Account"
-          component={() => (
-            <Account userInfo={userInfo} setUserInfo={setUserInfo} />
-          )}
-        />
+        <Route exact path="/" component={Library} />
         <Route exact path="/Login" component={Login} />
         <Route exact path="/Register" component={Register} />
         <ClassContextProvider>
+          <Route
+            exact
+            path="/Account"
+            component={() => (
+              <Account userInfo={userInfo} setUserInfo={setUserInfo} />
+            )}
+          />
           <Route
             exact
             path="/ClassList"

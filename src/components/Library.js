@@ -11,9 +11,24 @@ import {
 import FileViewer from 'react-native-file-viewer';
 import RNFS from 'react-native-fs';
 import Nav from './Nav';
+import IconLib from '../../assets/books.svg';
+import IconGoBack from '../../assets/goback.svg';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 const Library = () => {
-  const [files, setFiles] = useState(['Module 2.docx', 'Spanning tree.pptx']);
+  // const [files, setFiles] = useState(['Module 2.docx', 'Spanning tree.pptx']);
+  const [subjects, setSubjects] = useState([
+    {
+      subject: 'Advance machine learning',
+      materials: ['Module 1.docx', 'Module 2.docx'],
+    },
+    {
+      subject: 'Algorithms and complexity',
+      materials: ['Spanning tree.pptx'],
+    },
+  ]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [subjectNumber, setSubjectNumber] = useState(0);
 
   BackHandler.addEventListener('hardwareBackPress', function () {
     alert('Close app', 'Are you sure you want to leave Read App?');
@@ -21,19 +36,48 @@ const Library = () => {
 
   return (
     <>
-      <ScrollView>
-        {files.map((item, index) => {
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => {
-                openFile(item);
-              }}>
-              <Text style={styles.item}>{item}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.header}>
+        <IconLib height={40} width={40} color={Colors.black} />
+        <Text style={styles.headerText}>Library</Text>
+        {isOpen ? (
+          <TouchableOpacity onPress={() => setIsOpen(false)}>
+            <IconGoBack height={25} width={40} color={Colors.black} />
+          </TouchableOpacity>
+        ) : (
+          <></>
+        )}
+      </View>
+      {!isOpen ? (
+        <ScrollView>
+          {subjects.map((item, index) => {
+            return (
+              <TouchableOpacity
+                style={styles.item}
+                key={index}
+                onPress={() => {
+                  setIsOpen(true);
+                  setSubjectNumber(index);
+                }}>
+                <Text style={styles.item}>{item.subject}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      ) : (
+        <ScrollView>
+          {subjects[subjectNumber].materials.map((item, index) => {
+            return (
+              <TouchableOpacity
+                key={index}
+                onPress={() => {
+                  openFile(item);
+                }}>
+                <Text style={styles.item}>{item}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
       <Nav />
     </>
   );
@@ -52,36 +96,38 @@ const openFile = file => {
       console.log('file openned');
     })
     .catch(error => {
-      console.log(error);
+      alert("Can't open file", error);
     });
 };
 
 const styles = StyleSheet.create({
-  body: {},
   header: {
     flexDirection: 'row',
-    width: '100%',
-    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ADD8E6',
     borderRadius: 5,
+    margin: 10,
   },
   headerText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
+    padding: 10,
+    fontSize: 20,
+    fontFamily: 'Lato-Regular',
     marginHorizontal: 30,
     marginVertical: 10,
+    textAlign: 'center',
   },
-  materialContainer: {},
   item: {
-    backgroundColor: '#E8EAED',
-    padding: 15,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#ADD8E6',
+    fontFamily: 'Lato-Regular',
     justifyContent: 'space-between',
-    fontFamily: 'monospace',
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 10,
     marginHorizontal: 10,
     marginVertical: 3,
+    textAlign: 'center',
+    width: '95%',
   },
 });
 
