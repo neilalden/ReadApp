@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  BackHandler,
 } from 'react-native';
 import {Link} from 'react-router-native';
 import {useHistory} from 'react-router';
@@ -37,37 +38,11 @@ const Register = () => {
         })
         .catch(e => console.log(e));
     }
-  }, [user, confirm, state]);
 
-  // function confirmCode() {
-  //   confirm
-  //     .confirm(code)
-  //     .then(res => {
-  //       firestore()
-  //         .collection('users')
-  //         .doc(id)
-  //         .set({
-  //           id: id,
-  //           name: name,
-  //           isStudent: isStudent,
-  //           phoneNumber: phoneNumber,
-  //           classes: [],
-  //         })
-  //         .then(() => {
-  //           setState(true);
-  //           console.log(user);
-  //           false;
-  //         })
-  //         .catch(e => {
-  //           false;
-  //           console.log(e);
-  //         });
-  //     })
-  //     .catch(e => {
-  //       false;
-  //       console.log(e);
-  //     });
-  // }
+    BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
+  }, [user, confirm, state]);
 
   if (!confirm) {
     return (

@@ -1,5 +1,12 @@
 import React, {useCallback, useContext, useEffect, useState} from 'react';
-import {View, Text, StyleSheet, ScrollView, RefreshControl} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  BackHandler,
+} from 'react-native';
 import {ClassContext, fetchSubmissionList} from '../context/ClassContext';
 
 const SubmissionList = () => {
@@ -20,6 +27,10 @@ const SubmissionList = () => {
         setClassList,
       );
     }
+
+    BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
   return (
     <>

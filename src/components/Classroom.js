@@ -44,9 +44,10 @@ const Classroom = ({userInfo}) => {
       );
 
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
-    BackHandler.addEventListener('hardwareBackPress', () =>
-      history.push('/ClassList'),
-    );
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      history.push('/ClassList');
+      return true;
+    });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);

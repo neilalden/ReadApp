@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
   KeyboardAvoidingView,
+  BackHandler,
 } from 'react-native';
 import {Link} from 'react-router-native';
 import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
@@ -23,7 +24,6 @@ const Login = () => {
   const [confirm, setConfirm] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const {user} = useContext(AuthContext);
-  let history = useHistory();
   useEffect(() => {
     if (user) {
       if (user.displayName == null && confirm != null) {
@@ -36,17 +36,12 @@ const Login = () => {
           })
           .catch(e => console.log(e));
       }
-      // history.push('/ClassList');
     }
-  }, [confirm]);
 
-  // async function confirmCode() {
-  //   try {
-  //     await confirm.confirm(code);
-  //   } catch (error) {
-  //     createTwoButtonAlert(error);
-  //   }
-  // }
+    BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
+  }, [confirm]);
 
   if (!confirm) {
     return (

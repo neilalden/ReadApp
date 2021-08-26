@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  BackHandler,
 } from 'react-native';
 import ClassroomHeader from './ClassroomHeader';
 import firestore from '@react-native-firebase/firestore';
@@ -22,6 +23,11 @@ const People = () => {
   const [isStudent, setIsStudent] = useState(true);
   const [accountId, setAccountId] = useState('');
   const refRBSheet = useRef();
+  useEffect(() => {
+    BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
+  }, []);
   return (
     <ScrollView>
       <ClassroomHeader

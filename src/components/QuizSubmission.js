@@ -7,6 +7,7 @@ import {
   Alert,
   StyleSheet,
   ScrollView,
+  BackHandler,
 } from 'react-native';
 import {ClassContext, fetchSubmision} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
@@ -34,6 +35,10 @@ const QuizSubmission = ({userInfo}) => {
       );
       setReload(false);
     }
+
+    BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [reload]);
   return (
     <View>

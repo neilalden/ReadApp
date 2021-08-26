@@ -20,7 +20,7 @@ const Library = () => {
   const [subjects, setSubjects] = useState([
     {
       subject: 'Advance machine learning',
-      materials: ['Module 1.docx', 'Module 2.docx'],
+      materials: ['Module 1.pdf', 'Module 2.docx'],
     },
     {
       subject: 'Algorithms and complexity',
@@ -29,10 +29,15 @@ const Library = () => {
   ]);
   const [isOpen, setIsOpen] = useState(false);
   const [subjectNumber, setSubjectNumber] = useState(0);
-
-  BackHandler.addEventListener('hardwareBackPress', function () {
-    alert('Close app', 'Are you sure you want to leave Read App?');
-  });
+  useEffect(() => {
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    });
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
+  }, []);
 
   return (
     <>
