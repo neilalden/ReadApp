@@ -43,27 +43,25 @@ export default function ClassList({userInfo, setUserInfo}) {
   const [section, setSection] = useState('');
 
   // TO REFETCH CLASSES AFTER ADDING A NEW ONE
-  const [reload, setReload] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setClassList([]);
     fetchClassList(userInfo, setClassList);
     wait(1000).then(() => setRefreshing(false));
   }, []);
   useEffect(() => {
     if (!user) {
+      // no user;
       setClassList([]);
       setUserInfo({});
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
+      // user logged in but no information on them
       fetchUser(user.displayName, setUserInfo);
-    } else {
-      if ((userInfo && classList.length === 0) || reload) {
-        fetchClassList(userInfo, setClassList);
-        setReload(false);
-      }
+    } else if (userInfo && user && classList.length === 0) {
+      // user logged in and has the information on them but classes is not loaded yet
+      fetchClassList(userInfo, setClassList);
     }
     // TO STOP THE BACK BUTTON FROM CLOSING APP
     BackHandler.addEventListener('hardwareBackPress', () => {
@@ -72,7 +70,7 @@ export default function ClassList({userInfo, setUserInfo}) {
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [userInfo, user, reload]);
+  }, [userInfo, user]);
   if (classList.length === 0) {
     return (
       <View style={styles.textCenterContainer}>
@@ -140,7 +138,12 @@ export default function ClassList({userInfo, setUserInfo}) {
           ref={refRBSheet}
           closeOnDragDown={true}
           closeOnPressMask={true}
+          closeOnPressBack={true}
           animationType="slide"
+          onClose={() => {
+            setSection('');
+            setSubject('');
+          }}
           customStyles={{
             wrapper: {
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -155,13 +158,11 @@ export default function ClassList({userInfo, setUserInfo}) {
           }}>
           <AddClass
             subject={subject}
-            setSubject={setSubject}
             section={section}
-            setSection={setSection}
             userInfo={userInfo}
+            classList={classList}
+            setClassList={setClassList}
             refRBSheet={refRBSheet}
-            reload={reload}
-            setReload={setReload}
           />
         </RBSheet>
         <Nav />
@@ -189,10 +190,10 @@ const StudentClasses = ({classList, setClassNumber}) => {
               }}>
               <>
                 <View>
-                  <Text style={styles.header}>{item.classCode}</Text>
+                  <Text style={styles.header}>{item.subject}</Text>
                   <View style={styles.teachersNameContainer}>
                     <Text style={styles.itemSubtitle}>
-                      {teachers ? teachers.toString() : ''}
+                      {teachers ? teachers.toString().replace(',', ', ') : ''}
                     </Text>
                   </View>
                 </View>
@@ -220,7 +221,7 @@ const TeacherClasses = ({classList, setClassNumber}) => {
               }}>
               <>
                 <View>
-                  <Text style={styles.header}>{item.classCode}</Text>
+                  <Text style={styles.header}>{item.subject}</Text>
                   <Text style={styles.itemSubtitle}>{item.section}</Text>
                 </View>
                 <IconClassPic style={styles.itemPic} height={50} width={60} />
@@ -238,15 +239,14 @@ const wait = timeout => {
 
 const AddClass = ({
   userInfo,
-  refRBSheet,
   subject,
-  setSubject,
   section,
-  setSection,
-  setReload,
+  classList,
+  setClassList,
+
+  refRBSheet,
 }) => {
   // CREATE CLASS COMPONENT (IT'S BETTER TO LEAVE THIS MF BE FOR NOW)
-
   const createClass = () => {
     const id = firestore().collection('classes').doc().id;
     let classes = userInfo.classes;
@@ -255,52 +255,70 @@ const AddClass = ({
       .collection('classes')
       .doc(id)
       .set({
-        teachers: [userInfo.id],
-        students: [],
-        classCode: subject,
         classId: id,
+        subject: subject,
         section: section,
+        teachers: [{id: userInfo.id, name: userInfo.name}],
+        students: [],
       })
       .then(() => {
         firestore()
           .collection(`users`)
           .doc(userInfo.id)
           .update({classes: classes})
-          .then(() => {})
+          .then(() => {
+            refRBSheet.current.close();
+          })
           .catch(e => {
-            console.log(e);
+            alert('Error', e);
+            refRBSheet.current.close();
           });
-        setReload(true);
-        setSubject('');
-        setSection('');
-        refRBSheet.current.close();
+        let classListCopy = [...classList];
+        classListCopy.push({
+          classId: id,
+          subject: subject,
+          section: section,
+          teachers: [{id: userInfo.id, name: userInfo.name}],
+          students: [],
+        });
+        setClassList(classListCopy);
       })
       .catch(e => {
-        refRBSheet.current.close();
-        setReload(true);
-        setSubject('');
-        setSection('');
-        console.log(e);
+        alert('Error', e);
       });
   };
   return (
     <View style={styles.addPeopleContainer}>
       <Text style={styles.header}>Create class</Text>
       <TextInput
-        placeholder="Subject / Class code"
+        placeholder="Subject"
         value={subject}
         style={styles.addPeopleInput}
         onChangeText={text => setSubject(text)}
       />
       <TextInput
-        placeholder="Section"
+        placeholder="Grade and Section"
         value={section}
         style={styles.addPeopleInput}
         onChangeText={text => setSection(text)}
       />
       <TouchableOpacity
         style={styles.addPeopleButton}
-        onPress={() => createClass()}>
+        onPress={() => {
+          if (subject === '' || section === '') {
+            alert('Error', 'Subject and section of the class is required');
+            return;
+          }
+          Alert.alert('Are you sure?', `Create ${subject} for ${section}?`, [
+            {text: 'Yes', onPress: () => createClass()},
+            {
+              text: 'No',
+              onPress: () => {
+                return;
+              },
+            },
+          ]);
+        }}>
         <Text>Add</Text>
       </TouchableOpacity>
     </View>
@@ -341,7 +359,7 @@ const fetchUser = (id, setUserInfo) => {
         name: res.data().name,
       });
     })
-    .catch(e => alert('error', e));
+    .catch(e => alert('Error', e));
 };
 
 const styles = StyleSheet.create({

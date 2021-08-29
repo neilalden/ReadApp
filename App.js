@@ -19,6 +19,7 @@ import Classroom from './src/components/Classroom';
 import People from './src/components/People';
 import {Alert, BackHandler} from 'react-native';
 import Materials from './src/components/Materials';
+import Grades from './src/components/Grades';
 
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
@@ -90,6 +91,10 @@ const App = () => {
           <Route
             path="/Classwork"
             component={() => <Classwork userInfo={userInfo} />}
+          />
+          <Route
+            path="/Grades"
+            component={() => <Grades userInfo={userInfo} />}
           />
           <Route
             path="/People"

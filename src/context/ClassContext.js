@@ -1,5 +1,6 @@
 import React, {useState, createContext} from 'react';
 import firestore from '@react-native-firebase/firestore';
+import {Alert} from 'react-native';
 
 export const ClassContext = createContext();
 
@@ -28,6 +29,7 @@ export default ClassContextProvider = props => {
 };
 
 export const fetchClassList = (userInfo, setClassList) => {
+  setClassList([]);
   console.log('FETCHING CLASSES...');
   const classes = userInfo.classes;
   for (let i in classes) {
@@ -48,17 +50,15 @@ export const fetchClassList = (userInfo, setClassList) => {
           },
         ]);
       })
-      .catch(e => console.error('error in fetching classes', e));
+      .catch(e => alert('You may have disconnected', e));
   }
 };
 
 export const fetchClassworkList = (classNumber, classList, setClassList) => {
   console.log('FETCHING CLASSWORKS...');
-
   const classId = classList[classNumber].classId;
   let classListCopy = [...classList];
   let classworkList = [];
-
   firestore()
     .collection(`classes/${classId}/classworks`)
     .get()
@@ -71,6 +71,7 @@ export const fetchClassworkList = (classNumber, classList, setClassList) => {
           deadline: res.data().deadline,
           isActivity: res.data().isActivity,
           questions: res.data().questions,
+          points: res.data().points,
         });
       });
 
@@ -81,7 +82,7 @@ export const fetchClassworkList = (classNumber, classList, setClassList) => {
       }
       setClassList(classListCopy);
     })
-    .catch(e => console.error('error in fetching classworks', e));
+    .catch(e => alert('You may have disconnected', e));
 };
 
 // IF ACCOUNT TYPE IS TEACHER, FETCH ALL SUBMISSIONS
@@ -109,6 +110,7 @@ export const fetchSubmissionList = (
             submittedAt: res.data().submittedAt,
             work: res.data().work,
             files: res.data().files,
+            score: res.data().score,
           };
         } else {
           data = {submittedBy: classList[classNumber].students[i]};
@@ -127,9 +129,7 @@ export const fetchSubmissionList = (
           setClassList(classListCopy);
         }
       })
-      .catch(e =>
-        console.error('error in fetching classwork submission list', e),
-      );
+      .catch(e => alert('You may have disconnected', e));
   }
 };
 
@@ -165,7 +165,13 @@ export const fetchSubmision = (
         submission;
       setClassList(classListCopy);
     })
-    .catch(e =>
-      console.error('error in fetching user classwork submission', e),
-    );
+    .catch(e => alert('You may have disconnected', e));
+};
+
+const alert = (title = 'Error', msg) => {
+  Alert.alert(
+    `${title ? title : 'Errpr'}`,
+    `${msg ? msg : 'Fill up the form properly'}`,
+    [{text: 'OK', onPress: () => console.log('OK Pressed')}],
+  );
 };

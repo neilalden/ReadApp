@@ -2,7 +2,7 @@ import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {Link} from 'react-router-native';
 import IconLib from '../../assets/books.svg';
-import IconClass from '../../assets/files.svg';
+import IconClass from '../../assets/door-open.svg';
 import IconAccount from '../../assets/account.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 
@@ -39,20 +39,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     alignItems: 'center',
   },
-  headerText: {
-    fontSize: 15,
-    fontFamily: 'Lato-Regular',
-    marginVertical: 10,
-    marginHorizontal: 10,
-  },
   navText: {
     fontFamily: 'Lato-Regular',
-    fontSize: 15,
+    fontSize: 12,
     textAlign: 'center',
   },
   iconView: {
     alignItems: 'center',
-    padding: 15,
+    paddingVertical: 15,
+    minWidth: 90,
   },
 });
 

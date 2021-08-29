@@ -10,16 +10,16 @@ import {
 import {ClassContext, fetchSubmissionList} from '../context/ClassContext';
 
 const SubmissionList = () => {
-  const {classNumber, classList, classworkNumber, setClassList} =
-    useContext(ClassContext);
   const [refreshing, setRefreshing] = useState(false);
+  const {classNumber, classworkNumber, classList, setClassList} =
+    useContext(ClassContext);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchSubmissionList(classNumber, classworkNumber, classList, setClassList);
     wait(1000).then(() => setRefreshing(false));
   }, []);
   useEffect(() => {
-    if (!classList[classNumber].classworkList[classworkNumber].submission) {
+    if (!classList[classNumber].classworkList[classworkNumber].submissionList) {
       fetchSubmissionList(
         classNumber,
         classworkNumber,
@@ -48,7 +48,6 @@ const SubmissionList = () => {
           classList[classNumber].classworkList[
             classworkNumber
           ].submissionList.map((item, index) => {
-            console.log(item);
             return (
               <View key={index} style={styles.item}>
                 <Text>{item.submittedBy.name}</Text>

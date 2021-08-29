@@ -26,7 +26,7 @@ const People = ({userInfo}) => {
   const history = useHistory();
   useEffect(() => {
     BackHandler.addEventListener('hardwareBackPress', () => {
-      history.push('/Classroom');
+      history.push('/ClassList');
       return true;
     });
     return () =>
@@ -35,8 +35,7 @@ const People = ({userInfo}) => {
   return (
     <ScrollView>
       <ClassroomHeader
-        classCode={classList[classNumber].classCode}
-        backTo={'/Classroom'}
+        subject={classList[classNumber].subject}
         isStudent={false}
       />
       <View style={styles.itemSubtitleContainer}>
@@ -129,7 +128,11 @@ const People = ({userInfo}) => {
         ref={refRBSheet}
         closeOnDragDown={true}
         closeOnPressMask={true}
+        closeOnPressBack={true}
         animationType="slide"
+        onClose={() => {
+          setAccountId('');
+        }}
         customStyles={{
           wrapper: {
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -211,7 +214,7 @@ const deletePersonFromClass = (
 ) => {
   Alert.alert(
     'Are you sure?',
-    `Remove ${account.name} to ${classList[classNumber].classCode}`,
+    `Remove ${account.name} from ${classList[classNumber].subject}`,
     [
       {
         text: 'Yes',
@@ -271,15 +274,15 @@ const deletePersonFromClass = (
                       console.log('USER CLASSES UPDATED');
                     })
                     .catch(e => {
-                      console.error('error in updating user classes', e);
+                      alert('error in updating user classes', e);
                     });
                 })
                 .catch(e => {
-                  console.log('error in fetching removed user details', e);
+                  alert('error in fetching removed user details', e);
                 });
             })
             .catch(e => {
-              console.error('error in updating class', e);
+              alert('error in updating class', e);
             });
         },
       },
@@ -313,7 +316,7 @@ const addPersonToClass = (
         // USER ACCOUNT TYPE DOES NOT MATCH
         alert(
           'Error',
-          `${res.data().name} is not a ${isStudent ? 'Student' : 'Teacher'}`,
+          `${res.data().name} is not a ${isStudent ? 'student' : 'teacher'}`,
         );
       } else {
         // USER ALREADY IN CLASS
@@ -338,7 +341,7 @@ const addPersonToClass = (
           'Are you sure?',
           `Add ${res.data().name} as a ${
             isStudent ? 'student' : 'teacher'
-          } to ${classList[classNumber].classCode}`,
+          } to ${classList[classNumber].subject}`,
           [
             {
               text: 'Yes',
@@ -392,13 +395,13 @@ const addPersonToClass = (
                         setClassList(classListCopy);
                       })
                       .catch(e => {
-                        console.error('error in updating user classes', e);
+                        alert('error in updating user classes', e);
                         refRBSheet.current.close();
                         setAccountId('');
                       });
                   })
                   .catch(e => {
-                    console.log('error in updating class', e);
+                    alert('error in updating class', e);
                     refRBSheet.current.close();
                     setAccountId('');
                   });
@@ -415,7 +418,7 @@ const addPersonToClass = (
       }
     })
     .catch(e => {
-      console.error('error in verifying the existance of the user', e);
+      alert('error in verifying the existance of the user', e);
       refRBSheet.current.close();
       setAccountId('');
     });

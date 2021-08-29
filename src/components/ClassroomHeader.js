@@ -2,35 +2,52 @@ import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import {Link} from 'react-router-native';
 import IconGoBack from '../../assets/goback.svg';
-import IconPeople from '../../assets/people-fill.svg';
+import IconPeople from '../../assets/people.svg';
 import IconFile from '../../assets/file-earmark-text.svg';
+import IconTable from '../../assets/table.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 
-const ClassroomHeader = ({classCode = 'undefined', backTo, isStudent}) => {
+const ClassroomHeader = ({subject = 'undefined', isStudent}) => {
   return (
     <View style={styles.header}>
       <View style={styles.headerTextContainer}>
-        <Text style={styles.headerText}>{classCode}</Text>
-        <Link to={backTo} style={styles.back} underlayColor="#ADD8E6">
-          <IconGoBack height={25} width={40} color={Colors.black} />
+        <Text style={styles.headerText}>{subject}</Text>
+        <Link to="/ClassList" style={styles.back} underlayColor="#C1E1EC">
+          <IconGoBack height={20} width={40} color={Colors.black} />
         </Link>
       </View>
       {isStudent ? (
-        <View style={styles.subtitleContainer2}>
-          <IconFile height={25} width={25} color={Colors.black} />
-          <Text style={styles.subtitleText}>Classroom</Text>
-        </View>
-      ) : (
         <View style={styles.subtitleContainer}>
           <Link to="/Classroom" underlayColor="#C1E1EC">
             <View style={styles.subtitle}>
-              <IconFile height={25} width={25} color={Colors.black} />
+              <IconFile height={20} width={20} color={Colors.black} />
               <Text style={styles.subtitleText}>Classwork</Text>
             </View>
           </Link>
           <Link to="/People" underlayColor="#C1E1EC">
             <View style={styles.subtitle}>
-              <IconPeople height={25} width={25} color={Colors.black} />
+              <IconPeople height={20} width={20} color={Colors.black} />
+              <Text style={styles.subtitleText}>People</Text>
+            </View>
+          </Link>
+        </View>
+      ) : (
+        <View style={styles.subtitleContainer}>
+          <Link to="/Classroom" underlayColor="#C1E1EC">
+            <View style={styles.subtitle}>
+              <IconFile height={20} width={20} color={Colors.black} />
+              <Text style={styles.subtitleText}>Classwork</Text>
+            </View>
+          </Link>
+          <Link to="/Grades" underlayColor="#C1E1EC">
+            <View style={styles.subtitle}>
+              <IconTable height={20} width={20} color={Colors.black} />
+              <Text style={styles.subtitleText}>Grades</Text>
+            </View>
+          </Link>
+          <Link to="/People" underlayColor="#C1E1EC">
+            <View style={styles.subtitle}>
+              <IconPeople height={20} width={20} color={Colors.black} />
               <Text style={styles.subtitleText}>People</Text>
             </View>
           </Link>
@@ -42,40 +59,42 @@ const ClassroomHeader = ({classCode = 'undefined', backTo, isStudent}) => {
 const styles = StyleSheet.create({
   back: {
     padding: 5,
+    marginBottom: 0,
   },
   header: {
-    margin: 15,
     backgroundColor: '#ADD8E6',
     borderRadius: 15,
-    padding: 15,
+    paddingHorizontal: 15,
+    marginHorizontal: 15,
+    marginVertical: 5,
   },
   headerText: {
     fontSize: 24,
     fontFamily: 'Lato-Regular',
+    marginBottom: 0,
   },
   headerTextContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 5,
+    paddingBottom: 0,
   },
   subtitleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  subtitleContainer2: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
+    marginTop: 0,
   },
   subtitle: {
-    marginTop: 5,
-    flexDirection: 'row',
     color: 'black',
-    padding: 5,
-    fontSize: 15,
     fontFamily: 'Lato-Regular',
+    alignItems: 'center',
+    fontSize: 15,
+    minWidth: 80,
+    padding: 5,
+    margin: 0,
   },
   subtitleText: {
-    paddingLeft: 8,
+    fontSize: 12,
   },
 });
 export default ClassroomHeader;

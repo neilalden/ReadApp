@@ -6,12 +6,12 @@ import {
   ScrollView,
   StyleSheet,
   BackHandler,
+  Alert,
 } from 'react-native';
 import {useHistory} from 'react-router';
 import IconLib from '../../assets/books.svg';
 import IconGoBack from '../../assets/goback.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-import Nav from './Nav';
 import FileViewer from 'react-native-file-viewer';
 import RNFS from 'react-native-fs';
 
@@ -27,12 +27,17 @@ const Materials = ({subjects, subjectNumber}) => {
   }, []);
   return (
     <>
-      <View style={styles.header}>
+      <View style={styles.headerContainer}>
         <IconLib height={40} width={40} color={Colors.black} />
         <Text style={styles.headerText}>Library</Text>
         <TouchableOpacity onPress={() => history.push('/')}>
           <IconGoBack height={25} width={40} color={Colors.black} />
         </TouchableOpacity>
+      </View>
+      <View style={styles.subtitleContainer}>
+        <Text style={styles.itemSubtitle}>
+          {subjects[subjectNumber].subject}
+        </Text>
       </View>
       <ScrollView>
         {subjects[subjectNumber].materials.map((item, index) => {
@@ -47,7 +52,6 @@ const Materials = ({subjects, subjectNumber}) => {
           );
         })}
       </ScrollView>
-      <Nav />
     </>
   );
 };
@@ -69,7 +73,7 @@ const openFile = file => {
 };
 
 const styles = StyleSheet.create({
-  header: {
+  headerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -96,6 +100,21 @@ const styles = StyleSheet.create({
     marginVertical: 3,
     textAlign: 'center',
     width: '95%',
+  },
+  itemSubtitle: {
+    fontSize: 18,
+    fontFamily: 'Lato-Regular',
+    padding: 15,
+    textAlign: 'center',
+    color: '#ededed',
+  },
+  subtitleContainer: {
+    backgroundColor: '#3d3d3d',
+    width: 'auto',
+    justifyContent: 'center',
+    marginHorizontal: 15,
+    marginVertical: 10,
+    borderRadius: 10,
   },
 });
 

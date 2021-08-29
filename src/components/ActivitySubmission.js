@@ -86,6 +86,7 @@ const ActivitySubmission = ({userInfo}) => {
                 <TextInput
                   style={styles.item}
                   placeholder="type your answer or comment here.."
+                  multiline={true}
                   onChangeText={val => onChangeText(val)}
                   value={text}
                 />
@@ -353,7 +354,7 @@ const openFile = setFiles => {
         {fileName: res[0].name, uri: res[0].fileCopyUri},
       ]);
     })
-    .catch(e => alert(e));
+    .catch(e => console.log('openFile', e));
 };
 
 const submit = (
@@ -563,7 +564,7 @@ const handleDeleteFile = (
         .catch(e => alert(e));
     })
     .catch(function (error) {
-      console.error('Uh-oh, an error occurred!', error);
+      alert(error);
     });
 };
 const alert = e =>

@@ -46,6 +46,7 @@ const Classroom = ({userInfo}) => {
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => {
       history.push('/ClassList');
+
       return true;
     });
     return () =>
@@ -55,16 +56,15 @@ const Classroom = ({userInfo}) => {
   return (
     <>
       <ClassroomHeader
-        classCode={classList[classNumber].classCode}
-        backTo={'/ClassList'}
+        subject={classList[classNumber].subject}
         isStudent={userInfo.isStudent}
       />
-      <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
-        {classList[classNumber].classworkList &&
-          classList[classNumber].classworkList.map((item, index) => {
+      {classList[classNumber].classworkList ? (
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
+          {classList[classNumber].classworkList.map((item, index) => {
             const dt = new Date(item.deadline.toDate());
             const day = dt.getDate();
             const month = dt.getMonth();
@@ -91,7 +91,10 @@ const Classroom = ({userInfo}) => {
               </Link>
             );
           })}
-      </ScrollView>
+        </ScrollView>
+      ) : (
+        <Text style={styles.subtitle}>No classworks yet</Text>
+      )}
     </>
   );
 };
@@ -136,6 +139,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato-Regular',
     paddingTop: 3,
     paddingBottom: 3,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+    textAlign: 'center',
+    color: '#ccc',
   },
 });
 export default Classroom;

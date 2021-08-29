@@ -24,7 +24,7 @@ const Classwork = ({userInfo}) => {
   return (
     <>
       <ClassroomHeader
-        classCode={classList[classNumber].classCode}
+        subject={classList[classNumber].subject}
         backTo={'/Classroom'}
         isStudent={userInfo.isStudent}
       />

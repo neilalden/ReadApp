@@ -19,7 +19,7 @@ const Account = ({userInfo, setUserInfo}) => {
   let history = useHistory();
   let {user} = useContext(AuthContext);
   const {classList, setClassList} = useContext(ClassContext);
-  const [classCodes, setClassCodes] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   useEffect(() => {
     if (!user) {
       setUserInfo({});
@@ -30,9 +30,9 @@ const Account = ({userInfo, setUserInfo}) => {
       fetchClassList(userInfo, setClassList);
     }
     if (classList) {
-      setClassCodes([]);
+      setSubjects([]);
       for (const i in classList) {
-        setClassCodes(prev => [...prev, classList[i].classCode]);
+        setSubjects(prev => [...prev, classList[i].subject]);
       }
     }
 
@@ -79,7 +79,7 @@ const Account = ({userInfo, setUserInfo}) => {
           <View style={styles.accountInfoContainer2}>
             <Text style={styles.classesText}>Classes</Text>
             <Text style={styles.accountText}>
-              {classCodes ? classCodes.toString() : ''}
+              {subjects ? subjects.toString().replace(',', ', ') : ''}
             </Text>
           </View>
 
@@ -87,7 +87,7 @@ const Account = ({userInfo, setUserInfo}) => {
             <Button
               title="Logout"
               onPress={() => {
-                signOut();
+                console.log(signOut());
               }}
             />
           </View>
