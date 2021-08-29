@@ -47,6 +47,7 @@ export default function ClassList({userInfo, setUserInfo}) {
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    setClassList([]);
     fetchClassList(userInfo, setClassList);
     wait(1000).then(() => setRefreshing(false));
   }, []);

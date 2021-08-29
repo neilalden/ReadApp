@@ -33,7 +33,6 @@ export default ClassContextProvider = props => {
 };
 
 export const fetchClassList = (userInfo, setClassList) => {
-  setClassList([]);
   // console.log('FETCHING CLASSES...');
   const classes = userInfo.classes;
   for (let i in classes) {

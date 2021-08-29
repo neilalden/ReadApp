@@ -26,10 +26,9 @@ const Account = ({userInfo, setUserInfo}) => {
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo);
-    } else if (userInfo && classList.length === 0) {
+    } else if (classList.length === 0) {
       fetchClassList(userInfo, setClassList);
-    }
-    if (classList) {
+    } else if (classList.length !== 0) {
       setSubjects([]);
       for (const i in classList) {
         setSubjects(prev => [...prev, classList[i].subject]);
@@ -43,7 +42,7 @@ const Account = ({userInfo, setUserInfo}) => {
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [user, userInfo, classList]);
+  }, [userInfo, user, classList]);
 
   if (classList.length === 0) {
     return (
