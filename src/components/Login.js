@@ -31,10 +31,8 @@ const Login = () => {
           .updateProfile({
             displayName: id,
           })
-          .then(() => {
-            console.log('user displayName updated');
-          })
-          .catch(e => console.log(e));
+          .then(() => {})
+          .catch(e => alert(e));
       }
     }
 
@@ -126,7 +124,7 @@ const Login = () => {
 
 const createTwoButtonAlert = e =>
   Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
+    {text: 'OK', onPress: () => true},
   ]);
 
 const styles = StyleSheet.create({

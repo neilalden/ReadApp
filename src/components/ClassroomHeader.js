@@ -64,8 +64,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#ADD8E6',
     borderRadius: 15,
-    paddingHorizontal: 15,
-    marginHorizontal: 15,
+    paddingHorizontal: 10,
+    marginHorizontal: 10,
     marginVertical: 5,
   },
   headerText: {

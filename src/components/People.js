@@ -201,7 +201,7 @@ const alert = (title = 'Error', msg) => {
   Alert.alert(
     `${title ? title : 'Errpr'}`,
     `${msg ? msg : 'Fill up the form properly'}`,
-    [{text: 'OK', onPress: () => console.log('OK Pressed')}],
+    [{text: 'OK', onPress: () => true}],
   );
 };
 
@@ -246,7 +246,6 @@ const deletePersonFromClass = (
             .doc(classId)
             .update(data)
             .then(() => {
-              console.log('CLASS UPDATED');
               let classListCopy = [...classList];
               if (isStudent) {
                 classListCopy[classNumber].students = students;
@@ -270,9 +269,7 @@ const deletePersonFromClass = (
                     .collection(`users`)
                     .doc(account.id)
                     .update({classes: userClasses})
-                    .then(() => {
-                      console.log('USER CLASSES UPDATED');
-                    })
+                    .then(() => {})
                     .catch(e => {
                       alert('error in updating user classes', e);
                     });
@@ -286,7 +283,7 @@ const deletePersonFromClass = (
             });
         },
       },
-      {text: 'No', onPress: () => console.log('OK Pressed')},
+      {text: 'No', onPress: () => true},
     ],
   );
 };
@@ -367,7 +364,6 @@ const addPersonToClass = (
                   .doc(classId)
                   .update(data)
                   .then(() => {
-                    console.log('CLASS UPDATED!');
                     // NOW UPDATE THE PERSON'S CLASSES
                     firestore()
                       .collection(`users`)
@@ -375,7 +371,6 @@ const addPersonToClass = (
                       .update({classes: [...userClasses, classId]})
                       .then(() => {
                         // EVERYTHING WENT WELL
-                        console.log('USER CLASSES UPDATE');
                         refRBSheet.current.close();
                         setAccountId('');
 
@@ -410,7 +405,7 @@ const addPersonToClass = (
             {
               text: 'No',
               onPress: () => {
-                console.log('No Presses');
+                true;
               },
             },
           ],

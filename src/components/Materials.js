@@ -57,16 +57,14 @@ const Materials = ({subjects, subjectNumber}) => {
 };
 const alert = (title = 'Error', msg) =>
   Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
+    {text: 'OK', onPress: () => true},
   ]);
 
 const openFile = file => {
   const dest = `${RNFS.DocumentDirectoryPath}/${file}`;
   RNFS.copyFileAssets(file, dest)
     .then(() => FileViewer.open(dest))
-    .then(() => {
-      console.log('file openned');
-    })
+    .then(() => {})
     .catch(error => {
       alert("Can't open file", error);
     });

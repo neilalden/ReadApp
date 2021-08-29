@@ -98,12 +98,7 @@ const ActivitySubmission = ({userInfo}) => {
                   onPress={() => openFile(setFiles)}>
                   <View style={styles.uploadView}>
                     <Text style={styles.uploadText}>Upload file </Text>
-                    <IconUpload
-                      style={styles.icon}
-                      height={20}
-                      width={20}
-                      color={Colors.black}
-                    />
+                    <IconUpload height={20} width={20} color={Colors.black} />
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -268,7 +263,6 @@ const ActivitySubmission = ({userInfo}) => {
                       <View style={styles.uploadView}>
                         <Text style={styles.uploadText}>Upload file </Text>
                         <IconUpload
-                          style={styles.icon}
                           height={20}
                           width={20}
                           color={Colors.black}
@@ -354,7 +348,7 @@ const openFile = setFiles => {
         {fileName: res[0].name, uri: res[0].fileCopyUri},
       ]);
     })
-    .catch(e => console.log('openFile', e));
+    .catch(e => alert('openFile', e));
 };
 
 const submit = (
@@ -368,7 +362,6 @@ const submit = (
   setIsEdit,
   setReload,
 ) => {
-  console.log('classid', classId, '\nclasswork', classwork, '\nfiles', files);
   const filePath = `${classId}/classworks/${classwork.id}/`;
   let urls = [];
   if (files.length !== 0) {
@@ -378,11 +371,7 @@ const submit = (
         .putFile(files[i].uri)
         .then(res => {
           urls.push(filePath + files[i].fileName);
-          console.log('139');
-          console.log('140', i, files.length, urls.length);
           if (urls.length === files.length) {
-            console.log('141');
-            console.log(urls);
             saveToDb(
               classId,
               classwork,
@@ -430,11 +419,6 @@ const saveToDb = (
   urls = urls.concat(submission.files ? submission.files : []);
   if (text != undefined && text != '' && urls.length !== 0) {
     // if student wrote something and added files (text at files parehas meron)
-    console.log(
-      '163 if student wrote something and added files (text at files parehas meron)',
-      text,
-      urls,
-    );
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
@@ -444,7 +428,6 @@ const saveToDb = (
         work: text,
       })
       .then(res => {
-        console.log('success', res);
         setFiles([]);
         setIsEdit(false);
         setReload(true);
@@ -452,16 +435,11 @@ const saveToDb = (
       .catch(e => alert(e));
   } else if ((text == '' || text == undefined) && urls.length !== 0) {
     // if student did not write anything but submitted files (text wala, files meron)
-    console.log(
-      '185 if student did not write anything but submitted files (text wala, files meron)',
-    );
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
       .set({submittedAt: firestore.FieldValue.serverTimestamp(), files: urls})
       .then(res => {
-        console.log('success', res);
-
         setFiles([]);
         setIsEdit(false);
         setReload(true);
@@ -469,9 +447,6 @@ const saveToDb = (
       .catch(e => alert(e));
   } else if (text != '' && text != undefined && urls.length === 0) {
     // if student did wrote something but did not submit files (text meron, files wala)
-    console.log(
-      '204 if student did wrote something but did not submit files (text meron, files wala)',
-    );
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
@@ -480,13 +455,11 @@ const saveToDb = (
         work: text,
       })
       .then(res => {
-        console.log('success', res);
         setIsEdit(false);
         setReload(true);
       })
       .catch(e => alert(e));
   } else {
-    console.log('223');
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
@@ -496,8 +469,6 @@ const saveToDb = (
         files: [],
       })
       .then(res => {
-        console.log('success', res);
-
         setIsEdit(false);
         setReload(true);
       })
@@ -548,7 +519,6 @@ const handleDeleteFile = (
   desertRef
     .delete()
     .then(function () {
-      console.log('File deleted successfully');
       firestore()
         .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
         .doc(userInfo.id)
@@ -558,7 +528,6 @@ const handleDeleteFile = (
           submittedAt: firestore.FieldValue.serverTimestamp(),
         })
         .then(() => {
-          console.log('files updated successfully');
           setReload(true);
         })
         .catch(e => alert(e));
@@ -569,7 +538,7 @@ const handleDeleteFile = (
 };
 const alert = e =>
   Alert.alert('Alert', `${e ? e : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
+    {text: 'OK', onPress: () => true},
   ]);
 const styles = StyleSheet.create({
   item: {

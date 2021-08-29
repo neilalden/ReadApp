@@ -33,10 +33,9 @@ const Register = () => {
           displayName: id,
         })
         .then(() => {
-          console.log(user);
           history.push('/ClassList');
         })
-        .catch(e => console.log(e));
+        .catch(e => alert(e));
     }
 
     BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -162,14 +161,13 @@ const Register = () => {
                     })
                     .then(() => {
                       setState(true);
-                      console.log(user);
                     })
                     .catch(e => {
-                      console.log(e);
+                      alert(e);
                     });
                 })
                 .catch(e => {
-                  console.log(e.message);
+                  alert(e);
                 });
             }}
           />
@@ -191,7 +189,7 @@ const Register = () => {
 
 const createTwoButtonAlert = e =>
   Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
+    {text: 'OK', onPress: () => true},
   ]);
 const styles = StyleSheet.create({
   numberInput: {

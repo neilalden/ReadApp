@@ -332,13 +332,13 @@ const alert = (title = 'Error', msg) => {
       {
         text: 'No',
         onPress: () => {
-          console.log('No Presses');
+          true;
         },
       },
     ]);
   } else {
     Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
-      {text: 'OK', onPress: () => console.log('OK Pressed')},
+      {text: 'OK', onPress: () => true},
     ]);
   }
 };

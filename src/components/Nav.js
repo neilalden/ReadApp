@@ -31,7 +31,6 @@ const Nav = () => {
   );
 };
 const styles = StyleSheet.create({
-  body: {},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

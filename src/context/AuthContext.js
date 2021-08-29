@@ -1,5 +1,6 @@
 import auth from '@react-native-firebase/auth';
 import React, {useState, createContext, useEffect} from 'react';
+import {Alert} from 'react-native';
 import {useHistory} from 'react-router-native';
 
 const AuthContextProvider = props => {
@@ -36,7 +37,7 @@ export const signInWithPhoneNumber = (
       })
       .catch(e => {
         createTwoButtonAlert(e);
-        console.log(e);
+        alert('Error', e);
       });
   } else {
     createTwoButtonAlert();
@@ -46,10 +47,15 @@ export const signInWithPhoneNumber = (
 export const signOut = () => {
   auth()
     .signOut()
-    .then(() => {
-      console.log('User signed out!');
-    })
-    .catch(err => console.log(err));
+    .then(() => {})
+    .catch(err => alert('Error', err));
+};
+const alert = (title, msg) => {
+  Alert.alert(
+    `${title ? title : 'Error'}`,
+    `${msg ? msg : 'Fill up the form properly'}`,
+    [{text: 'OK', onPress: () => true}],
+  );
 };
 
 export default AuthContextProvider;

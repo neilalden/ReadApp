@@ -204,7 +204,6 @@ const handleFinishQuiz = (
       }
     }
     // USER HAS ANSWERED EVERY QUESTION
-    console.log('student has answered every question');
     // SCORING USER
     let score = 0;
     for (const i in classwork.questions) {
@@ -221,8 +220,6 @@ const handleFinishQuiz = (
         submittedAt: firestore.FieldValue.serverTimestamp(),
       })
       .then(res => {
-        console.log('success');
-
         setReload(true);
       })
       .catch(e => alert(e));
@@ -230,7 +227,7 @@ const handleFinishQuiz = (
 };
 const alert = e =>
   Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => console.log('OK Pressed')},
+    {text: 'OK', onPress: () => true},
   ]);
 
 const styles = StyleSheet.create({

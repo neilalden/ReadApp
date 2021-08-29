@@ -6,6 +6,8 @@ export const ClassContext = createContext();
 
 export default ClassContextProvider = props => {
   const [classList, setClassList] = useState([]);
+  // FOR XLSX EXPORT
+  const [classListGrades, setClassListGrades] = useState({});
 
   // TO KEEP TRACK OF WHAT CLASS IN THE CLASSLIST ARRAY IS OPEN
   const [classNumber, setClassNumber] = useState(0);
@@ -22,6 +24,8 @@ export default ClassContextProvider = props => {
         setClassNumber,
         classworkNumber,
         setClassworkNumber,
+        classListGrades,
+        setClassListGrades,
       }}>
       {props.children}
     </ClassContext.Provider>
