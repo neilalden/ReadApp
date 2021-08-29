@@ -158,7 +158,9 @@ export default function ClassList({userInfo, setUserInfo}) {
           }}>
           <AddClass
             subject={subject}
+            setSubject={setSubject}
             section={section}
+            setSection={setSection}
             userInfo={userInfo}
             classList={classList}
             setClassList={setClassList}
@@ -243,7 +245,8 @@ const AddClass = ({
   section,
   classList,
   setClassList,
-
+  setSubject,
+  setSection,
   refRBSheet,
 }) => {
   // CREATE CLASS COMPONENT (IT'S BETTER TO LEAVE THIS MF BE FOR NOW)

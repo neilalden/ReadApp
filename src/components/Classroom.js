@@ -59,7 +59,8 @@ const Classroom = ({userInfo}) => {
         subject={classList[classNumber].subject}
         isStudent={userInfo.isStudent}
       />
-      {classList[classNumber].classworkList ? (
+      {classList[classNumber].classworkList &&
+      classList[classNumber].classworkList.length !== 0 ? (
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

@@ -34,7 +34,7 @@ export default ClassContextProvider = props => {
 
 export const fetchClassList = (userInfo, setClassList) => {
   setClassList([]);
-  console.log('FETCHING CLASSES...');
+  // console.log('FETCHING CLASSES...');
   const classes = userInfo.classes;
   for (let i in classes) {
     firestore()
@@ -59,7 +59,7 @@ export const fetchClassList = (userInfo, setClassList) => {
 };
 
 export const fetchClassworkList = (classNumber, classList, setClassList) => {
-  console.log('FETCHING CLASSWORKS...');
+  // console.log('FETCHING CLASSWORKS...');
   const classId = classList[classNumber].classId;
   let classListCopy = [...classList];
   let classworkList = [];
@@ -100,7 +100,7 @@ export const fetchSubmissionList = (
   const classId = classList[classNumber].classId;
   let classListCopy = [...classList];
   let submissionList = [];
-  console.log('FETCHING CLASSWORK SUBMISSIONS...');
+  // console.log('FETCHING CLASSWORK SUBMISSIONS...');
   for (let i in classList[classNumber].students) {
     firestore()
       .collection(`classes/${classId}/classworks/${classworkId}/submissions`)
@@ -145,7 +145,7 @@ export const fetchSubmision = (
   setClassList,
   userInfo,
 ) => {
-  console.log('FETCHING CLASSWORK SUBMISSION...');
+  // console.log('FETCHING CLASSWORK SUBMISSION...');
   const classworkId = classList[classNumber].classworkList[classworkNumber].id;
   const classId = classList[classNumber].classId;
   const studenId = userInfo.id;
@@ -176,6 +176,6 @@ const alert = (title = 'Error', msg) => {
   Alert.alert(
     `${title ? title : 'Errpr'}`,
     `${msg ? msg : 'Fill up the form properly'}`,
-    [{text: 'OK', onPress: () => console.log('OK Pressed')}],
+    [{text: 'OK', onPress: () => true}],
   );
 };

@@ -79,9 +79,6 @@ const Grades = () => {
           }
         }
         score /= keys.length - 1;
-        // data[i].student = data[i].student;
-        // data[i].average = score;
-
         let temp = {};
         temp.student = data[i].student;
         temp.average = score;
@@ -92,6 +89,7 @@ const Grades = () => {
       }
       return newData;
     };
+
     for (const i in classworkList) {
       if (!classworkList[i].submissionList) {
         fetchSubmissionList(classNumber, i, classList, setClassList);
@@ -114,12 +112,30 @@ const Grades = () => {
               ) {
                 let copyClassListGrades = {...classListGrades};
 
-                copyClassListGrades[classId] = getAVG(data);
+                let newData = [];
+                let copyData = [...data];
+                for (const i in copyData) {
+                  const keys = Object.keys(copyData[i]);
+                  let score = 0;
+                  for (const j in keys) {
+                    if (keys[j] !== 'student') {
+                      score += copyData[i][keys[j]];
+                    }
+                  }
+                  score /= keys.length - 1;
+                  let temp = {};
+                  temp.student = copyData[i].student;
+                  temp.average = score;
+                  for (const j of Object.keys(copyData[i])) {
+                    temp[j] = copyData[i][j];
+                  }
+                  newData.push(temp);
+                }
+                copyClassListGrades[classId] = newData;
+                setData(newData);
                 setClassListGrades(copyClassListGrades);
                 setIsLoaded(true);
               }
-            } else {
-              setIsLoaded(false);
             }
           }
         }
@@ -141,6 +157,31 @@ const Grades = () => {
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [classList, isLoaded]);
 
+  if (
+    !classList[classNumber].students ||
+    classList[classNumber].students.length == 0
+  ) {
+    return (
+      <>
+        <ClassroomHeader
+          subject={classList[classNumber].subject}
+          isStudent={false}
+        />
+        <Text style={styles.subtitle}>No students to grade yet</Text>
+      </>
+    );
+  }
+  if (!isLoaded) {
+    return (
+      <>
+        <ClassroomHeader
+          subject={classList[classNumber].subject}
+          isStudent={false}
+        />
+        <Text style={styles.subtitle}>Loading...</Text>
+      </>
+    );
+  }
   return (
     <>
       <ClassroomHeader
@@ -246,6 +287,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '100',
     fontSize: 12,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+    textAlign: 'center',
+    color: '#ccc',
   },
   dataWrapper: {marginTop: -1},
   row: {height: 40, backgroundColor: '#c4e3ed'},
