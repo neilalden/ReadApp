@@ -34,20 +34,22 @@ const Materials = ({subjects, subjectNumber}) => {
           <IconGoBack height={25} width={40} color={Colors.black} />
         </TouchableOpacity>
       </View>
-      <View style={styles.subtitleContainer}>
-        <Text style={styles.itemSubtitle}>
-          {subjects[subjectNumber].subject}
-        </Text>
-      </View>
+
       <ScrollView>
+        <View style={styles.subtitleContainer}>
+          <Text style={styles.itemSubtitle}>
+            {subjects[subjectNumber].subject}
+          </Text>
+        </View>
         {subjects[subjectNumber].materials.map((item, index) => {
           return (
             <TouchableOpacity
+              style={styles.item}
               key={index}
               onPress={() => {
                 openFile(item);
               }}>
-              <Text style={styles.item}>{item}</Text>
+              <Text>{item}</Text>
             </TouchableOpacity>
           );
         })}
@@ -77,7 +79,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ADD8E6',
     borderRadius: 5,
-    margin: 10,
+    paddingHorizontal: 10,
+    marginHorizontal: 10,
+    marginVertical: 5,
   },
   headerText: {
     padding: 10,
@@ -90,26 +94,24 @@ const styles = StyleSheet.create({
   item: {
     backgroundColor: '#ADD8E6',
     fontFamily: 'Lato-Regular',
-    justifyContent: 'space-between',
-    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 10,
-    padding: 10,
+    paddingVertical: 20,
     marginHorizontal: 10,
     marginVertical: 3,
-    textAlign: 'center',
-    width: '95%',
   },
   itemSubtitle: {
-    fontSize: 18,
-    fontFamily: 'Lato-Regular',
-    padding: 15,
-    textAlign: 'center',
     color: '#ededed',
+    textAlign: 'center',
+    fontFamily: 'Lato-Regular',
+    fontSize: 18,
+    padding: 15,
   },
   subtitleContainer: {
     backgroundColor: '#3d3d3d',
-    width: 'auto',
     justifyContent: 'center',
+    width: 'auto',
     marginHorizontal: 15,
     marginVertical: 10,
     borderRadius: 10,

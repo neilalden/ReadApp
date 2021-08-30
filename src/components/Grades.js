@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import {useHistory} from 'react-router';
 import {ClassContext, fetchSubmissionList} from '../context/ClassContext';
@@ -62,11 +63,6 @@ const Grades = () => {
       }
       return;
     };
-    if (classListGrades[classId]) {
-      // Data is loaded before
-      setIsLoaded(true);
-      renderData();
-    }
 
     const getAVG = data => {
       let newData = [];
@@ -74,14 +70,14 @@ const Grades = () => {
         const keys = Object.keys(data[i]);
         let score = 0;
         for (const j in keys) {
-          if (keys[j] !== 'student') {
+          if (keys[j] !== 'Student') {
             score += data[i][keys[j]];
           }
         }
         score /= keys.length - 1;
         let temp = {};
-        temp.student = data[i].student;
-        temp.average = score;
+        temp.Student = data[i].Student;
+        temp.Average = score;
         for (const j of Object.keys(data[i])) {
           temp[j] = data[i][j];
         }
@@ -89,6 +85,11 @@ const Grades = () => {
       }
       return newData;
     };
+    if (classListGrades[classId]) {
+      // Data is loaded before
+      setIsLoaded(true);
+      renderData();
+    }
 
     for (const i in classworkList) {
       if (!classworkList[i].submissionList) {
@@ -97,7 +98,7 @@ const Grades = () => {
         const submissionList = classworkList[i].submissionList;
         for (const j in submissionList) {
           for (const k in data) {
-            if (data[k].student === submissionList[j].submittedBy.id) {
+            if (data[k].Student === submissionList[j].submittedBy.id) {
               let copyData = [...data];
               const work_title = `${classworkList[i].title} (${classworkList[i].points} points)`;
               const score = submissionList[j].score || 0;
@@ -112,25 +113,7 @@ const Grades = () => {
               ) {
                 let copyClassListGrades = {...classListGrades};
 
-                let newData = [];
-                let copyData = [...data];
-                for (const i in copyData) {
-                  const keys = Object.keys(copyData[i]);
-                  let score = 0;
-                  for (const j in keys) {
-                    if (keys[j] !== 'student') {
-                      score += copyData[i][keys[j]];
-                    }
-                  }
-                  score /= keys.length - 1;
-                  let temp = {};
-                  temp.student = copyData[i].student;
-                  temp.average = score;
-                  for (const j of Object.keys(copyData[i])) {
-                    temp[j] = copyData[i][j];
-                  }
-                  newData.push(temp);
-                }
+                const newData = getAVG(data);
                 copyClassListGrades[classId] = newData;
                 setData(newData);
                 setClassListGrades(copyClassListGrades);
@@ -144,9 +127,9 @@ const Grades = () => {
     // get the students
     for (const i in students) {
       for (const j in data) {
-        if (data[j].student == students[i].id) return;
+        if (data[j].Student == students[i].id) return;
       }
-      setData(prev => [...prev, {student: students[i].id}]);
+      setData(prev => [...prev, {Student: students[i].id}]);
     }
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => {
@@ -178,7 +161,9 @@ const Grades = () => {
           subject={classList[classNumber].subject}
           isStudent={false}
         />
-        <Text style={styles.subtitle}>Loading...</Text>
+        <Text style={styles.subtitle}>
+          This should only take time once, please wait
+        </Text>
       </>
     );
   }
@@ -263,13 +248,13 @@ const saveFile = (fileName = 'ReadApp.xlsx', data) => {
 const styles = StyleSheet.create({
   saveButton: {
     marginVertical: 5,
-    padding: 5,
+    marginHorizontal: 20,
+    padding: 15,
     borderRadius: 10,
-    width: 250,
-    flexDirection: 'row',
     backgroundColor: '#ADD8E6',
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
   },
   marginH5: {
     marginHorizontal: 5,

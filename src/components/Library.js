@@ -41,7 +41,7 @@ const Library = ({subjects, subjectNumber, setSubjectNumber}) => {
                 setSubjectNumber(index);
                 history.push('/Materials');
               }}>
-              <Text style={styles.item}>{item.subject}</Text>
+              <Text>{item.subject}</Text>
             </TouchableOpacity>
           );
         })}
@@ -76,7 +76,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ADD8E6',
     borderRadius: 5,
-    margin: 10,
+    paddingHorizontal: 10,
+    marginHorizontal: 10,
+    marginVertical: 5,
   },
   headerText: {
     padding: 10,
@@ -89,14 +91,12 @@ const styles = StyleSheet.create({
   item: {
     backgroundColor: '#ADD8E6',
     fontFamily: 'Lato-Regular',
-    justifyContent: 'space-between',
-    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 10,
-    padding: 10,
+    paddingVertical: 20,
     marginHorizontal: 10,
     marginVertical: 3,
-    textAlign: 'center',
-    width: '95%',
   },
 });
 

@@ -14,6 +14,7 @@ export default ClassContextProvider = props => {
 
   // TO KEEP TRACK OF WHAT CLASSWORK IN THE CLASSWORKLIST ARRAY IS OPEN
   const [classworkNumber, setClassworkNumber] = useState(0);
+  const [submissionListNumber, setSubmissionListNumber] = useState(0);
 
   return (
     <ClassContext.Provider
@@ -26,6 +27,8 @@ export default ClassContextProvider = props => {
         setClassworkNumber,
         classListGrades,
         setClassListGrades,
+        submissionListNumber,
+        setSubmissionListNumber,
       }}>
       {props.children}
     </ClassContext.Provider>
@@ -157,6 +160,7 @@ export const fetchSubmision = (
     .then(res => {
       if (res.data()) {
         submission = {
+          submittedAt: res.data().submittedAt,
           work: res.data().work,
           score: res.data().score,
           files: res.data().files,

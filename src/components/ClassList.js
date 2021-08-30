@@ -81,93 +81,95 @@ export default function ClassList({userInfo, setUserInfo}) {
   } else {
     return (
       <>
-        <View style={styles.classHeader}>
-          <View style={styles.profileContainer}>
-            <Link to="/Account" underlayColor="#ADD8E6">
-              <IconProfile height={50} width={60} />
-            </Link>
-          </View>
-
-          <Text style={styles.classHeaderText}>Welcome,</Text>
-          <Text style={styles.classHeaderText}>{userInfo.name}</Text>
-          <View style={styles.userID}>
-            <Text style={styles.userText}>{userInfo.id}</Text>
-            <Text style={styles.userText}>
-              {userInfo.isStudent ? 'Student' : 'Teacher'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={{backgroundColor: '#ADD8E6'}}>
-          <View style={styles.backgroundView}>
-            <Text style={[styles.header, {marginVertical: 15, marginLeft: 20}]}>
-              Classes
-            </Text>
-            {!userInfo.isStudent ? (
-              <TouchableOpacity
-                style={{marginVertical: 10, marginRight: 20}}
-                onPress={() => {
-                  refRBSheet.current.open();
-                }}>
-                <IconAddClass height={30} width={30} color={Colors.black} />
-              </TouchableOpacity>
-            ) : (
-              <></>
-            )}
-          </View>
-        </View>
         <ScrollView
-          style={{backgroundColor: '#fff'}}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }>
-          {userInfo && userInfo.isStudent ? (
-            <StudentClasses
-              classList={classList}
-              setClassNumber={setClassNumber}
-            />
-          ) : (
-            <TeacherClasses
-              classList={classList}
-              setClassNumber={setClassNumber}
-              setClassNumber={setClassNumber}
-            />
-          )}
-        </ScrollView>
+          <View style={styles.classHeader}>
+            <View style={styles.profileContainer}>
+              <Link to="/Account" underlayColor="#ADD8E6">
+                <IconProfile height={50} width={60} />
+              </Link>
+            </View>
 
-        <RBSheet
-          ref={refRBSheet}
-          closeOnDragDown={true}
-          closeOnPressMask={true}
-          closeOnPressBack={true}
-          animationType="slide"
-          onClose={() => {
-            setSection('');
-            setSubject('');
-          }}
-          customStyles={{
-            wrapper: {
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            },
-            draggableIcon: {
-              backgroundColor: '#000',
-            },
-            container: {
-              borderTopLeftRadius: 15,
-              borderTopRightRadius: 15,
-            },
-          }}>
-          <AddClass
-            subject={subject}
-            setSubject={setSubject}
-            section={section}
-            setSection={setSection}
-            userInfo={userInfo}
-            classList={classList}
-            setClassList={setClassList}
-            refRBSheet={refRBSheet}
-          />
-        </RBSheet>
+            <Text style={styles.classHeaderText}>Welcome,</Text>
+            <Text style={styles.classHeaderText}>{userInfo.name}</Text>
+            <View style={styles.userID}>
+              <Text style={styles.userText}>{userInfo.id}</Text>
+              <Text style={styles.userText}>
+                {userInfo.isStudent ? 'Student' : 'Teacher'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={{backgroundColor: '#ADD8E6'}}>
+            <View style={styles.backgroundView}>
+              <Text
+                style={[styles.header, {marginVertical: 15, marginLeft: 20}]}>
+                Classes
+              </Text>
+              {!userInfo.isStudent ? (
+                <TouchableOpacity
+                  style={{marginVertical: 10, marginRight: 20}}
+                  onPress={() => {
+                    refRBSheet.current.open();
+                  }}>
+                  <IconAddClass height={30} width={30} color={Colors.black} />
+                </TouchableOpacity>
+              ) : (
+                <></>
+              )}
+            </View>
+          </View>
+          <ScrollView style={{backgroundColor: '#fff'}}>
+            {userInfo && userInfo.isStudent ? (
+              <StudentClasses
+                classList={classList}
+                setClassNumber={setClassNumber}
+              />
+            ) : (
+              <TeacherClasses
+                classList={classList}
+                setClassNumber={setClassNumber}
+                setClassNumber={setClassNumber}
+              />
+            )}
+          </ScrollView>
+
+          <RBSheet
+            ref={refRBSheet}
+            closeOnDragDown={true}
+            closeOnPressMask={true}
+            closeOnPressBack={true}
+            animationType="slide"
+            onClose={() => {
+              setSection('');
+              setSubject('');
+            }}
+            customStyles={{
+              wrapper: {
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              },
+              draggableIcon: {
+                backgroundColor: '#000',
+              },
+              container: {
+                borderTopLeftRadius: 15,
+                borderTopRightRadius: 15,
+              },
+            }}>
+            <AddClass
+              subject={subject}
+              setSubject={setSubject}
+              section={section}
+              setSection={setSection}
+              userInfo={userInfo}
+              classList={classList}
+              setClassList={setClassList}
+              refRBSheet={refRBSheet}
+            />
+          </RBSheet>
+        </ScrollView>
         <Nav />
       </>
     );

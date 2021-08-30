@@ -19,36 +19,57 @@ import IconUpload from '../../assets/uploadFile.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import IconRemove from '../../assets/x-circle.svg';
 
-const ActivitySubmission = ({userInfo}) => {
+const ActivitySubmission = ({userInfo, student, setRefresh}) => {
   const [files, setFiles] = useState([]);
   const [text, onChangeText] = useState('');
   const [reload, setReload] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
+  const [studentInfo, setStudentInfo] = useState({});
+  const [submission, setSubmission] = useState({});
+  const [score, setScore] = useState('');
   const history = useHistory();
-  const {classNumber, classworkNumber, classList, setClassList} =
-    useContext(ClassContext);
+  const {
+    classNumber,
+    classworkNumber,
+    submissionListNumber,
+    classList,
+    setClassList,
+  } = useContext(ClassContext);
 
   const classId = classList[classNumber].classId;
   const classwork = classList[classNumber].classworkList[classworkNumber];
-  const submission =
-    classList[classNumber].classworkList[classworkNumber].submission;
   useEffect(() => {
+    if (!userInfo.isStudent) {
+      setStudentInfo(student);
+      setSubmission(
+        classList[classNumber].classworkList[classworkNumber].submissionList[
+          submissionListNumber
+        ],
+      );
+    } else {
+      setStudentInfo(userInfo);
+      setSubmission(
+        classList[classNumber].classworkList[classworkNumber].submission,
+      );
+    }
     if (
-      !classList[classNumber].classworkList[classworkNumber].submission ||
-      reload
+      userInfo.isStudent &&
+      (!classList[classNumber].classworkList[classworkNumber].submission ||
+        reload)
     ) {
       fetchSubmision(
         classNumber,
         classworkNumber,
         classList,
         setClassList,
-        userInfo,
+        studentInfo,
       );
       setReload(false);
     }
 
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => {
+      history.push('/Classroom');
       return true;
     });
     return () =>
@@ -58,13 +79,44 @@ const ActivitySubmission = ({userInfo}) => {
   const filePath = `${classId}/classworks/${classwork.id}/`;
   return (
     <View>
+      <View style={styles.headerContainer}>
+        <Text
+          style={[
+            styles.header,
+            {
+              color: '#ededed',
+              textAlign: 'center',
+              padding: 15,
+            },
+          ]}>
+          {student.name}
+        </Text>
+      </View>
       <View style={styles.questionContainer}>
         <Text style={styles.header}>Instruction</Text>
         <Text style={styles.item}>{classwork.instruction}</Text>
         <Text style={styles.header}>Score</Text>
-        <Text style={styles.item}>
-          {submission && submission.score ? submission.score : 'no grades yet'}
-        </Text>
+        {submission && submission.score && isEdit ? (
+          <TextInput
+            keyboardType="numeric"
+            style={styles.item}
+            value={score}
+            onChangeText={val => setScore(val)}
+          />
+        ) : submission && submission.score ? (
+          <Text
+            style={
+              styles.item
+            }>{`${submission.score}/${classwork.points}`}</Text>
+        ) : (
+          <TextInput
+            placeholder="no grades yet"
+            keyboardType="numeric"
+            style={styles.item}
+            value={score}
+            onChangeText={val => setScore(val)}
+          />
+        )}
       </View>
 
       {/* Student activity screen has three (3) states */}
@@ -73,7 +125,101 @@ const ActivitySubmission = ({userInfo}) => {
       {/* > Student has complied and their work is graded (only allows the user to view their score and submission) */}
 
       {(() => {
-        if (
+        if (!userInfo.isStudent) {
+          return (
+            <>
+              {submission.work ? (
+                <View style={styles.questionContainer}>
+                  <Text style={styles.header}>Answer/Comment</Text>
+                  <Text style={styles.item}>{submission.work}</Text>
+                </View>
+              ) : (
+                <></>
+              )}
+              {submission.files && submission.files.length !== 0 ? (
+                <View style={styles.questionContainer}>
+                  <Text style={styles.header}>File submission(s)</Text>
+                  <View style={styles.item}>
+                    {submission.files.map((item, index) => {
+                      return (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.fileItem}
+                          onPress={() => viewFile(item, classId, classwork)}>
+                          <Text>{item.replace(filePath, '')}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ) : !submission.work || submission.work === '' ? (
+                <Text style={styles.subtitle}>No submission</Text>
+              ) : (
+                <></>
+              )}
+              {(submission.work && submission.work != '') ||
+              (submission.files && submission.files.length != 0) ? (
+                submission.score ? (
+                  isEdit ? (
+                    <TouchableOpacity
+                      style={styles.submitButton}
+                      onPress={() => {
+                        let parsedScore = parseInt(score);
+                        if (score == '' || Number.isNaN(parsedScore)) {
+                          alert('Please write the appropriate score');
+                          return;
+                        }
+                        const path = `classes/${filePath}submissions`;
+                        handleSaveScore(
+                          parsedScore,
+                          path,
+                          student,
+                          submission,
+                          setSubmission,
+                          setRefresh,
+                        );
+                        setIsEdit(false);
+                      }}>
+                      <Text>Save</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => {
+                        setScore(submission.score.toString());
+                        setIsEdit(true);
+                      }}>
+                      <Text>Edit score</Text>
+                    </TouchableOpacity>
+                  )
+                ) : (
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={() => {
+                      let parsedScore = parseInt(score);
+                      if (score == '' || Number.isNaN(parsedScore)) {
+                        alert('Please write the appropriate score');
+                        return;
+                      }
+                      const path = `classes/${filePath}submissions`;
+                      handleSaveScore(
+                        parsedScore,
+                        path,
+                        student,
+                        submission,
+                        setSubmission,
+                        setRefresh,
+                      );
+                    }}>
+                    <Text>Score student</Text>
+                  </TouchableOpacity>
+                )
+              ) : (
+                <></>
+              )}
+            </>
+          );
+        } else if (
           submission &&
           !submission.work &&
           (!submission.files || submission.files.length === 0)
@@ -108,7 +254,7 @@ const ActivitySubmission = ({userInfo}) => {
                       classId,
                       classwork,
                       files,
-                      userInfo,
+                      studentInfo,
                       text,
                       submission,
                       setFiles,
@@ -220,7 +366,7 @@ const ActivitySubmission = ({userInfo}) => {
                                 text,
                                 classId,
                                 classwork,
-                                userInfo,
+                                studentInfo,
                                 setReload,
                               )
                             }>
@@ -276,7 +422,7 @@ const ActivitySubmission = ({userInfo}) => {
                           classId,
                           classwork,
                           files,
-                          userInfo,
+                          studentInfo,
                           text,
                           submission,
                           setFiles,
@@ -355,7 +501,7 @@ const submit = (
   classId,
   classwork,
   files,
-  userInfo,
+  studentInfo,
   text,
   submission,
   setFiles,
@@ -376,7 +522,7 @@ const submit = (
               classId,
               classwork,
               urls,
-              userInfo,
+              studentInfo,
               text,
               submission,
               setFiles,
@@ -394,7 +540,7 @@ const submit = (
       classId,
       classwork,
       urls,
-      userInfo,
+      studentInfo,
       text,
       submission,
       setFiles,
@@ -408,7 +554,7 @@ const saveToDb = (
   classId,
   classwork,
   urls,
-  userInfo,
+  studentInfo,
   text,
   submission,
   setFiles,
@@ -421,7 +567,7 @@ const saveToDb = (
     // if student wrote something and added files (text at files parehas meron)
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(userInfo.id)
+      .doc(studentInfo.id)
       .set({
         submittedAt: firestore.FieldValue.serverTimestamp(),
         files: urls,
@@ -437,7 +583,7 @@ const saveToDb = (
     // if student did not write anything but submitted files (text wala, files meron)
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(userInfo.id)
+      .doc(studentInfo.id)
       .set({submittedAt: firestore.FieldValue.serverTimestamp(), files: urls})
       .then(res => {
         setFiles([]);
@@ -449,7 +595,7 @@ const saveToDb = (
     // if student did wrote something but did not submit files (text meron, files wala)
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(userInfo.id)
+      .doc(studentInfo.id)
       .set({
         submittedAt: firestore.FieldValue.serverTimestamp(),
         work: text,
@@ -462,7 +608,7 @@ const saveToDb = (
   } else {
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(userInfo.id)
+      .doc(studentInfo.id)
       .set({
         submittedAt: firestore.FieldValue.serverTimestamp(),
         work: '',
@@ -508,7 +654,7 @@ const handleDeleteFile = (
   text,
   classId,
   classwork,
-  userInfo,
+  studentInfo,
   setReload,
 ) => {
   let filesCopy = [...submissionFiles];
@@ -521,7 +667,7 @@ const handleDeleteFile = (
     .then(function () {
       firestore()
         .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-        .doc(userInfo.id)
+        .doc(studentInfo.id)
         .set({
           files: filesCopy,
           work: text ? text : '',
@@ -535,6 +681,26 @@ const handleDeleteFile = (
     .catch(function (error) {
       alert(error);
     });
+};
+const handleSaveScore = (
+  score,
+  path,
+  student,
+  submission,
+  setSubmission,
+  setRefresh,
+) => {
+  firestore()
+    .collection(path)
+    .doc(student.id)
+    .update({score: parseInt(score)})
+    .then(() => {
+      let copySubmission = {...submission};
+      copySubmission.score = score;
+      setSubmission(copySubmission);
+      setRefresh(true);
+    })
+    .catch(e => alert(e));
 };
 const alert = e =>
   Alert.alert('Alert', `${e ? e : 'Fill up the form properly'}`, [
@@ -555,10 +721,19 @@ const styles = StyleSheet.create({
     marginRight: 5,
     color: '#666',
   },
+
   header: {
     fontSize: 18,
     fontFamily: 'Lato-Regular',
     marginHorizontal: 15,
+  },
+  headerContainer: {
+    backgroundColor: '#3d3d3d',
+    justifyContent: 'center',
+    width: 'auto',
+    marginHorizontal: 15,
+    marginVertical: 10,
+    borderRadius: 10,
   },
   buttonsContainer: {
     justifyContent: 'center',
@@ -585,6 +760,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
+  editButton: {
+    marginVertical: 5,
+    backgroundColor: 'gold',
+    marginHorizontal: 20,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
   fileItem: {
     justifyContent: 'space-between',
     backgroundColor: '#E8EAED',
@@ -594,20 +777,18 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
   },
-  editButton: {
-    backgroundColor: 'gold',
-    borderRadius: 5,
-    marginHorizontal: 20,
-    marginVertical: 5,
-    padding: 15,
-    alignItems: 'center',
-  },
   questionContainer: {
     backgroundColor: '#ADD8E6',
     borderRadius: 15,
     marginHorizontal: 15,
     marginVertical: 5,
     paddingVertical: 10,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+    textAlign: 'center',
+    color: '#ccc',
   },
 });
 export default ActivitySubmission;

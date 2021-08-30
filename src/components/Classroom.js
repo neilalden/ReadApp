@@ -54,17 +54,17 @@ const Classroom = ({userInfo}) => {
   }, []);
 
   return (
-    <>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }>
       <ClassroomHeader
         subject={classList[classNumber].subject}
         isStudent={userInfo.isStudent}
       />
       {classList[classNumber].classworkList &&
       classList[classNumber].classworkList.length !== 0 ? (
-        <ScrollView
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }>
+        <ScrollView>
           {classList[classNumber].classworkList.map((item, index) => {
             const dt = new Date(item.deadline.toDate());
             const day = dt.getDate();
@@ -96,7 +96,7 @@ const Classroom = ({userInfo}) => {
       ) : (
         <Text style={styles.subtitle}>No classworks yet</Text>
       )}
-    </>
+    </ScrollView>
   );
 };
 

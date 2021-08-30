@@ -78,7 +78,7 @@ const Account = ({userInfo, setUserInfo}) => {
           <View style={styles.accountInfoContainer2}>
             <Text style={styles.classesText}>Classes</Text>
             <Text style={styles.accountText}>
-              {subjects ? subjects.toString().replace(',', ', ') : ''}
+              {subjects ? subjects.toString().replace(/,/gi, ', ') : ''}
             </Text>
           </View>
 

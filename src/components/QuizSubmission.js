@@ -11,19 +11,41 @@ import {
 } from 'react-native';
 import {ClassContext, fetchSubmision} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
+import {useHistory} from 'react-router';
 
-const QuizSubmission = ({userInfo}) => {
-  const {classNumber, classworkNumber, classList, setClassList} =
-    useContext(ClassContext);
+const QuizSubmission = ({userInfo, student}) => {
+  const {
+    classNumber,
+    classworkNumber,
+    submissionListNumber,
+    classList,
+    setClassList,
+  } = useContext(ClassContext);
+  const history = useHistory();
+  const [studentInfo, setStudentInfo] = useState({});
   const [userAnswers, setUserAnswers] = useState({});
+  const [submission, setSubmission] = useState({});
   const [reload, setReload] = useState(false);
 
   const classwork = classList[classNumber].classworkList[classworkNumber];
   const classId = classList[classNumber].classId;
-  const submission = classwork.submission;
   useEffect(() => {
+    if (!userInfo.isStudent) {
+      setStudentInfo(student);
+      setSubmission(
+        classList[classNumber].classworkList[classworkNumber].submissionList[
+          submissionListNumber
+        ],
+      );
+    } else {
+      setStudentInfo(userInfo);
+      setSubmission(
+        classList[classNumber].classworkList[classworkNumber].submission,
+      );
+    }
     if (
-      !classList[classNumber].classworkList[classworkNumber].submission ||
+      (userInfo.isStudent &&
+        !classList[classNumber].classworkList[classworkNumber].submission) ||
       reload
     ) {
       fetchSubmision(
@@ -36,12 +58,28 @@ const QuizSubmission = ({userInfo}) => {
       setReload(false);
     }
 
-    BackHandler.addEventListener('hardwareBackPress', () => true);
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      history.push('/Classroom');
+      return true;
+    });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [reload]);
   return (
     <View>
+      <View style={styles.headerContainer}>
+        <Text
+          style={[
+            styles.header,
+            {
+              color: '#ededed',
+              textAlign: 'center',
+              padding: 15,
+            },
+          ]}>
+          {student.name}
+        </Text>
+      </View>
       <View style={styles.questionContainer}>
         <View>
           <Text style={styles.header}>Instruction</Text>
@@ -51,7 +89,7 @@ const QuizSubmission = ({userInfo}) => {
           <Text style={styles.header}>Score</Text>
           <Text style={styles.item}>
             {submission && submission.score
-              ? `${submission.score}/${Object.keys(classwork.questions).length}`
+              ? `${submission.score}/${classwork.points}`
               : 'no grades yet'}
           </Text>
         </View>
@@ -62,7 +100,11 @@ const QuizSubmission = ({userInfo}) => {
       {/* > Student has NOT taken the quiz */}
 
       {(() => {
-        if (submission && Object.keys(submission).length !== 0) {
+        if (
+          submission &&
+          Object.keys(submission).length !== 0 &&
+          (submission.work || submission.files)
+        ) {
           // STUDENT HAS TAKEN THE QUIZ
           return (
             <ScrollView>
@@ -78,7 +120,10 @@ const QuizSubmission = ({userInfo}) => {
                       <Text style={styles.item}>{item['answer']}</Text>
                     </View>
                     <View>
-                      <Text style={styles.header}>Your answer</Text>
+                      <Text style={styles.header}>
+                        {userInfo.isStudent ? 'Your' : `Student's `}
+                        answer
+                      </Text>
                       <Text
                         style={[
                           styles.item,
@@ -95,6 +140,12 @@ const QuizSubmission = ({userInfo}) => {
             </ScrollView>
           );
         } else {
+          if (!userInfo.isStudent)
+            return (
+              <>
+                <Text style={styles.subtitle}>No submission</Text>
+              </>
+            );
           // STUDENT HAS NOT TAKEN THE QUIZ YET
           return (
             <>
@@ -192,6 +243,7 @@ const handleFinishQuiz = (
   classId,
   setReload,
 ) => {
+  if (!userInfo.isStudent) alert('You are not a student');
   // FIRST VERIFY IF EVERY QUESTION IS ANSWERED
   if (Object.keys(userAnswers).length !== classwork.questions.length) {
     alert('Please answer every question');
@@ -248,6 +300,20 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     marginVertical: 3,
     padding: 3,
+  },
+  headerContainer: {
+    backgroundColor: '#3d3d3d',
+    justifyContent: 'center',
+    width: 'auto',
+    marginHorizontal: 15,
+    marginVertical: 10,
+    borderRadius: 10,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontFamily: 'Lato-Regular',
+    textAlign: 'center',
+    color: '#ccc',
   },
   questionContainer: {
     backgroundColor: '#ADD8E6',

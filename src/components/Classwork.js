@@ -22,26 +22,23 @@ const Classwork = ({userInfo}) => {
   }, []);
 
   return (
-    <>
+    <ScrollView>
       <ClassroomHeader
         subject={classList[classNumber].subject}
         backTo={'/Classroom'}
         isStudent={userInfo.isStudent}
       />
-
-      <ScrollView>
-        {!userInfo.isStudent ? (
-          // if user is a teacher show component
-          <SubmissionList />
-        ) : classwork.isActivity ? (
-          // if user is a student and the classwork is an activity show component
-          <ActivitySubmission userInfo={userInfo} />
-        ) : (
-          // if user is a student and the classwork is a quiz show component
-          <QuizSubmission userInfo={userInfo} />
-        )}
-      </ScrollView>
-    </>
+      {!userInfo.isStudent ? (
+        // if user is a teacher show component
+        <SubmissionList userInfo={userInfo} />
+      ) : classwork.isActivity ? (
+        // if user is a student and the classwork is an activity show component
+        <ActivitySubmission userInfo={userInfo} />
+      ) : (
+        // if user is a student and the classwork is a quiz show component
+        <QuizSubmission userInfo={userInfo} />
+      )}
+    </ScrollView>
   );
 };
 
