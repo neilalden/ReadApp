@@ -7,6 +7,7 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  Image,
 } from 'react-native';
 import {AuthContext} from '../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
@@ -14,10 +15,9 @@ import Nav from './Nav';
 import {signOut} from '../context/AuthContext';
 import {useHistory} from 'react-router';
 import {ClassContext, fetchClassList} from '../context/ClassContext';
-import IconProfile from '../../assets/profile.svg';
 const Account = ({userInfo, setUserInfo}) => {
-  let history = useHistory();
   let {user} = useContext(AuthContext);
+  const history = useHistory();
   const {classList, setClassList} = useContext(ClassContext);
   const [subjects, setSubjects] = useState([]);
   useEffect(() => {
@@ -25,7 +25,7 @@ const Account = ({userInfo, setUserInfo}) => {
       setUserInfo({});
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
-      fetchUser(user.displayName, setUserInfo);
+      fetchUser(user.displayName, setUserInfo, history);
     } else if (classList.length === 0) {
       fetchClassList(userInfo, setClassList);
     } else if (classList.length !== 0) {
@@ -43,8 +43,7 @@ const Account = ({userInfo, setUserInfo}) => {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [userInfo, user, classList]);
-
-  if (classList.length === 0) {
+  if (Object.keys(userInfo).length === 0 && classList.length === 0) {
     return (
       <View style={styles.textCenterContainer}>
         <Text>Loading...</Text>
@@ -55,7 +54,16 @@ const Account = ({userInfo, setUserInfo}) => {
       <>
         <ScrollView style={styles.scrollView}>
           <View style={styles.iconContainer}>
-            <IconProfile style={styles.icon} height={150} width={150} />
+            {user ? (
+              <Image
+                style={styles.profileImage}
+                source={{
+                  uri: user.photoURL,
+                }}
+              />
+            ) : (
+              <></>
+            )}
           </View>
           <View style={styles.accountContainer}>
             <Text style={styles.accountType}>
@@ -78,7 +86,9 @@ const Account = ({userInfo, setUserInfo}) => {
           <View style={styles.accountInfoContainer2}>
             <Text style={styles.classesText}>Classes</Text>
             <Text style={styles.accountText}>
-              {subjects ? subjects.toString().replace(/,/gi, ', ') : ''}
+              {subjects && subjects.length !== 0
+                ? subjects.toString().replace(/,/gi, ', ')
+                : 'You are not in any classes'}
             </Text>
           </View>
 
@@ -115,19 +125,24 @@ const alert = (title = 'Error', msg) => {
   }
 };
 
-const fetchUser = (id, setUserInfo) => {
+const fetchUser = (id, setUserInfo, history) => {
   firestore()
     .collection('users')
     .doc(id)
     .get()
     .then(res => {
-      setUserInfo({
-        id: res.data().id,
-        isStudent: res.data().isStudent,
-        name: res.data().name,
-        phoneNumber: res.data().phoneNumber,
-        classes: res.data().classes,
-      });
+      if (!res.data()) {
+        // USER DOES NOT EXIST
+        history.push('/Register');
+      } else {
+        setUserInfo({
+          id: res.data().id,
+          isStudent: res.data().isStudent,
+          name: res.data().name,
+          phoneNumber: res.data().phoneNumber,
+          classes: res.data().classes,
+        });
+      }
     })
     .catch(e => alert('error', e));
 };
@@ -196,6 +211,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileImage: {
+    borderRadius: 50,
+    height: 100,
+    width: 100,
+    alignSelf: 'center',
   },
 });
 export default Account;

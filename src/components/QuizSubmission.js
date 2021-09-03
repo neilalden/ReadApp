@@ -13,7 +13,7 @@ import {ClassContext, fetchSubmision} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import {useHistory} from 'react-router';
 
-const QuizSubmission = ({userInfo, student}) => {
+const QuizSubmission = ({userInfo, student, setStudent}) => {
   const {
     classNumber,
     classworkNumber,
@@ -21,14 +21,18 @@ const QuizSubmission = ({userInfo, student}) => {
     classList,
     setClassList,
   } = useContext(ClassContext);
-  const history = useHistory();
   const [studentInfo, setStudentInfo] = useState({});
   const [userAnswers, setUserAnswers] = useState({});
   const [submission, setSubmission] = useState({});
   const [reload, setReload] = useState(false);
+  const history = useHistory();
 
-  const classwork = classList[classNumber].classworkList[classworkNumber];
   const classId = classList[classNumber].classId;
+  const classwork = classList[classNumber].classworkList[classworkNumber];
+  const pointsPerRight =
+    classList[classNumber].classworkList[classworkNumber].pointsPerRight;
+  const pointsPerWrong =
+    classList[classNumber].classworkList[classworkNumber].pointsPerWrong;
   useEffect(() => {
     if (!userInfo.isStudent) {
       setStudentInfo(student);
@@ -39,47 +43,54 @@ const QuizSubmission = ({userInfo, student}) => {
       );
     } else {
       setStudentInfo(userInfo);
-      setSubmission(
-        classList[classNumber].classworkList[classworkNumber].submission,
-      );
+      if (
+        !classList[classNumber].classworkList[classworkNumber].submission ||
+        reload
+      ) {
+        fetchSubmision(
+          classNumber,
+          classworkNumber,
+          classList,
+          setClassList,
+          userInfo,
+        );
+        setReload(false);
+      } else {
+        setSubmission(
+          classList[classNumber].classworkList[classworkNumber].submission,
+        );
+      }
     }
-    if (
-      (userInfo.isStudent &&
-        !classList[classNumber].classworkList[classworkNumber].submission) ||
-      reload
-    ) {
-      fetchSubmision(
-        classNumber,
-        classworkNumber,
-        classList,
-        setClassList,
-        userInfo,
-      );
-      setReload(false);
-    }
-
     BackHandler.addEventListener('hardwareBackPress', () => {
-      history.push('/Classroom');
+      if (!userInfo.isStudent) {
+        setStudent({});
+      } else {
+        history.push('/Classwork');
+      }
       return true;
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [reload]);
+  }, [reload, classList]);
   return (
     <View>
-      <View style={styles.headerContainer}>
-        <Text
-          style={[
-            styles.header,
-            {
-              color: '#ededed',
-              textAlign: 'center',
-              padding: 15,
-            },
-          ]}>
-          {student.name}
-        </Text>
-      </View>
+      {!studentInfo.isStudent ? (
+        <View style={styles.headerContainer}>
+          <Text
+            style={[
+              styles.header,
+              {
+                color: '#ededed',
+                textAlign: 'center',
+                padding: 15,
+              },
+            ]}>
+            {studentInfo.name}
+          </Text>
+        </View>
+      ) : (
+        <></>
+      )}
       <View style={styles.questionContainer}>
         <View>
           <Text style={styles.header}>Instruction</Text>
@@ -93,6 +104,16 @@ const QuizSubmission = ({userInfo, student}) => {
               : 'no grades yet'}
           </Text>
         </View>
+
+        {submission.submittedAt &&
+        classwork &&
+        submission.submittedAt.toDate() > classwork.deadline.toDate() ? (
+          <Text style={[styles.subtitle, {color: '#666'}]}>
+            Late submission
+          </Text>
+        ) : (
+          <></>
+        )}
       </View>
 
       {/* Student Quiz screen has two (2) states */}
@@ -100,38 +121,32 @@ const QuizSubmission = ({userInfo, student}) => {
       {/* > Student has NOT taken the quiz */}
 
       {(() => {
-        if (
-          submission &&
-          Object.keys(submission).length !== 0 &&
-          (submission.work || submission.files)
-        ) {
+        if (submission.work && Object.keys(submission.work).length !== 0) {
           // STUDENT HAS TAKEN THE QUIZ
           return (
             <ScrollView>
               {classwork.questions.map((item, index) => {
                 return (
                   <View key={index} style={styles.questionContainer}>
-                    <Text style={styles.header}>
-                      Question number {index + 1}
-                    </Text>
-                    <Text style={styles.item}>{item[index + 1]}</Text>
+                    <Text style={styles.header}>Question</Text>
+                    <Text style={styles.item}>{item.question}</Text>
                     <View>
                       <Text style={styles.header}>Correct answer</Text>
                       <Text style={styles.item}>{item['answer']}</Text>
                     </View>
                     <View>
                       <Text style={styles.header}>
-                        {userInfo.isStudent ? 'Your' : `Student's `}
+                        {userInfo.isStudent ? `Your ` : `Student's `}
                         answer
                       </Text>
                       <Text
                         style={[
                           styles.item,
-                          item['answer'] == submission.work[index]
+                          item['answer'] == submission.work[item.question]
                             ? {backgroundColor: 'forestgreen'}
                             : {backgroundColor: 'crimson'},
                         ]}>
-                        {submission.work[index]}
+                        {submission.work[item.question]}
                       </Text>
                     </View>
                   </View>
@@ -140,12 +155,6 @@ const QuizSubmission = ({userInfo, student}) => {
             </ScrollView>
           );
         } else {
-          if (!userInfo.isStudent)
-            return (
-              <>
-                <Text style={styles.subtitle}>No submission</Text>
-              </>
-            );
           // STUDENT HAS NOT TAKEN THE QUIZ YET
           return (
             <>
@@ -157,20 +166,19 @@ const QuizSubmission = ({userInfo, student}) => {
                   if (options) options.sort();
                   return (
                     <View key={index} style={styles.questionContainer}>
-                      <Text style={styles.header}>
-                        Question number {index + 1}
-                      </Text>
-                      <Text style={styles.item}>{item[index + 1]}</Text>
+                      <Text style={styles.header}>Question</Text>
+                      <Text style={styles.item}>{item.question}</Text>
                       {options ? (
                         <View style={styles.optionsContainer}>
                           {options.map((itm, idx) => {
                             return (
                               <TouchableOpacity
                                 key={idx}
+                                disabled={!userInfo.isStudent}
                                 style={[
                                   styles.item,
-                                  userAnswers[index] &&
-                                  userAnswers[index] == itm
+                                  userAnswers[item.question] &&
+                                  userAnswers[item.question] == itm
                                     ? {
                                         borderColor: '#3ca1c3',
                                         borderWidth: 3,
@@ -183,7 +191,7 @@ const QuizSubmission = ({userInfo, student}) => {
                                     userAnswers,
                                     setUserAnswers,
                                     itm,
-                                    index,
+                                    item.question,
                                   )
                                 }>
                                 <Text>{itm}</Text>
@@ -194,14 +202,15 @@ const QuizSubmission = ({userInfo, student}) => {
                       ) : (
                         <TextInput
                           placeholder="Write your answers here.."
+                          editable={userInfo.isStudent}
                           style={styles.item}
-                          value={userAnswers[index]}
+                          value={userAnswers[item.question]}
                           onChangeText={text => {
                             handleAnswer(
                               userAnswers,
                               setUserAnswers,
                               text,
-                              index,
+                              item.question,
                             );
                           }}
                         />
@@ -212,6 +221,7 @@ const QuizSubmission = ({userInfo, student}) => {
               </ScrollView>
               <TouchableOpacity
                 style={styles.submitButton}
+                disabled={!userInfo.isStudent}
                 onPress={() =>
                   handleFinishQuiz(
                     userInfo,
@@ -219,6 +229,8 @@ const QuizSubmission = ({userInfo, student}) => {
                     classwork,
                     classId,
                     setReload,
+                    pointsPerRight,
+                    pointsPerWrong,
                   )
                 }>
                 <Text>Finish</Text>
@@ -242,6 +254,8 @@ const handleFinishQuiz = (
   classwork,
   classId,
   setReload,
+  pointsPerRight,
+  pointsPerWrong,
 ) => {
   if (!userInfo.isStudent) alert('You are not a student');
   // FIRST VERIFY IF EVERY QUESTION IS ANSWERED
@@ -250,8 +264,7 @@ const handleFinishQuiz = (
   } else {
     for (const [key, value] of Object.entries(userAnswers)) {
       if (value == '') {
-        const qn = parseInt(key) + 1;
-        alert(`You have'nt answered question number ${qn}`);
+        alert(`Please answer every question`);
         return;
       }
     }
@@ -259,8 +272,18 @@ const handleFinishQuiz = (
     // SCORING USER
     let score = 0;
     for (const i in classwork.questions) {
-      score =
-        classwork.questions[i]['answer'] === userAnswers[i] ? score + 1 : score;
+      if (
+        classwork.questions[i].answer ==
+        userAnswers[classwork.questions[i].question]
+      ) {
+        score += pointsPerRight;
+      } else {
+        score += pointsPerWrong;
+        console.log('right answer', classwork.questions[i].answer);
+        console.log('user answer object', userAnswers);
+        console.log('question', classwork.questions[i].question);
+        console.log(userAnswers[classwork.questions[i].question]);
+      }
     }
     // SAVE TO DB USER SUBMISSION
     firestore()

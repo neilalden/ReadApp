@@ -8,45 +8,36 @@ import {
   Alert,
   ScrollView,
   BackHandler,
+  KeyboardAvoidingView,
 } from 'react-native';
-import {Link} from 'react-router-native';
 import {useHistory} from 'react-router';
-import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
+import {AuthContext} from '../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
 import Nav from './Nav';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import IconLib from '../../assets/register.svg';
+import auth from '@react-native-firebase/auth';
 
 const Register = () => {
-  const [code, setCode] = useState('');
-  const [confirm, setConfirm] = useState(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [id, setId] = useState('');
   const [name, setName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isStudent, setIsStudent] = useState(true);
-  const [state, setState] = useState(false);
-  const {user} = useContext(AuthContext);
+  const {user, setReload} = useContext(AuthContext);
   let history = useHistory();
   useEffect(() => {
-    if (user !== null) {
-      user
-        .updateProfile({
-          displayName: id,
-        })
-        .then(() => {
-          history.push('/ClassList');
-        })
-        .catch(e => alert(e));
-    }
-
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [user, confirm, state]);
+  }, []);
 
-  if (!confirm) {
-    return (
-      <>
-        <ScrollView>
+  return (
+    <>
+      <ScrollView>
+        <View style={styles.iconLogin}>
+          <IconLib height={250} width={400} />
+          <Text style={styles.iconText}>Make your profile</Text>
+        </View>
+        <KeyboardAvoidingView>
           <Text style={styles.span}>ID</Text>
           <TextInput
             selectionColor="black"
@@ -65,143 +56,144 @@ const Register = () => {
             onChangeText={text => setName(text)}
           />
           <Text style={styles.span}>Phone number</Text>
-          <TextInput
-            selectionColor="black"
-            style={styles.numberInput}
-            value={phoneNumber}
-            placeholder="+6399876543210"
-            keyboardType="numeric"
-            onChangeText={text => setPhoneNumber(text)}
-          />
-
-          <View style={styles.toggle}>
+          <View style={[styles.numberInput, {flexDirection: 'row'}]}>
             <Text
               style={{
-                color: '#666',
-                fontFamily: 'Lato-Regular',
-                fontSize: 15,
-                marginTop: 10,
-                marginHorizontal: 20,
+                margin: 0,
+                padding: 0,
+                textAlignVertical: 'center',
               }}>
-              I'm a :
+              (+63)
             </Text>
-            <Button
-              title="Student"
-              color={isStudent ? '#ADD8E6' : '#ccc'}
-              onPress={() => setIsStudent(true)}
-            />
-            <Button
-              title="Teacher"
-              color={!isStudent ? '#ADD8E6' : '#ccc'}
-              onPress={() => setIsStudent(false)}
-            />
-          </View>
-
-          <View style={styles.button}>
-            <Button
-              color="#ADD8E6"
-              title="Sign up"
-              onPress={() => {
-                signInWithPhoneNumber(
-                  phoneNumber,
-                  setConfirm,
-                  createTwoButtonAlert,
-                );
+            <TextInput
+              selectionColor="black"
+              style={{
+                margin: 0,
+                padding: 0,
+                width: '90%',
               }}
+              value={phoneNumber}
+              placeholder="9876543210"
+              keyboardType="numeric"
+              onChangeText={text => setPhoneNumber(text)}
             />
           </View>
-          <Link to="/Login" underlayColor="#f0f4f7">
-            <Text style={styles.link}>
-              already have an account? Log in here
-            </Text>
-          </Link>
-        </ScrollView>
-        <Nav />
-      </>
-    );
-  }
-  return (
-    <>
-      <ScrollView>
-        <View
-          style={{
-            alignItems: 'center',
-          }}>
+        </KeyboardAvoidingView>
+
+        <View style={styles.toggle}>
           <Text
-            style={[
-              styles.header,
-              {fontSize: 26, fontWeight: 'bold', top: 100},
-            ]}>
-            OTP Code
-          </Text>
-          <OTPInputView
             style={{
-              width: '80%',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 400,
-            }}
-            pinCount={6}
-            autoFocusOnLoad
-            codeInputFieldStyle={styles.underlineStyleBase}
-            codeInputHighlightStyle={styles.underlineStyleHighLighted}
-            onCodeFilled={code => {
-              confirm
-                .confirm(code)
-                .then(res => {
-                  firestore()
-                    .collection('users')
-                    .doc(id)
-                    .set({
-                      id: id,
-                      name: name,
-                      isStudent: isStudent,
-                      phoneNumber: phoneNumber,
-                      classes: [],
-                    })
-                    .then(() => {
-                      setState(true);
-                    })
-                    .catch(e => {
-                      alert(e);
-                    });
-                })
-                .catch(e => {
-                  alert(e);
-                });
+              color: '#666',
+              fontFamily: 'Lato-Regular',
+              fontSize: 15,
+              marginTop: 10,
+              marginHorizontal: 20,
+            }}>
+            I'm a :
+          </Text>
+          <Button
+            title="Student"
+            color={isStudent ? '#ADD8E6' : '#ccc'}
+            onPress={() => setIsStudent(true)}
+          />
+          <Button
+            title="Teacher"
+            color={!isStudent ? '#ADD8E6' : '#ccc'}
+            onPress={() => setIsStudent(false)}
+          />
+        </View>
+
+        <View style={styles.button}>
+          <Button
+            color="#ADD8E6"
+            title="Sign up"
+            onPress={() => {
+              if (id === '' || name === '' || phoneNumber === '') {
+                alert('All fields are required');
+                return;
+              }
+              if (phoneNumber.length !== 10) {
+                alert(
+                  'Phone number must have 11 digits\nNote* (+63) stands for 0',
+                );
+                return;
+              }
+              createAccount(
+                id,
+                name,
+                isStudent,
+                phoneNumber,
+                user,
+                history,
+                setReload,
+              );
             }}
           />
         </View>
-        {/* <TextInput
-          keyboardType="numeric"
-          value={code}
-          style={styles.numberInput}
-          onChangeText={text => setCode(text)}
-        />
-        <View style={styles.button}>
-          <Button title="Confirm Code" onPress={() => confirmCode()} />
-        </View> */}
       </ScrollView>
       <Nav />
     </>
   );
 };
 
-const createTwoButtonAlert = e =>
+const createAccount = (
+  id,
+  name,
+  isStudent,
+  phoneNumber,
+  user,
+  history,
+  setReload,
+) => {
+  // user.updateProfile({photoURL:"http://"})
+  firestore()
+    .collection('users')
+    .doc(id)
+    .set({
+      id: id,
+      name: name,
+      isStudent: isStudent,
+      phoneNumber: `+63${phoneNumber}`,
+      classes: [],
+      photoUrl: user.photoURL,
+    })
+    .then(() => {
+      user
+        .updateProfile({
+          displayName: id,
+        })
+        .then(() => {
+          setReload(prev => !prev);
+          history.push('/');
+        })
+        .catch(e => {
+          alert(`Error in making profile ${e}`);
+        });
+    })
+    .catch(e => {
+      alert(e);
+    });
+};
+
+const alert = e =>
   Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => true},
   ]);
 const styles = StyleSheet.create({
+  iconLogin: {
+    alignSelf: 'center',
+    padding: 15,
+  },
+  iconText: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 30,
+    textAlign: 'center',
+  },
   numberInput: {
     marginHorizontal: 20,
     borderBottomWidth: 3,
     borderBottomColor: '#D6D6D6',
     padding: 0,
-  },
-  header2: {
-    fontSize: 18,
-    marginTop: 10,
-    marginLeft: 20,
   },
   span: {
     color: '#666',
@@ -210,13 +202,6 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     fontFamily: 'Lato-Regular',
   },
-  link: {
-    color: 'dodgerblue',
-    padding: 0,
-    margin: 10,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
-  },
   button: {
     marginHorizontal: 20,
     marginVertical: 10,
@@ -224,27 +209,6 @@ const styles = StyleSheet.create({
   toggle: {
     marginVertical: 10,
     flexDirection: 'row',
-  },
-  borderStyleBase: {
-    width: 30,
-    height: 45,
-  },
-
-  borderStyleHighLighted: {
-    borderColor: '#03DAC6',
-  },
-
-  underlineStyleBase: {
-    width: 30,
-    height: 45,
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    color: 'black',
-    fontWeight: 'bold',
-  },
-
-  underlineStyleHighLighted: {
-    borderColor: '#03DAC6',
   },
 });
 

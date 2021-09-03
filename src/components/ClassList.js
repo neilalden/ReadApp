@@ -8,8 +8,8 @@ import React, {
 import {
   Alert,
   BackHandler,
+  Image,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -27,6 +27,7 @@ import IconAddClass from '../../assets/addClass.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import IconProfile from '../../assets/profile.svg';
 import IconClassPic from '../../assets/classpic.svg';
+import IconLib from '../../assets/undraw_teaching_f1cm.svg';
 // STUDENT ACCOUNT TYPE SEES: TEACHER NAME IN THE SUBJECT
 // TEACHER ACCOUNT TYPE SEES: SECTION NAME IN THE SUBJECT
 //                          : BUTTON TO SHOW ADD CLASS COMPONENT
@@ -43,7 +44,6 @@ export default function ClassList({userInfo, setUserInfo}) {
   const [section, setSection] = useState('');
 
   // TO REFETCH CLASSES AFTER ADDING A NEW ONE
-
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -51,6 +51,7 @@ export default function ClassList({userInfo, setUserInfo}) {
     fetchClassList(userInfo, setClassList);
     wait(1000).then(() => setRefreshing(false));
   }, []);
+
   useEffect(() => {
     if (!user) {
       // no user;
@@ -59,7 +60,9 @@ export default function ClassList({userInfo, setUserInfo}) {
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
       // user logged in but no information on them
-      fetchUser(user.displayName, setUserInfo);
+
+      console.log(user, '54');
+      fetchUser(user.displayName, setUserInfo, history);
     } else if (userInfo && user && classList.length === 0) {
       // user logged in and has the information on them but classes is not loaded yet
       fetchClassList(userInfo, setClassList);
@@ -71,8 +74,8 @@ export default function ClassList({userInfo, setUserInfo}) {
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [userInfo, user]);
-  if (classList.length === 0) {
+  }, []);
+  if (Object.keys(userInfo).length === 0 && classList.length === 0) {
     return (
       <View style={styles.textCenterContainer}>
         <Text>Loading...</Text>
@@ -86,55 +89,54 @@ export default function ClassList({userInfo, setUserInfo}) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }>
           <View style={styles.classHeader}>
-            <View style={styles.profileContainer}>
-              <Link to="/Account" underlayColor="#ADD8E6">
-                <IconProfile height={50} width={60} />
-              </Link>
-            </View>
-
-            <Text style={styles.classHeaderText}>Welcome,</Text>
-            <Text style={styles.classHeaderText}>{userInfo.name}</Text>
-            <View style={styles.userID}>
-              <Text style={styles.userText}>{userInfo.id}</Text>
-              <Text style={styles.userText}>
-                {userInfo.isStudent ? 'Student' : 'Teacher'}
-              </Text>
+            <View style={{marginTop: 0}}>
+              <View style={styles.iconLogin}>
+                <IconLib height={200} width={400} />
+              </View>
             </View>
           </View>
-
           <View style={{backgroundColor: '#ADD8E6'}}>
             <View style={styles.backgroundView}>
               <Text
                 style={[styles.header, {marginVertical: 15, marginLeft: 20}]}>
                 Classes
               </Text>
-              {!userInfo.isStudent ? (
-                <TouchableOpacity
-                  style={{marginVertical: 10, marginRight: 20}}
-                  onPress={() => {
-                    refRBSheet.current.open();
-                  }}>
-                  <IconAddClass height={30} width={30} color={Colors.black} />
-                </TouchableOpacity>
-              ) : (
-                <></>
-              )}
+              <Text
+                style={[styles.header, {marginVertical: 15, marginRight: 20}]}>
+                {!userInfo.isStudent ? (
+                  <TouchableOpacity
+                    style={{marginVertical: 10, marginRight: 20}}
+                    onPress={() => {
+                      refRBSheet.current.open();
+                    }}>
+                    <IconAddClass height={30} width={30} color={Colors.black} />
+                  </TouchableOpacity>
+                ) : (
+                  <></>
+                )}
+              </Text>
             </View>
           </View>
-          <ScrollView style={{backgroundColor: '#fff'}}>
-            {userInfo && userInfo.isStudent ? (
-              <StudentClasses
-                classList={classList}
-                setClassNumber={setClassNumber}
-              />
-            ) : (
-              <TeacherClasses
-                classList={classList}
-                setClassNumber={setClassNumber}
-                setClassNumber={setClassNumber}
-              />
-            )}
-          </ScrollView>
+          {userInfo.classes && userInfo.classes.length !== 0 ? (
+            <ScrollView>
+              {userInfo && userInfo.isStudent ? (
+                <StudentClasses
+                  classList={classList}
+                  setClassNumber={setClassNumber}
+                />
+              ) : (
+                <TeacherClasses
+                  classList={classList}
+                  setClassNumber={setClassNumber}
+                  setClassNumber={setClassNumber}
+                />
+              )}
+            </ScrollView>
+          ) : (
+            <Text style={[styles.itemSubtitle, {textAlign: 'center'}]}>
+              You are not in any classes
+            </Text>
+          )}
 
           <RBSheet
             ref={refRBSheet}
@@ -202,7 +204,13 @@ const StudentClasses = ({classList, setClassNumber}) => {
                     </Text>
                   </View>
                 </View>
-                <IconClassPic style={styles.itemPic} height={50} width={60} />
+
+                <Image
+                  style={styles.itemPic}
+                  source={{
+                    uri: item.teachers[0].photoUrl,
+                  }}
+                />
               </>
             </Link>
           );
@@ -229,7 +237,12 @@ const TeacherClasses = ({classList, setClassNumber}) => {
                   <Text style={styles.header}>{item.subject}</Text>
                   <Text style={styles.itemSubtitle}>{item.section}</Text>
                 </View>
-                <IconClassPic style={styles.itemPic} height={50} width={60} />
+                <Image
+                  style={styles.itemPic}
+                  source={{
+                    uri: item.teachers[0].photoUrl,
+                  }}
+                />
               </>
             </Link>
           );
@@ -254,8 +267,13 @@ const AddClass = ({
 }) => {
   // CREATE CLASS COMPONENT (IT'S BETTER TO LEAVE THIS MF BE FOR NOW)
   const createClass = () => {
+    if (userInfo.isStudent) {
+      alert('Stop!', 'Teachers are only allowed to create classes');
+      return;
+    }
     const id = firestore().collection('classes').doc().id;
     let classes = userInfo.classes;
+
     classes.push(id);
     firestore()
       .collection('classes')
@@ -264,7 +282,9 @@ const AddClass = ({
         classId: id,
         subject: subject,
         section: section,
-        teachers: [{id: userInfo.id, name: userInfo.name}],
+        teachers: [
+          {id: userInfo.id, name: userInfo.name, photoUrl: user.photoURL},
+        ],
         students: [],
       })
       .then(() => {
@@ -351,19 +371,27 @@ const alert = (title = 'Error', msg) => {
 
 // USEFUL FUNCTIONS
 
-const fetchUser = (id, setUserInfo) => {
+const fetchUser = (id, setUserInfo, history) => {
   firestore()
     .collection('users')
     .doc(id)
     .get()
     .then(res => {
-      setUserInfo({
-        classes: res.data().classes,
-        id: res.data().id,
-        isStudent: res.data().isStudent,
-        phoneNumber: res.data().phoneNumber,
-        name: res.data().name,
-      });
+      console.log(res.data() == undefined);
+      console.log(res.data());
+      console.log(id);
+      if (!res.data()) {
+        // USER DOES NOT EXIST
+        history.push('/Register');
+      } else {
+        setUserInfo({
+          classes: res.data().classes,
+          id: res.data().id,
+          isStudent: res.data().isStudent,
+          phoneNumber: res.data().phoneNumber,
+          name: res.data().name,
+        });
+      }
     })
     .catch(e => alert('Error', e));
 };
@@ -424,6 +452,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ADD8E6',
     fontFamily: 'Lato-Regular',
     padding: 15,
+  },
+  iconLogin: {
+    alignSelf: 'center',
   },
   classHeaderText: {
     fontSize: 25,

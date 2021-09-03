@@ -52,10 +52,15 @@ const SubmissionList = ({userInfo}) => {
           <ActivitySubmission
             userInfo={userInfo}
             student={student}
+            setStudent={setStudent}
             setRefresh={setRefresh}
           />
         ) : (
-          <QuizSubmission userInfo={userInfo} student={student} />
+          <QuizSubmission
+            userInfo={userInfo}
+            student={student}
+            setStudent={setStudent}
+          />
         )
       ) : (
         <ScrollView>

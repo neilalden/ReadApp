@@ -48,7 +48,6 @@ export const fetchClassList = (userInfo, setClassList) => {
           ...prev,
           {
             classId: res.data().classId,
-            classCode: res.data().classCode,
             subject: res.data().subject,
             section: res.data().section,
             students: res.data().students,
@@ -56,7 +55,7 @@ export const fetchClassList = (userInfo, setClassList) => {
           },
         ]);
       })
-      .catch(e => alert('You may have disconnected', e));
+      .catch(e => alert(e, 'You may have disconnected'));
   }
 };
 
@@ -70,14 +69,21 @@ export const fetchClassworkList = (classNumber, classList, setClassList) => {
     .get()
     .then(documentSnapshot => {
       documentSnapshot.forEach(res => {
+        let questions = undefined;
+        if (res.data().questions) {
+          questions = shuffle(res.data().questions);
+        }
         classworkList.push({
           id: res.id,
           title: res.data().title,
-          instruction: res.data().instruction,
           deadline: res.data().deadline,
-          isActivity: res.data().isActivity,
-          questions: res.data().questions,
+          instruction: res.data().instruction,
           points: res.data().points,
+          isActivity: res.data().isActivity,
+          files: res.data().files,
+          questions: questions,
+          pointsPerRight: res.data().pointsPerRight,
+          pointsPerWrong: res.data().pointsPerWrong,
         });
       });
 
@@ -88,10 +94,27 @@ export const fetchClassworkList = (classNumber, classList, setClassList) => {
       }
       setClassList(classListCopy);
     })
-    .catch(e => alert('You may have disconnected', e));
+    .catch(e => alert(e, 'You may have disconnected'));
 };
+function shuffle(array) {
+  var currentIndex = array.length,
+    randomIndex;
 
-// IF ACCOUNT TYPE IS TEACHER, FETCH ALL SUBMISSIONS
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ];
+  }
+
+  return array;
+}
 export const fetchSubmissionList = (
   classNumber,
   classworkNumber,
@@ -135,7 +158,7 @@ export const fetchSubmissionList = (
           setClassList(classListCopy);
         }
       })
-      .catch(e => alert('You may have disconnected', e));
+      .catch(e => alert(e, 'You may have disconnected'));
   }
 };
 
@@ -172,10 +195,19 @@ export const fetchSubmision = (
         submission;
       setClassList(classListCopy);
     })
-    .catch(e => alert('You may have disconnected', e));
+    .catch(e => alert(e, 'You may have disconnected'));
 };
 
-const alert = (title = 'Error', msg) => {
+export const createClasswork = (data, classList, classNumber) => {
+  const classId = classList[classNumber].classId;
+  firestore()
+    .collection(`classes/${classId}/classworks`)
+    .add(data)
+    .then(() => {})
+    .catch(e => alert(e, 'You may have disconnected'));
+};
+
+const alert = (msg, title = 'Error') => {
   Alert.alert(
     `${title ? title : 'Errpr'}`,
     `${msg ? msg : 'Fill up the form properly'}`,

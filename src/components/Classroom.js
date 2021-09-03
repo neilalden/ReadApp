@@ -6,6 +6,7 @@ import {
   ScrollView,
   BackHandler,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import ClassroomHeader from './ClassroomHeader';
 import {Link, useHistory} from 'react-router-native';
@@ -14,6 +15,8 @@ import {
   fetchClassworkList,
   fetchSubmissionList,
 } from '../context/ClassContext';
+import IconAddClass from '../../assets/addClass.svg';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 // CLASSROOM IS THE SAME FOR BOTH STUDENT AND TEACHER ACCOUNT TYPE
 
@@ -62,6 +65,17 @@ const Classroom = ({userInfo}) => {
         subject={classList[classNumber].subject}
         isStudent={userInfo.isStudent}
       />
+      {!userInfo.isStudent ? (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            history.push('/CreateClasswork');
+          }}>
+          <IconAddClass height={30} width={30} color={Colors.black} />
+        </TouchableOpacity>
+      ) : (
+        <></>
+      )}
       {classList[classNumber].classworkList &&
       classList[classNumber].classworkList.length !== 0 ? (
         <ScrollView>
@@ -140,12 +154,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato-Regular',
     paddingTop: 3,
     paddingBottom: 3,
+    textAlignVertical: 'center',
   },
   subtitle: {
     fontSize: 15,
     fontFamily: 'Lato-Regular',
     textAlign: 'center',
     color: '#ccc',
+  },
+  addButton: {
+    margin: 5,
+    alignSelf: 'flex-end',
   },
 });
 export default Classroom;

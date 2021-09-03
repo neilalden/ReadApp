@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -34,12 +34,23 @@ const Grades = () => {
     setClassListGrades,
   } = useContext(ClassContext);
   const history = useHistory();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    wait(500).then(() => setRefreshing(false));
+  }, []);
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
+
   useEffect(() => {
     const classworkList = classList[classNumber].classworkList;
     const students = classList[classNumber].students;
     const classId = classList[classNumber].classId;
     const renderData = () => {
       const grades = classListGrades[classId];
+
       setData(grades);
       // setting the table header
       let copyTableHeader = {...tableHeader};
@@ -138,7 +149,7 @@ const Grades = () => {
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [classList, isLoaded]);
+  }, [classList, isLoaded, refreshing]);
 
   if (
     !classList[classNumber].students ||
@@ -161,9 +172,7 @@ const Grades = () => {
           subject={classList[classNumber].subject}
           isStudent={false}
         />
-        <Text style={styles.subtitle}>
-          This should only take time once, please wait
-        </Text>
+        <Text style={styles.subtitle}>Loading, please wait</Text>
       </>
     );
   }
@@ -174,7 +183,11 @@ const Grades = () => {
         isStudent={false}
       />
       <View style={styles.container}>
-        <ScrollView horizontal={true}>
+        <ScrollView
+          horizontal={true}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
           <View>
             <Table borderStyle={{borderWidth: 1}}>
               <Row

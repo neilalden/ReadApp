@@ -36,22 +36,26 @@ const People = ({userInfo}) => {
     <ScrollView>
       <ClassroomHeader
         subject={classList[classNumber].subject}
-        isStudent={false}
+        isStudent={userInfo.isStudent}
       />
       <View style={styles.itemSubtitleContainer}>
         <Text style={styles.header}>Teachers</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setIsStudent(false);
-            refRBSheet.current.open();
-          }}>
-          <IconAddClass height={30} width={30} color={Colors.black} />
-        </TouchableOpacity>
+        {!userInfo.isStudent ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setIsStudent(false);
+              refRBSheet.current.open();
+            }}>
+            <IconAddClass height={30} width={30} color={Colors.black} />
+          </TouchableOpacity>
+        ) : (
+          <></>
+        )}
       </View>
       {classList[classNumber].teachers &&
         classList[classNumber].teachers.map((item, index) => {
-          if (item.id === userInfo.id) {
+          if (item.id === userInfo.id || userInfo.isStudent) {
             return (
               <View style={styles.item} key={index}>
                 <View style={styles.deleteButton}>
@@ -74,6 +78,7 @@ const People = ({userInfo}) => {
                     classNumber,
                     classList,
                     setClassList,
+                    userInfo,
                   )
                 }>
                 <View style={styles.deleteButton}>
@@ -89,39 +94,55 @@ const People = ({userInfo}) => {
         })}
       <View style={styles.itemSubtitleContainer}>
         <Text style={styles.header}>Students</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setIsStudent(true);
-            refRBSheet.current.open();
-          }}>
-          <IconAddClass height={30} width={30} color={Colors.black} />
-        </TouchableOpacity>
+        {!userInfo.isStudent ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setIsStudent(true);
+              refRBSheet.current.open();
+            }}>
+            <IconAddClass height={30} width={30} color={Colors.black} />
+          </TouchableOpacity>
+        ) : (
+          <></>
+        )}
       </View>
       {classList[classNumber].students &&
         classList[classNumber].students.map((item, index) => {
-          return (
-            <TouchableOpacity
-              style={styles.item}
-              key={index}
-              onPress={() =>
-                deletePersonFromClass(
-                  true,
-                  item,
-                  classNumber,
-                  classList,
-                  setClassList,
-                )
-              }>
-              <View style={styles.deleteButton}>
+          if (!userInfo.isStudent) {
+            return (
+              <TouchableOpacity
+                style={styles.item}
+                key={index}
+                onPress={() =>
+                  deletePersonFromClass(
+                    true,
+                    item,
+                    classNumber,
+                    classList,
+                    setClassList,
+                    userInfo,
+                  )
+                }>
+                <View style={styles.deleteButton}>
+                  <View>
+                    <Text>{item.name}</Text>
+                    <Text style={styles.subtitle}>{item.id}</Text>
+                  </View>
+                  <IconRemove height={30} width={30} color={'red'} />
+                </View>
+              </TouchableOpacity>
+            );
+          } else {
+            return (
+              <View style={styles.item} key={index}>
                 <View>
                   <Text>{item.name}</Text>
                   <Text style={styles.subtitle}>{item.id}</Text>
                 </View>
-                <IconRemove height={30} width={30} color={'red'} />
               </View>
-            </TouchableOpacity>
-          );
+            );
+          }
         })}
 
       <RBSheet
@@ -153,6 +174,7 @@ const People = ({userInfo}) => {
           classList={classList}
           setClassList={setClassList}
           refRBSheet={refRBSheet}
+          userInfo={userInfo}
         />
       </RBSheet>
     </ScrollView>
@@ -167,10 +189,11 @@ const AddPeople = ({
   classList,
   setClassList,
   refRBSheet,
+  userInfo,
 }) => {
   return (
     <View style={styles.addPeopleContainer}>
-      <Text style={styles.header}>Add {isStudent ? 'Student' : 'Teacher'}</Text>
+      <Text style={styles.header}>Add {isStudent ? 'student' : 'seacher'}</Text>
       <TextInput
         placeholder="ID"
         keyboardType="numeric"
@@ -181,6 +204,16 @@ const AddPeople = ({
       <TouchableOpacity
         style={styles.addPeopleButton}
         onPress={() => {
+          if (accountId === '') {
+            alert(
+              'Error',
+              `Please write the ID of the ${
+                isStudent ? 'student' : 'teacher'
+              } you want to add`,
+            );
+            return;
+          }
+
           addPersonToClass(
             isStudent,
             accountId,
@@ -189,6 +222,7 @@ const AddPeople = ({
             classList,
             setClassList,
             refRBSheet,
+            userInfo,
           );
         }}>
         <Text>Add</Text>
@@ -211,7 +245,12 @@ const deletePersonFromClass = (
   classNumber,
   classList,
   setClassList,
+  userInfo,
 ) => {
+  if (userInfo.isStudent) {
+    alert('Stop!', 'Teachers are only allowed to remove people from classes');
+    return;
+  }
   Alert.alert(
     'Are you sure?',
     `Remove ${account.name} from ${classList[classNumber].subject}`,
@@ -296,7 +335,12 @@ const addPersonToClass = (
   classList,
   setClassList,
   refRBSheet,
+  userInfo,
 ) => {
+  if (userInfo.isStudent) {
+    alert('Stop!', 'Teachers are only allowed to add people to classes');
+    return;
+  }
   const classId = classList[classNumber].classId;
   const students = [...classList[classNumber].students];
   const teachers = [...classList[classNumber].teachers];
@@ -343,21 +387,19 @@ const addPersonToClass = (
             {
               text: 'Yes',
               onPress: () => {
+                const photoUrl = res.data().photoUrl;
                 const userClasses = res.data().classes
                   ? res.data().classes
                   : [];
+                const userData = photoUrl
+                  ? {id: accountId, name: res.data().name, photoUrl: photoUrl}
+                  : {id: accountId, name: res.data().name};
                 const data = isStudent
                   ? {
-                      students: [
-                        ...students,
-                        {id: accountId, name: res.data().name},
-                      ],
+                      students: [...students, userData],
                     }
                   : {
-                      teachers: [
-                        ...teachers,
-                        {id: accountId, name: res.data().name},
-                      ],
+                      teachers: [...teachers, userData],
                     };
                 firestore()
                   .collection(`classes`)

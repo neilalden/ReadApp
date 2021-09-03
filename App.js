@@ -20,7 +20,7 @@ import People from './src/components/People';
 import {Alert, BackHandler} from 'react-native';
 import Materials from './src/components/Materials';
 import Grades from './src/components/Grades';
-
+import CreateClasswork from './src/components/CreateClasswork';
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
 
@@ -33,12 +33,27 @@ const App = () => {
       subject: 'Algorithms and complexity',
       materials: ['Spanning tree.pptx'],
     },
+    {
+      subject: 'Computational science',
+      materials: ['CSEL 303 - Week 2.pptx'],
+    },
+    {
+      subject: 'Natural language processing',
+      materials: ['ISI 03 - Week 2.pptx'],
+    },
+    {
+      subject: 'Culinary arts',
+      materials: ['fried chicken habang medyo maulan.mp4'],
+    },
+    {
+      subject: 'Software engineering',
+      materials: ['435_Chapter1.pptx'],
+    },
   ]);
-  const [subjectNumber, setSubjectNumber] = useState(0);
+  const [subjectName, setSubjectName] = useState('');
   useEffect(() => {
     // TO STOP THE BACK BUTTON FROM CLOSING APP
     BackHandler.addEventListener('hardwareBackPress', () => {
-      alert('Exit', 'Do you want to leave?');
       return true;
     });
     return () =>
@@ -53,8 +68,8 @@ const App = () => {
           component={() => (
             <Library
               subjects={subjects}
-              subjectNumber={subjectNumber}
-              setSubjectNumber={setSubjectNumber}
+              subjects={subjects}
+              setSubjectName={setSubjectName}
             />
           )}
         />
@@ -63,13 +78,13 @@ const App = () => {
           component={() => (
             <Materials
               subjects={subjects}
-              subjectNumber={subjectNumber}
-              setSubjectNumber={setSubjectNumber}
+              subjects={subjects}
+              subjectName={subjectName}
             />
           )}
         />
-        <Route path="/Login" component={Login} />
         <Route path="/Register" component={Register} />
+        <Route path="/Login" component={() => <Login userInfo={userInfo} />} />
         <ClassContextProvider>
           <Route
             path="/Account"
@@ -87,7 +102,10 @@ const App = () => {
             path="/Classroom"
             component={() => <Classroom userInfo={userInfo} />}
           />
-
+          <Route
+            path="/CreateClasswork"
+            component={() => <CreateClasswork userInfo={userInfo} />}
+          />
           <Route
             path="/Classwork"
             component={() => <Classwork userInfo={userInfo} />}
@@ -112,7 +130,7 @@ const alert = (title = 'Error', msg) => {
       {
         text: 'No',
         onPress: () => {
-          console.log('No Presses');
+          return true;
         },
       },
     ]);

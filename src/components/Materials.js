@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,22 @@ import {Colors} from 'react-native/Libraries/NewAppScreen';
 import FileViewer from 'react-native-file-viewer';
 import RNFS from 'react-native-fs';
 
-const Materials = ({subjects, subjectNumber}) => {
+const Materials = ({subjects, subjectName}) => {
   const history = useHistory();
+  const [openSubject, setOpenSubject] = useState({});
+  const historyPush = () => {
+    history.push('/');
+    return;
+  };
   useEffect(() => {
-    BackHandler.addEventListener('hardwareBackPress', () => {
-      history.push('/');
-      return true;
-    });
+    for (const i in subjects) {
+      if (subjects[i].subject === subjectName) {
+        setOpenSubject(subjects[i]);
+        return;
+      }
+    }
+    // TO STOP THE BACK BUTTON FROM CLOSING THE APP
+    BackHandler.addEventListener('hardwareBackPress', () => historyPush);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
@@ -30,29 +39,28 @@ const Materials = ({subjects, subjectNumber}) => {
       <View style={styles.headerContainer}>
         <IconLib height={40} width={40} color={Colors.black} />
         <Text style={styles.headerText}>Library</Text>
-        <TouchableOpacity onPress={() => history.push('/')}>
+        <TouchableOpacity onPress={historyPush}>
           <IconGoBack height={25} width={40} color={Colors.black} />
         </TouchableOpacity>
       </View>
 
       <ScrollView>
         <View style={styles.subtitleContainer}>
-          <Text style={styles.itemSubtitle}>
-            {subjects[subjectNumber].subject}
-          </Text>
+          <Text style={styles.itemSubtitle}>{openSubject.subject}</Text>
         </View>
-        {subjects[subjectNumber].materials.map((item, index) => {
-          return (
-            <TouchableOpacity
-              style={styles.item}
-              key={index}
-              onPress={() => {
-                openFile(item);
-              }}>
-              <Text>{item}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        {Object.keys(openSubject).length != 0 &&
+          openSubject.materials.map((item, index) => {
+            return (
+              <TouchableOpacity
+                style={styles.item}
+                key={index}
+                onPress={() => {
+                  openFile(item);
+                }}>
+                <Text>{item}</Text>
+              </TouchableOpacity>
+            );
+          })}
       </ScrollView>
     </>
   );

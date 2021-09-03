@@ -1,120 +1,55 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect} from 'react';
 import {
   View,
   Text,
-  TextInput,
   Button,
   StyleSheet,
   Alert,
-  TouchableOpacity,
   ScrollView,
-  KeyboardAvoidingView,
   BackHandler,
 } from 'react-native';
-import {Link} from 'react-router-native';
-import {AuthContext, signInWithPhoneNumber} from '../context/AuthContext';
-// import firestore from '@react-native-firebase/firestore';
+import {AuthContext, onGoogleButtonPress} from '../context/AuthContext';
 import Nav from './Nav';
 import {useHistory} from 'react-router';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
 import IconLib from '../../assets/login.svg';
 
-const Login = () => {
-  // const [code, setCode] = useState('');
-  const [confirm, setConfirm] = useState(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
+const Login = ({userInfo}) => {
   const {user} = useContext(AuthContext);
+  const history = useHistory();
   useEffect(() => {
     if (user) {
-      if (user.displayName == null && confirm != null) {
-        user
-          .updateProfile({
-            displayName: id,
-          })
-          .then(() => {})
-          .catch(e => alert(e));
+      console.log(user);
+      if (Object.keys(userInfo).length === 0 && user) {
+        // user logged in but no information on them
+        fetchUser(user.displayName, setUserInfo);
+        history.push('/');
       }
     }
 
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [confirm]);
-
-  if (!confirm) {
-    return (
-      <>
-        <ScrollView style={{height: '90%'}}>
-          <View style={styles.iconLogin}>
-            <IconLib height={250} width={400} />
-            <Text style={styles.iconText}>Read App</Text>
-          </View>
-          <Text style={styles.span}>Phone number</Text>
-          <TextInput
-            selectionColor="black"
-            style={styles.numberInput}
-            value={phoneNumber}
-            placeholder="+639976447771"
-            keyboardType="numeric"
-            onChangeText={text => setPhoneNumber(text)}
-          />
-          <View style={styles.button}>
-            <Button
-              color="#ADD8E6"
-              title="Log in"
-              onPress={() => {
-                signInWithPhoneNumber(
-                  phoneNumber,
-                  setConfirm,
-                  createTwoButtonAlert,
-                );
-              }}
-            />
-          </View>
-          <Link to="/Register" underlayColor="#f0f4f7">
-            <Text style={styles.link}>
-              Don't have an account yet? Sign up here
-            </Text>
-          </Link>
-        </ScrollView>
-        <Nav />
-      </>
-    );
-  }
+  }, []);
 
   return (
     <>
-      <ScrollView>
-        <View
-          style={{
-            alignItems: 'center',
-          }}>
-          <Text
-            style={[
-              styles.header,
-              {fontSize: 26, fontWeight: 'bold', top: 100},
-            ]}>
-            OTP Code
-          </Text>
-          <OTPInputView
-            style={{
-              width: '80%',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 400,
-            }}
-            pinCount={6}
-            autoFocusOnLoad
-            codeInputFieldStyle={styles.underlineStyleBase}
-            codeInputHighlightStyle={styles.underlineStyleHighLighted}
-            onCodeFilled={async code => {
-              try {
-                await confirm.confirm(code);
-              } catch (error) {
-                createTwoButtonAlert(error);
-              }
-            }}
-          />
+      <ScrollView style={{height: '90%'}}>
+        <View style={styles.iconLogin}>
+          <IconLib height={250} width={400} />
+          <Text style={styles.iconText}>Read App</Text>
+        </View>
+
+        <View style={styles.container}>
+          <View style={styles.button}>
+            <Button
+              color="#ADD8E6"
+              title="Google Sign-In"
+              onPress={onGoogleButtonPress}
+            />
+            <Text style={styles.span}>
+              Open your google account to login or sign up in ReadApp
+            </Text>
+          </View>
         </View>
       </ScrollView>
       <Nav />
@@ -122,62 +57,25 @@ const Login = () => {
   );
 };
 
-const createTwoButtonAlert = e =>
+const alert = e =>
   Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => true},
   ]);
 
 const styles = StyleSheet.create({
-  numberInput: {
-    marginHorizontal: 20,
-    borderBottomWidth: 3,
-    borderBottomColor: '#D6D6D6',
-    padding: 0,
-  },
-  header2: {
-    fontSize: 18,
-    marginTop: 10,
-    marginLeft: 20,
-  },
+  container: {marginTop: 20},
   span: {
-    color: '#666',
-    fontSize: 15,
+    fontSize: 12,
     marginTop: 10,
-    marginLeft: 20,
+    color: '#666',
     fontFamily: 'Lato-Regular',
-  },
-  link: {
-    color: 'dodgerblue',
-    padding: 0,
-    margin: 10,
     textAlign: 'center',
-    textDecorationLine: 'underline',
   },
   button: {
     marginHorizontal: 20,
     marginVertical: 10,
   },
-  borderStyleBase: {
-    width: 30,
-    height: 45,
-  },
 
-  borderStyleHighLighted: {
-    borderColor: '#03DAC6',
-  },
-
-  underlineStyleBase: {
-    width: 30,
-    height: 45,
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    color: 'black',
-    fontWeight: 'bold',
-  },
-
-  underlineStyleHighLighted: {
-    borderColor: '#03DAC6',
-  },
   iconLogin: {
     alignSelf: 'center',
     padding: 15,
@@ -186,11 +84,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato-Regular',
     fontSize: 30,
     textAlign: 'center',
-  },
-  nav: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: 0,
   },
 });
 

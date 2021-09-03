@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   TextInput,
   BackHandler,
+  Platform,
 } from 'react-native';
-import {useHistory} from 'react-router';
 import {ClassContext, fetchSubmision} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
@@ -18,8 +18,10 @@ import FileViewer from 'react-native-file-viewer';
 import IconUpload from '../../assets/uploadFile.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import IconRemove from '../../assets/x-circle.svg';
+import {useHistory} from 'react-router';
+import RNFetchBlob from 'rn-fetch-blob';
 
-const ActivitySubmission = ({userInfo, student, setRefresh}) => {
+const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
   const [files, setFiles] = useState([]);
   const [text, onChangeText] = useState('');
   const [reload, setReload] = useState(false);
@@ -27,7 +29,8 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
   const [studentInfo, setStudentInfo] = useState({});
   const [submission, setSubmission] = useState({});
   const [score, setScore] = useState('');
-  const history = useHistory();
+  const [isLate, setIsLate] = useState(false);
+
   const {
     classNumber,
     classworkNumber,
@@ -35,9 +38,12 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
     classList,
     setClassList,
   } = useContext(ClassContext);
+  const history = useHistory();
 
   const classId = classList[classNumber].classId;
   const classwork = classList[classNumber].classworkList[classworkNumber];
+  // console.log(new Date(submission.submittedAt) > new Date(classwork.deadline));
+
   useEffect(() => {
     if (!userInfo.isStudent) {
       setStudentInfo(student);
@@ -48,74 +54,121 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
       );
     } else {
       setStudentInfo(userInfo);
-      setSubmission(
-        classList[classNumber].classworkList[classworkNumber].submission,
-      );
+      if (
+        !classList[classNumber].classworkList[classworkNumber].submission ||
+        reload
+      ) {
+        fetchSubmision(
+          classNumber,
+          classworkNumber,
+          classList,
+          setClassList,
+          userInfo,
+        );
+        setReload(false);
+      } else {
+        setSubmission(
+          classList[classNumber].classworkList[classworkNumber].submission,
+        );
+      }
     }
-    if (
-      userInfo.isStudent &&
-      (!classList[classNumber].classworkList[classworkNumber].submission ||
-        reload)
-    ) {
-      fetchSubmision(
-        classNumber,
-        classworkNumber,
-        classList,
-        setClassList,
-        studentInfo,
-      );
-      setReload(false);
-    }
+    // if (submission.submittedAt.toDate() > classwork.deadline.toDate()) {
+    //   setIsLate(true);
+    // }
 
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => {
-      history.push('/Classroom');
+      if (!userInfo.isStudent) {
+        setStudent({});
+      } else {
+        history.push('/Classwork');
+      }
       return true;
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [reload]);
-
+  }, [reload, classList]);
   const filePath = `${classId}/classworks/${classwork.id}/`;
   return (
     <View>
-      <View style={styles.headerContainer}>
-        <Text
-          style={[
-            styles.header,
-            {
-              color: '#ededed',
-              textAlign: 'center',
-              padding: 15,
-            },
-          ]}>
-          {student.name}
-        </Text>
-      </View>
+      {!studentInfo.isStudent ? (
+        <View style={styles.headerContainer}>
+          <Text
+            style={[
+              styles.header,
+              {
+                color: '#ededed',
+                textAlign: 'center',
+                padding: 15,
+              },
+            ]}>
+            {studentInfo.name}
+          </Text>
+        </View>
+      ) : (
+        <></>
+      )}
       <View style={styles.questionContainer}>
         <Text style={styles.header}>Instruction</Text>
         <Text style={styles.item}>{classwork.instruction}</Text>
         <Text style={styles.header}>Score</Text>
-        {submission && submission.score && isEdit ? (
-          <TextInput
-            keyboardType="numeric"
-            style={styles.item}
-            value={score}
-            onChangeText={val => setScore(val)}
-          />
-        ) : submission && submission.score ? (
-          <Text
-            style={
-              styles.item
-            }>{`${submission.score}/${classwork.points}`}</Text>
+        {!userInfo.isStudent ? (
+          submission && submission.score && isEdit ? (
+            <TextInput
+              keyboardType="numeric"
+              style={styles.item}
+              value={score}
+              onChangeText={val => setScore(val)}
+            />
+          ) : submission && submission.score && !isEdit ? (
+            <Text
+              style={
+                styles.item
+              }>{`${submission.score}/${classwork.points}`}</Text>
+          ) : (submission.work && submission.work !== '') ||
+            (submission.files && submission.files.length !== 0) ? (
+            <TextInput
+              placeholder="no grades yet"
+              keyboardType="numeric"
+              style={styles.item}
+              value={score}
+              onChangeText={val => setScore(val)}
+            />
+          ) : (
+            <Text style={styles.item}>{`${
+              submission.score ? submission.score : 0
+            }/${classwork.points}`}</Text>
+          )
         ) : (
-          <TextInput
-            placeholder="no grades yet"
-            keyboardType="numeric"
-            style={styles.item}
-            value={score}
-            onChangeText={val => setScore(val)}
-          />
+          <Text style={styles.item}>{`${
+            submission.score ? submission.score : 0
+          }/${classwork.points}`}</Text>
+        )}
+
+        {classwork.files ? (
+          <Text style={styles.header}>Activity files</Text>
+        ) : (
+          <></>
+        )}
+        {classwork.files &&
+          classwork.files.map((item, index) => {
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.fileItem}
+                onPress={() => viewFile(item, classId, classwork, true)}>
+                <Text>{item.replace(`${classId}/classworks/`, '')}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        {submission.submittedAt &&
+        classwork &&
+        submission.submittedAt.toDate() > classwork.deadline.toDate() ? (
+          <Text style={[styles.subtitle, {color: '#666'}]}>
+            Late submission
+          </Text>
+        ) : (
+          <></>
         )}
       </View>
 
@@ -128,7 +181,7 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
         if (!userInfo.isStudent) {
           return (
             <>
-              {submission.work ? (
+              {submission.work && submission.work != '' ? (
                 <View style={styles.questionContainer}>
                   <Text style={styles.header}>Answer/Comment</Text>
                   <Text style={styles.item}>{submission.work}</Text>
@@ -144,8 +197,9 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                       return (
                         <TouchableOpacity
                           key={index}
-                          style={styles.fileItem}
-                          onPress={() => viewFile(item, classId, classwork)}>
+                          onPress={() =>
+                            viewFile(item, classId, classwork, false)
+                          }>
                           <Text>{item.replace(filePath, '')}</Text>
                         </TouchableOpacity>
                       );
@@ -233,8 +287,8 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                   style={styles.item}
                   placeholder="type your answer or comment here.."
                   multiline={true}
-                  onChangeText={val => onChangeText(val)}
                   value={text}
+                  onChangeText={val => onChangeText(val)}
                 />
               </View>
 
@@ -275,7 +329,7 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                       filesCopy.splice(index, 1);
                       setFiles(filesCopy);
                     }}>
-                    <Text>{item.fileName}</Text>
+                    <Text style={{maxWidth: '90%'}}>{item.fileName}</Text>
                     <IconRemove height={30} width={30} color={'red'} />
                   </TouchableOpacity>
                 );
@@ -284,7 +338,8 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
           );
         } else if (
           submission &&
-          (submission.work || submission.files) &&
+          ((submission.work && submission.work != '') ||
+            (submission.files && submission.files.length != 0)) &&
           !submission.score
         ) {
           // student has complied but not yet graded
@@ -293,7 +348,7 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
               {!isEdit ? (
                 // student is viewing their ungraded submission
                 <>
-                  {submission.work ? (
+                  {submission.work && submission.work != '' ? (
                     <>
                       <View style={styles.questionContainer}>
                         <Text style={styles.header}>Answer/Comment</Text>
@@ -313,7 +368,7 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                               key={index}
                               style={styles.fileItem}
                               onPress={() =>
-                                viewFile(item, classId, classwork)
+                                viewFile(item, classId, classwork, false)
                               }>
                               <Text>{item.replace(filePath, '')}</Text>
                             </TouchableOpacity>
@@ -340,10 +395,10 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                     <Text style={styles.header}>Answer/Comment</Text>
                     <TextInput
                       style={styles.item}
+                      defaultValue={submission.work}
                       value={text}
                       onChangeText={onChangeText}
                       placeholder="type your answer or comment here.."
-                      defaultValue={submission.work}
                     />
                   </View>
 
@@ -370,7 +425,7 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                                 setReload,
                               )
                             }>
-                            <Text style={{alignSelf: 'center'}}>
+                            <Text style={{maxWidth: '90%'}}>
                               {item.replace(filePath, '')}
                             </Text>
                             <IconRemove height={30} width={30} color={'red'} />
@@ -397,7 +452,7 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                             filesCopy.splice(index, 1);
                             setFiles(filesCopy);
                           }}>
-                          <Text>{item.fileName}</Text>
+                          <Text style={{maxWidth: '90%'}}>{item.fileName}</Text>
                           <IconRemove height={30} width={30} color={'red'} />
                         </TouchableOpacity>
                       );
@@ -464,7 +519,9 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
                         <TouchableOpacity
                           key={index}
                           style={styles.fileItem}
-                          onPress={() => viewFile(item, classId, classwork)}>
+                          onPress={() =>
+                            viewFile(item, classId, classwork, false)
+                          }>
                           <Text>{item.replace(filePath, '')}</Text>
                         </TouchableOpacity>
                       );
@@ -485,7 +542,7 @@ const ActivitySubmission = ({userInfo, student, setRefresh}) => {
 // FUNCTIONS
 
 const openFile = setFiles => {
-  DocumentPicker.pick({
+  DocumentPicker.pickMultiple({
     type: [DocumentPicker.types.allFiles],
   })
     .then(res => {
@@ -494,10 +551,10 @@ const openFile = setFiles => {
         {fileName: res[0].name, uri: res[0].fileCopyUri},
       ]);
     })
-    .catch(e => alert('openFile', e));
+    .catch(e => alert(`${e}`));
 };
 
-const submit = (
+const submit = async (
   classId,
   classwork,
   files,
@@ -510,11 +567,21 @@ const submit = (
 ) => {
   const filePath = `${classId}/classworks/${classwork.id}/`;
   let urls = [];
+
+  const getPathForFirebaseStorage = async uri => {
+    if (Platform.OS === 'ios') {
+      return uri;
+    }
+    const stat = await RNFetchBlob.fs.stat(uri);
+    return stat.path;
+  };
+
   if (files.length !== 0) {
     for (let i in files) {
+      const documentUri = await getPathForFirebaseStorage(files[i].uri);
       const reference = storage().ref(filePath + files[i].fileName);
       reference
-        .putFile(files[i].uri)
+        .putFile(documentUri)
         .then(res => {
           urls.push(filePath + files[i].fileName);
           if (urls.length === files.length) {
@@ -621,8 +688,10 @@ const saveToDb = (
       .catch(e => alert(e));
   }
 };
-const viewFile = (file, classId, classwork) => {
-  const filePath = `${classId}/classworks/${classwork.id}/`;
+const viewFile = (file, classId, classwork, fromInstructions) => {
+  const filePath = fromInstructions
+    ? `${classId}/classworks/`
+    : `${classId}/classworks/${classwork.id}/`;
 
   storage()
     .ref(file)
