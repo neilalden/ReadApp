@@ -18,19 +18,17 @@ import RNFS from 'react-native-fs';
 const Materials = ({subjects, subjectName}) => {
   const history = useHistory();
   const [openSubject, setOpenSubject] = useState({});
-  const historyPush = () => {
-    history.push('/');
-    return;
-  };
   useEffect(() => {
     for (const i in subjects) {
       if (subjects[i].subject === subjectName) {
         setOpenSubject(subjects[i]);
-        return;
       }
     }
-    // TO STOP THE BACK BUTTON FROM CLOSING THE APP
-    BackHandler.addEventListener('hardwareBackPress', () => historyPush);
+
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      history.push('/');
+      return true;
+    });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
@@ -39,7 +37,7 @@ const Materials = ({subjects, subjectName}) => {
       <View style={styles.headerContainer}>
         <IconLib height={40} width={40} color={Colors.black} />
         <Text style={styles.headerText}>Library</Text>
-        <TouchableOpacity onPress={historyPush}>
+        <TouchableOpacity onPress={() => history.push('/')}>
           <IconGoBack height={25} width={40} color={Colors.black} />
         </TouchableOpacity>
       </View>
@@ -65,7 +63,7 @@ const Materials = ({subjects, subjectName}) => {
     </>
   );
 };
-const alert = (title = 'Error', msg) =>
+const alert = (msg, title = 'Error') =>
   Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => true},
   ]);
@@ -76,7 +74,7 @@ const openFile = file => {
     .then(() => FileViewer.open(dest))
     .then(() => {})
     .catch(error => {
-      alert("Can't open file", error);
+      alert(error);
     });
 };
 

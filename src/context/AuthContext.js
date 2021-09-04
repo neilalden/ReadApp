@@ -17,7 +17,7 @@ export async function onGoogleButtonPress() {
     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
     return auth().signInWithCredential(googleCredential);
   } catch (e) {
-    alert(e.message);
+    alert(`${e}`);
   }
 }
 export const signOut = () => {
@@ -26,7 +26,7 @@ export const signOut = () => {
     .then(async function () {
       await GoogleSignin.revokeAccess();
     })
-    .catch(err => alert('Alert', err));
+    .catch(err => alert(`${err}`));
 };
 
 const AuthContextProvider = props => {
@@ -50,7 +50,7 @@ const AuthContextProvider = props => {
   );
 };
 
-const alert = (title, msg) => {
+const alert = (msg, title = 'Alert') => {
   Alert.alert(`${title ? title : 'Alert'}`, `${msg ? msg : ''}`, [
     {text: 'OK', onPress: () => true},
   ]);

@@ -25,8 +25,6 @@ import Nav from './Nav';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import IconAddClass from '../../assets/addClass.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-import IconProfile from '../../assets/profile.svg';
-import IconClassPic from '../../assets/classpic.svg';
 import IconLib from '../../assets/undraw_teaching_f1cm.svg';
 // STUDENT ACCOUNT TYPE SEES: TEACHER NAME IN THE SUBJECT
 // TEACHER ACCOUNT TYPE SEES: SECTION NAME IN THE SUBJECT
@@ -51,17 +49,19 @@ export default function ClassList({userInfo, setUserInfo}) {
     fetchClassList(userInfo, setClassList);
     wait(1000).then(() => setRefreshing(false));
   }, []);
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
 
   useEffect(() => {
     if (!user) {
       // no user;
-      setClassList([]);
       setUserInfo({});
+      setClassList([]);
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
       // user logged in but no information on them
 
-      console.log(user, '54');
       fetchUser(user.displayName, setUserInfo, history);
     } else if (userInfo && user && classList.length === 0) {
       // user logged in and has the information on them but classes is not loaded yet
@@ -161,6 +161,7 @@ export default function ClassList({userInfo, setUserInfo}) {
               },
             }}>
             <AddClass
+              user={user}
               subject={subject}
               setSubject={setSubject}
               section={section}
@@ -251,11 +252,8 @@ const TeacherClasses = ({classList, setClassNumber}) => {
   );
 };
 
-const wait = timeout => {
-  return new Promise(resolve => setTimeout(resolve, timeout));
-};
-
 const AddClass = ({
+  user,
   userInfo,
   subject,
   section,
@@ -304,7 +302,9 @@ const AddClass = ({
           classId: id,
           subject: subject,
           section: section,
-          teachers: [{id: userInfo.id, name: userInfo.name}],
+          teachers: [
+            {id: userInfo.id, name: userInfo.name, photoUrl: user.photoURL},
+          ],
           students: [],
         });
         setClassList(classListCopy);
@@ -377,9 +377,6 @@ const fetchUser = (id, setUserInfo, history) => {
     .doc(id)
     .get()
     .then(res => {
-      console.log(res.data() == undefined);
-      console.log(res.data());
-      console.log(id);
       if (!res.data()) {
         // USER DOES NOT EXIST
         history.push('/Register');
@@ -481,6 +478,10 @@ const styles = StyleSheet.create({
   itemPic: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    borderRadius: 50,
+    height: 50,
+    width: 50,
+    alignSelf: 'center',
   },
   profileContainer: {
     flexDirection: 'row',

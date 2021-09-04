@@ -6,6 +6,7 @@ import {
   ScrollView,
   BackHandler,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import {useHistory} from 'react-router';
 import {ClassContext, fetchSubmissionList} from '../context/ClassContext';
@@ -24,6 +25,13 @@ const SubmissionList = ({userInfo}) => {
   const [student, setStudent] = useState({});
   const [refresh, setRefresh] = useState(false);
   const classwork = classList[classNumber].classworkList[classworkNumber];
+  const onRefresh = useCallback(() => {
+    setRefresh(true);
+    wait(1000).then(() => setRefresh(false));
+  }, []);
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
   useEffect(() => {
     if (
       !classList[classNumber].classworkList[classworkNumber].submissionList ||
@@ -39,12 +47,16 @@ const SubmissionList = ({userInfo}) => {
     }
 
     BackHandler.addEventListener('hardwareBackPress', () => {
-      history.push('/Classroom');
+      if (Object.keys(student).length !== 0) {
+        setStudent({});
+      } else {
+        history.push('/Classroom');
+      }
       return true;
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [refresh]);
+  }, [refresh, student]);
   return (
     <>
       {Object.keys(student).length !== 0 ? (
@@ -63,7 +75,10 @@ const SubmissionList = ({userInfo}) => {
           />
         )
       ) : (
-        <ScrollView>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refresh={refresh} onRefresh={onRefresh} />
+          }>
           <View style={styles.headerContainer}>
             <Text style={styles.header}>{classwork.title}</Text>
           </View>

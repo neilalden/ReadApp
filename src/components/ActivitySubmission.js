@@ -8,6 +8,7 @@ import {
   TextInput,
   BackHandler,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import {ClassContext, fetchSubmision} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
@@ -29,7 +30,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
   const [studentInfo, setStudentInfo] = useState({});
   const [submission, setSubmission] = useState({});
   const [score, setScore] = useState('');
-  const [isLate, setIsLate] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
 
   const {
     classNumber,
@@ -42,7 +43,6 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
 
   const classId = classList[classNumber].classId;
   const classwork = classList[classNumber].classworkList[classworkNumber];
-  // console.log(new Date(submission.submittedAt) > new Date(classwork.deadline));
 
   useEffect(() => {
     if (!userInfo.isStudent) {
@@ -72,16 +72,17 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
         );
       }
     }
-    // if (submission.submittedAt.toDate() > classwork.deadline.toDate()) {
-    //   setIsLate(true);
-    // }
+
+    if (new Date() > classwork.deadline.toDate() && classwork.closeOnDeadline) {
+      setIsClosed(true);
+    }
 
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => {
       if (!userInfo.isStudent) {
         setStudent({});
       } else {
-        history.push('/Classwork');
+        history.push('/Classroom');
       }
       return true;
     });
@@ -178,7 +179,20 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
       {/* > Student has complied and their work is graded (only allows the user to view their score and submission) */}
 
       {(() => {
-        if (!userInfo.isStudent) {
+        if (
+          (!submission.work || submission.work === '') &&
+          (!submission.files || submission.files.length === 0) &&
+          isClosed &&
+          studentInfo.isStudent
+        ) {
+          return (
+            <View style={styles.questionContainer}>
+              <Text style={[styles.subtitle, {color: '#666'}]}>
+                Activity is close
+              </Text>
+            </View>
+          );
+        } else if (!userInfo.isStudent) {
           return (
             <>
               {submission.work && submission.work != '' ? (
@@ -275,7 +289,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
           );
         } else if (
           submission &&
-          !submission.work &&
+          (!submission.work || submission.work === '') &&
           (!submission.files || submission.files.length === 0)
         ) {
           // student is yet to comply
@@ -305,6 +319,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                   style={styles.submitButton}
                   onPress={() =>
                     submit(
+                      isClosed,
                       classId,
                       classwork,
                       files,
@@ -474,6 +489,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                       style={styles.submitButton}
                       onPress={() =>
                         submit(
+                          isClosed,
                           classId,
                           classwork,
                           files,
@@ -518,7 +534,6 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                       return (
                         <TouchableOpacity
                           key={index}
-                          style={styles.fileItem}
                           onPress={() =>
                             viewFile(item, classId, classwork, false)
                           }>
@@ -541,20 +556,67 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
 
 // FUNCTIONS
 
+const requestStoragePermission = async () => {
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+      {
+        title: 'ReadApp Storage Permission',
+        message:
+          'ReadApp needs access to your storage ' +
+          'so you can upload files from your storage',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+    );
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    alert('Error', `${err}`);
+  }
+};
+
 const openFile = setFiles => {
-  DocumentPicker.pickMultiple({
-    type: [DocumentPicker.types.allFiles],
-  })
-    .then(res => {
-      setFiles(prev => [
-        ...prev,
-        {fileName: res[0].name, uri: res[0].fileCopyUri},
-      ]);
+  PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE)
+    .then(async response => {
+      if (response) {
+        DocumentPicker.pickMultiple({
+          type: [DocumentPicker.types.allFiles],
+        })
+          .then(res => {
+            setFiles(prev => [
+              ...prev,
+              {fileName: res[0].name, uri: res[0].fileCopyUri},
+            ]);
+          })
+          .catch(e => alert(`${e}`));
+      } else {
+        const permission = await requestStoragePermission();
+        if (permission) {
+          DocumentPicker.pickMultiple({
+            type: [DocumentPicker.types.allFiles],
+          })
+            .then(res => {
+              setFiles(prev => [
+                ...prev,
+                {fileName: res[0].name, uri: res[0].fileCopyUri},
+              ]);
+            })
+            .catch(e => alert(`${e}`));
+        } else {
+          alert('Alert', 'Unable to upload file');
+        }
+      }
     })
-    .catch(e => alert(`${e}`));
+    .catch(e => alert('Alert', `${e}`));
 };
 
 const submit = async (
+  isClosed,
   classId,
   classwork,
   files,
@@ -565,6 +627,10 @@ const submit = async (
   setIsEdit,
   setReload,
 ) => {
+  if (isClosed) {
+    alert('This quiz is close');
+    return;
+  }
   const filePath = `${classId}/classworks/${classwork.id}/`;
   let urls = [];
 
@@ -572,8 +638,12 @@ const submit = async (
     if (Platform.OS === 'ios') {
       return uri;
     }
-    const stat = await RNFetchBlob.fs.stat(uri);
-    return stat.path;
+    try {
+      const stat = await RNFetchBlob.fs.stat(uri);
+      return stat.path;
+    } catch (e) {
+      alert(`${e}`, 'Move file to internal storage');
+    }
   };
 
   if (files.length !== 0) {
@@ -582,7 +652,7 @@ const submit = async (
       const reference = storage().ref(filePath + files[i].fileName);
       reference
         .putFile(documentUri)
-        .then(res => {
+        .then(() => {
           urls.push(filePath + files[i].fileName);
           if (urls.length === files.length) {
             saveToDb(
@@ -771,8 +841,8 @@ const handleSaveScore = (
     })
     .catch(e => alert(e));
 };
-const alert = e =>
-  Alert.alert('Alert', `${e ? e : 'Fill up the form properly'}`, [
+const alert = (e, title = 'Alert') =>
+  Alert.alert(title, `${e ? e : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => true},
   ]);
 const styles = StyleSheet.create({

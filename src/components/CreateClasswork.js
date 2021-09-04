@@ -9,6 +9,7 @@ import {
   ScrollView,
   TextInput,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import IconUpload from '../../assets/uploadFile.svg';
 import IconGoBack from '../../assets/goback.svg';
@@ -26,13 +27,12 @@ const CreateClasswork = () => {
   const {classList, classNumber, classworkNumber} = useContext(ClassContext);
   const history = useHistory();
   const [isQuiz, setIsQuiz] = useState(true);
-  // Activity specific states
-  const [files, setFiles] = useState([]);
   //
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date());
   const [mode, setMode] = useState('date');
   const [show, setShow] = useState(false);
+  const [closeOnDeadline, setCloseOnDeadline] = useState(false);
   const [instruction, setInstruction] = useState('');
   const [pointsPerRight, setPointsPerRight] = useState(5);
   // Quiz specific states
@@ -43,18 +43,50 @@ const CreateClasswork = () => {
   const [isOptions, setIsOptions] = useState(true);
   const [options, setOptions] = useState([]);
   const [option, setOption] = useState('');
+  // Activity specific states
+  const [files, setFiles] = useState([]);
 
   const classId = classList[classNumber].classId;
   const filePath = `${classId}/classworks/`;
 
   useEffect(() => {
     BackHandler.addEventListener('hardwareBackPress', () => {
-      backAlert(history);
+      backAlert();
       return true;
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
+
+  const backAlert = () => {
+    if (
+      title !== '' ||
+      instruction !== '' ||
+      question !== '' ||
+      correctAnswer !== '' ||
+      option !== '' ||
+      files.length !== 0 ||
+      quizItems.length !== 0 ||
+      options.length !== 0
+    ) {
+      Alert.alert(
+        'Are you sure?',
+        'Leaving this page would discard all your progress',
+        [
+          {
+            text: 'Yes',
+            onPress: () => {
+              history.push('/Classroom');
+            },
+          },
+          {text: 'No', onPress: () => true},
+        ],
+      );
+    } else {
+      history.push('/Classroom');
+    }
+  };
+
   return (
     <ScrollView>
       <View style={styles.headerContainer}>
@@ -86,9 +118,7 @@ const CreateClasswork = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.iconContainer}
-          onPress={() => backAlert(history)}>
+        <TouchableOpacity style={styles.iconContainer} onPress={backAlert}>
           <IconGoBack height={40} width={80} color={Colors.black} />
         </TouchableOpacity>
       </View>
@@ -104,6 +134,8 @@ const CreateClasswork = () => {
           setMode={setMode}
           show={show}
           setShow={setShow}
+          closeOnDeadline={closeOnDeadline}
+          setCloseOnDeadline={setCloseOnDeadline}
           pointsPerRight={pointsPerRight}
           setPointsPerRight={setPointsPerRight}
           pointsPerWrong={pointsPerWrong}
@@ -137,6 +169,8 @@ const CreateClasswork = () => {
           setMode={setMode}
           show={show}
           setShow={setShow}
+          closeOnDeadline={closeOnDeadline}
+          setCloseOnDeadline={setCloseOnDeadline}
           instruction={instruction}
           setInstruction={setInstruction}
           pointsPerRight={pointsPerRight}
@@ -159,6 +193,8 @@ const QuizWork = ({
   setMode,
   show,
   setShow,
+  closeOnDeadline,
+  setCloseOnDeadline,
   pointsPerRight,
   setPointsPerRight,
   pointsPerWrong,
@@ -197,8 +233,9 @@ const QuizWork = ({
     showMode('time');
   };
   const handleAddOption = () => {
-    if (option === '') alert('please write an option');
-    else {
+    if (option === '') {
+      alert('please write an option');
+    } else {
       let copyOptions = [...options];
       copyOptions.push(option);
       setOptions(copyOptions);
@@ -243,18 +280,19 @@ const QuizWork = ({
   const handleAddQuiz = () => {
     const parsedPointsPerRight = parseInt(pointsPerRight);
     const parsedPointsPerWrong = parseInt(pointsPerWrong);
-    if (
-      title === '' ||
-      instruction == '' ||
-      isNaN(parsedPointsPerRight) ||
-      isNaN(parsedPointsPerWrong)
-    ) {
-      alert(
-        'Quiz title, instruction, points per right and points per wrong is not filled properly',
-      );
+    if (title == '') {
+      alert('Quiz title is not filled properly');
       return;
-    }
-    if (quizItems.length == 0) {
+    } else if (instruction === '') {
+      alert('Quiz instruction is not filled properly');
+      return;
+    } else if (isNaN(parsedPointsPerRight)) {
+      alert('Points per right on this quiz is not filled properly');
+      return;
+    } else if (isNaN(parsedPointsPerWrong)) {
+      alert('Points per wrong on this quiz is not filled properly');
+      return;
+    } else if (quizItems.length == 0) {
       alert('There are no questions for this quiz');
       return;
     }
@@ -262,8 +300,10 @@ const QuizWork = ({
       const points = quizItems.length * parsedPointsPerRight;
       var date_converted = firestore.Timestamp.fromDate(date);
       let data = {
+        createdAt: firestore.Timestamp.fromDate(new Date()),
         title: title,
         deadline: date_converted,
+        closeOnDeadline: closeOnDeadline,
         instruction: instruction,
         points: points,
         isActivity: false,
@@ -306,7 +346,7 @@ const QuizWork = ({
             marginTop: 0,
           },
         ]}>
-        <Text style={styles.header}>Quiz title :</Text>
+        <Text style={styles.header}>Quiz title </Text>
         <TextInput
           placeholder="Quiz 1"
           multiline={true}
@@ -316,7 +356,7 @@ const QuizWork = ({
         />
         <View style={{flexDirection: 'row'}}>
           <Text style={[styles.header, {textAlignVertical: 'center'}]}>
-            Deadline :
+            Deadline
           </Text>
           <TouchableOpacity
             onPress={showDatepicker}
@@ -356,7 +396,35 @@ const QuizWork = ({
           )}
         </View>
         <Text style={styles.item}>{`${date}`}</Text>
-        <Text style={styles.header}>Instruction :</Text>
+        <Text style={styles.header}>Close on deadline </Text>
+        <View style={styles.flexRow}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.toggleLeft,
+              {margin: 5, padding: 5, minWidth: 150},
+
+              closeOnDeadline
+                ? {backgroundColor: '#E8EAED'}
+                : {borderWidth: 3, borderColor: '#E8EAED'},
+            ]}
+            onPress={() => setCloseOnDeadline(true)}>
+            <Text style={styles.buttonText}>Yes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.toggleRight,
+              {margin: 5, padding: 5, minWidth: 150},
+              !closeOnDeadline
+                ? {backgroundColor: '#E8EAED'}
+                : {borderWidth: 3, borderColor: '#E8EAED'},
+            ]}
+            onPress={() => setCloseOnDeadline(false)}>
+            <Text style={styles.buttonText}>No</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.header}>Instruction </Text>
         <TextInput
           placeholder="Read each question carefully"
           multiline={true}
@@ -365,7 +433,7 @@ const QuizWork = ({
           onChangeText={text => setInstruction(text)}
         />
         <View>
-          <Text style={styles.header}>Points per ✔️:</Text>
+          <Text style={styles.header}>Points per ✔️</Text>
           <TextInput
             placeholder="5"
             keyboardType="number-pad"
@@ -378,7 +446,7 @@ const QuizWork = ({
           </Text>
         </View>
         <View>
-          <Text style={styles.header}>Points per ✖️:</Text>
+          <Text style={styles.header}>Points per ✖️</Text>
           <TextInput
             placeholder="-5"
             keyboardType="number-pad"
@@ -391,7 +459,7 @@ const QuizWork = ({
           </Text>
         </View>
 
-        <Text style={styles.header}>This quiz is worth :</Text>
+        <Text style={styles.header}>This quiz is worth </Text>
         <Text style={styles.item}>
           {quizItems.length * pointsPerRight} points
         </Text>
@@ -402,7 +470,7 @@ const QuizWork = ({
 
       <View>
         <View style={styles.card}>
-          <Text style={styles.header}>Question :</Text>
+          <Text style={styles.header}>Question </Text>
           <TextInput
             placeholder="Write question here..."
             multiline={true}
@@ -411,7 +479,7 @@ const QuizWork = ({
             onChangeText={text => setQuestion(text)}
           />
 
-          <Text style={styles.header}>Answer type :</Text>
+          <Text style={styles.header}>Answer type </Text>
           <View style={styles.flexRow}>
             <TouchableOpacity
               style={[
@@ -443,23 +511,23 @@ const QuizWork = ({
           {/* OPTION ANSWER TYPE */}
           {isOptions ? (
             <View>
-              <Text style={styles.header}>Correct answer :</Text>
+              <Text style={styles.header}>Correct answer </Text>
               <View style={styles.flexRow}>
                 <View style={styles.mark}></View>
                 <TextInput
                   placeholder="Write the correct answer here..."
-                  style={styles.item}
+                  style={[styles.item, {width: '75%'}]}
                   value={correctAnswer}
                   onChangeText={text => setCorrectAnswer(text)}
                 />
               </View>
 
-              <Text style={styles.header}>Add option :</Text>
+              <Text style={styles.header}>Add option </Text>
               <View style={styles.flexRow}>
                 <View style={styles.mark}></View>
                 <TextInput
                   placeholder="Write an option here..."
-                  style={[styles.item, {minWidth: 223}]}
+                  style={[styles.item, {width: '75%'}]}
                   value={option}
                   onChangeText={text => setOption(text)}
                 />
@@ -474,22 +542,35 @@ const QuizWork = ({
                 onPress={handleAddOption}>
                 <Text style={styles.subtitle}>+ Add option</Text>
               </TouchableOpacity>
-              <Text style={styles.header}>Added options :</Text>
+              <Text style={styles.header}>Added options </Text>
               <View>
-                {options.map((item, index) => {
-                  return (
-                    <View key={index} style={styles.flexRow}>
-                      <View style={styles.mark}></View>
-                      <Text style={styles.item}>{item}</Text>
-                    </View>
-                  );
-                })}
+                {options.length == 0 ? (
+                  <Text style={styles.subtitle}>No options added yet</Text>
+                ) : (
+                  options.map((item, index) => {
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.flexRow}
+                        onPress={() => {
+                          let copyOptions = [...options];
+                          copyOptions.splice(index, 1);
+                          setOptions(copyOptions);
+                        }}>
+                        <View style={styles.mark}></View>
+                        <Text style={[styles.item, {width: '75%'}]}>
+                          {item}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
               </View>
             </View>
           ) : (
             // WRITE ANSWER TYPE
             <View>
-              <Text style={styles.header}>Correct answer :</Text>
+              <Text style={styles.header}>Correct answer </Text>
               <TextInput
                 placeholder="Write the correct answer here..."
                 style={styles.item}
@@ -515,38 +596,42 @@ const QuizWork = ({
 
       <ScrollView style={styles.marginBottom}>
         <Text style={styles.header}>Quiz items</Text>
-        {quizItems.map((item, index) => {
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => handleRemoveQuestion(index)}>
-              <View style={styles.headerContainer}>
-                <Text style={styles.header}>Question</Text>
-                <IconRemove height={30} width={30} color={'red'} />
-              </View>
-              <Text style={styles.item}>{item.question}</Text>
+        {quizItems.length === 0 ? (
+          <Text style={styles.subtitle}>No items yet</Text>
+        ) : (
+          quizItems.map((item, index) => {
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.card}
+                onPress={() => handleRemoveQuestion(index)}>
+                <View style={styles.headerContainer}>
+                  <Text style={styles.header}>Question</Text>
+                  <IconRemove height={30} width={30} color={'red'} />
+                </View>
+                <Text style={styles.item}>{item.question}</Text>
 
-              <View>
-                <Text style={styles.header}>Correct answer</Text>
-                <Text style={styles.item}>{item.answer}</Text>
-              </View>
-              {item.options ? (
-                <Text style={styles.header}>Options</Text>
-              ) : (
-                <></>
-              )}
-              {item.options &&
-                item.options.map((itm, idx) => {
-                  return (
-                    <Text style={styles.item} key={idx}>
-                      {itm}
-                    </Text>
-                  );
-                })}
-            </TouchableOpacity>
-          );
-        })}
+                <View>
+                  <Text style={styles.header}>Correct answer</Text>
+                  <Text style={styles.item}>{item.answer}</Text>
+                </View>
+                {item.options ? (
+                  <Text style={styles.header}>Options</Text>
+                ) : (
+                  <></>
+                )}
+                {item.options &&
+                  item.options.map((itm, idx) => {
+                    return (
+                      <Text style={styles.item} key={idx}>
+                        {itm}
+                      </Text>
+                    );
+                  })}
+              </TouchableOpacity>
+            );
+          })
+        )}
       </ScrollView>
       <View style={styles.marginBottom}>
         <TouchableOpacity style={styles.submitButton} onPress={handleAddQuiz}>
@@ -569,6 +654,8 @@ const ActivityWork = ({
   setMode,
   show,
   setShow,
+  closeOnDeadline,
+  setCloseOnDeadline,
   instruction,
   setInstruction,
   pointsPerRight,
@@ -595,15 +682,67 @@ const ActivityWork = ({
   };
 
   const openFile = () => {
-    DocumentPicker.pickMultiple({
-      type: [DocumentPicker.types.allFiles],
-    })
-      .then(async res => {
-        const uri = await getPathForFirebaseStorage(res[0].fileCopyUri);
-        setFiles(prev => [...prev, {fileName: res[0].name, uri: uri}]);
+    PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+    )
+      .then(async response => {
+        if (response) {
+          DocumentPicker.pickMultiple({
+            type: [DocumentPicker.types.allFiles],
+          })
+            .then(res => {
+              console.log(res[0]);
+              setFiles(prev => [
+                ...prev,
+                {fileName: res[0].name, uri: res[0].fileCopyUri},
+              ]);
+            })
+            .catch(e => alert(`${e}`));
+        } else {
+          const permission = await requestStoragePermission();
+          if (permission) {
+            DocumentPicker.pickMultiple({
+              type: [DocumentPicker.types.allFiles],
+            })
+              .then(res => {
+                setFiles(prev => [
+                  ...prev,
+                  {fileName: res[0].name, uri: res[0].fileCopyUri},
+                ]);
+              })
+              .catch(e => alert(`${e}`));
+          } else {
+            alert('Alert', 'Unable to upload file');
+          }
+        }
       })
-      .catch(e => alert(`${e}`));
+      .catch(e => alert('Alert', `${e}`));
   };
+
+  const requestStoragePermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: 'ReadApp Storage Permission',
+          message:
+            'ReadApp needs access to your storage ' +
+            'so you can upload files from your storage',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (err) {
+      alert('Error', `${err}`);
+    }
+  };
+
   const getPathForFirebaseStorage = async uri => {
     if (Platform.OS === 'ios') {
       return uri;
@@ -618,8 +757,15 @@ const ActivityWork = ({
 
   const handleAddActivity = () => {
     const parsedPointsPerRight = parseInt(pointsPerRight);
-    if (title === '' || instruction == '' || isNaN(parsedPointsPerRight)) {
-      alert('Activity title, instruction, and points is not filled properly');
+
+    if (title === '') {
+      alert('Activity title is not filled properly');
+      return;
+    } else if (instruction == '') {
+      alert('Activity instruction is not filled properly');
+      return;
+    } else if (isNaN(parsedPointsPerRight)) {
+      alert('Points for this activity is not filled properly');
       return;
     }
     const addActivity = async () => {
@@ -628,16 +774,17 @@ const ActivityWork = ({
       if (files.length !== 0) {
         for (const i in files) {
           const documentUri = await getPathForFirebaseStorage(files[i].uri);
-          console.log('documentUri', documentUri);
           const reference = storage().ref(filePath + files[i].fileName);
           reference
-            .putFile(files[i].uri)
+            .putFile(documentUri)
             .then(() => {
               urls.push(filePath + files[i].fileName);
               if (urls.length === files.length) {
                 let data = {
+                  createdAt: firestore.Timestamp.fromDate(new Date()),
                   title: title,
                   deadline: date_converted,
+                  closeOnDeadline: closeOnDeadline,
                   instruction: instruction,
                   points: parsedPointsPerRight,
                   isActivity: true,
@@ -657,8 +804,10 @@ const ActivityWork = ({
         }
       } else {
         let data = {
+          createdAt: firestore.Timestamp.fromDate(new Date()),
           title: title,
           deadline: date_converted,
+          closeOnDeadline: closeOnDeadline,
           instruction: instruction,
           points: parsedPointsPerRight,
           isActivity: true,
@@ -698,7 +847,7 @@ const ActivityWork = ({
             marginTop: 0,
           },
         ]}>
-        <Text style={styles.header}>Activity title :</Text>
+        <Text style={styles.header}>Activity title </Text>
         <TextInput
           placeholder="Performance task 1"
           multiline={true}
@@ -708,7 +857,7 @@ const ActivityWork = ({
         />
         <View style={{flexDirection: 'row'}}>
           <Text style={[styles.header, {textAlignVertical: 'center'}]}>
-            Deadline :
+            Deadline
           </Text>
           <TouchableOpacity
             onPress={showDatepicker}
@@ -748,7 +897,35 @@ const ActivityWork = ({
           )}
         </View>
         <Text style={styles.item}>{`${date}`}</Text>
-        <Text style={styles.header}>Instruction :</Text>
+        <Text style={styles.header}>Close on deadline </Text>
+        <View style={styles.flexRow}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.toggleLeft,
+              {margin: 5, padding: 5, minWidth: 150},
+
+              closeOnDeadline
+                ? {backgroundColor: '#E8EAED'}
+                : {borderWidth: 3, borderColor: '#E8EAED'},
+            ]}
+            onPress={() => setCloseOnDeadline(true)}>
+            <Text style={styles.buttonText}>Yes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.toggleRight,
+              {margin: 5, padding: 5, minWidth: 150},
+              !closeOnDeadline
+                ? {backgroundColor: '#E8EAED'}
+                : {borderWidth: 3, borderColor: '#E8EAED'},
+            ]}
+            onPress={() => setCloseOnDeadline(false)}>
+            <Text style={styles.buttonText}>No</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.header}>Instruction </Text>
         <TextInput
           placeholder="Write an essay about the file below..."
           multiline={true}
@@ -757,7 +934,7 @@ const ActivityWork = ({
           onChangeText={text => setInstruction(text)}
         />
         <View>
-          <Text style={styles.header}>Points for the activity:</Text>
+          <Text style={styles.header}>Points for the activity</Text>
           <TextInput
             placeholder="100"
             keyboardType="number-pad"
@@ -814,21 +991,6 @@ const ActivityWork = ({
   );
 };
 
-const backAlert = history => {
-  Alert.alert(
-    'Are you sure?',
-    'Leaving this page would discard all your progress',
-    [
-      {
-        text: 'Yes',
-        onPress: () => {
-          history.push('/Classroom');
-        },
-      },
-      {text: 'No', onPress: () => true},
-    ],
-  );
-};
 const alert = (message, title = 'Alert!') => {
   Alert.alert(title, message, [{text: 'OK', onPress: () => true}]);
 };
@@ -869,7 +1031,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Lato-Regular',
-    fontSize: 18,
+    fontSize: 16,
   },
   button: {
     backgroundColor: '#ADD8E6',

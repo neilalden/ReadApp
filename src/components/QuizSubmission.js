@@ -24,6 +24,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
   const [studentInfo, setStudentInfo] = useState({});
   const [userAnswers, setUserAnswers] = useState({});
   const [submission, setSubmission] = useState({});
+  const [isClosed, setIsClosed] = useState(false);
   const [reload, setReload] = useState(false);
   const history = useHistory();
 
@@ -61,17 +62,27 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
         );
       }
     }
+    if (new Date() > classwork.deadline.toDate() && classwork.closeOnDeadline) {
+      setIsClosed(true);
+    }
     BackHandler.addEventListener('hardwareBackPress', () => {
       if (!userInfo.isStudent) {
         setStudent({});
       } else {
-        history.push('/Classwork');
+        history.push('/Classroom');
       }
       return true;
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [reload, classList]);
+  if (Object.keys(studentInfo).length === 0 || submission === {}) {
+    return (
+      <View>
+        <Text style={styles.subtitle}>Loading...</Text>
+      </View>
+    );
+  }
   return (
     <View>
       {!studentInfo.isStudent ? (
@@ -121,7 +132,18 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
       {/* > Student has NOT taken the quiz */}
 
       {(() => {
-        if (submission.work && Object.keys(submission.work).length !== 0) {
+        if (isClosed && studentInfo.isStudent) {
+          return (
+            <View style={styles.questionContainer}>
+              <Text style={[styles.subtitle, {color: '#666'}]}>
+                Quiz is close
+              </Text>
+            </View>
+          );
+        } else if (
+          submission.work &&
+          Object.keys(submission.work).length !== 0
+        ) {
           // STUDENT HAS TAKEN THE QUIZ
           return (
             <ScrollView>
@@ -166,7 +188,6 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
                   if (options) options.sort();
                   return (
                     <View key={index} style={styles.questionContainer}>
-                      <Text style={styles.header}>Question</Text>
                       <Text style={styles.item}>{item.question}</Text>
                       {options ? (
                         <View style={styles.optionsContainer}>
@@ -174,7 +195,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
                             return (
                               <TouchableOpacity
                                 key={idx}
-                                disabled={!userInfo.isStudent}
+                                disabled={!userInfo.isStudent || isClosed}
                                 style={[
                                   styles.item,
                                   userAnswers[item.question] &&
@@ -202,7 +223,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
                       ) : (
                         <TextInput
                           placeholder="Write your answers here.."
-                          editable={userInfo.isStudent}
+                          editable={userInfo.isStudent && !isClosed}
                           style={styles.item}
                           value={userAnswers[item.question]}
                           onChangeText={text => {
@@ -219,22 +240,27 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
                   );
                 })}
               </ScrollView>
-              <TouchableOpacity
-                style={styles.submitButton}
-                disabled={!userInfo.isStudent}
-                onPress={() =>
-                  handleFinishQuiz(
-                    userInfo,
-                    userAnswers,
-                    classwork,
-                    classId,
-                    setReload,
-                    pointsPerRight,
-                    pointsPerWrong,
-                  )
-                }>
-                <Text>Finish</Text>
-              </TouchableOpacity>
+              {userInfo.isStudent ? (
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  disabled={!userInfo.isStudent || isClosed}
+                  onPress={() =>
+                    handleFinishQuiz(
+                      userInfo,
+                      userAnswers,
+                      classwork,
+                      classId,
+                      setReload,
+                      pointsPerRight,
+                      pointsPerWrong,
+                      isClosed,
+                    )
+                  }>
+                  <Text>Finish</Text>
+                </TouchableOpacity>
+              ) : (
+                <></>
+              )}
             </>
           );
         }
@@ -256,7 +282,9 @@ const handleFinishQuiz = (
   setReload,
   pointsPerRight,
   pointsPerWrong,
+  isClosed,
 ) => {
+  if (isClosed) alert('This quiz is close');
   if (!userInfo.isStudent) alert('You are not a student');
   // FIRST VERIFY IF EVERY QUESTION IS ANSWERED
   if (Object.keys(userAnswers).length !== classwork.questions.length) {
@@ -279,10 +307,6 @@ const handleFinishQuiz = (
         score += pointsPerRight;
       } else {
         score += pointsPerWrong;
-        console.log('right answer', classwork.questions[i].answer);
-        console.log('user answer object', userAnswers);
-        console.log('question', classwork.questions[i].question);
-        console.log(userAnswers[classwork.questions[i].question]);
       }
     }
     // SAVE TO DB USER SUBMISSION

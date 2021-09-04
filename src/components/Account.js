@@ -23,6 +23,7 @@ const Account = ({userInfo, setUserInfo}) => {
   useEffect(() => {
     if (!user) {
       setUserInfo({});
+      setClassList([]);
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
       fetchUser(user.displayName, setUserInfo, history);

@@ -36,7 +36,6 @@ export default ClassContextProvider = props => {
 };
 
 export const fetchClassList = (userInfo, setClassList) => {
-  // console.log('FETCHING CLASSES...');
   const classes = userInfo.classes;
   for (let i in classes) {
     firestore()
@@ -60,12 +59,12 @@ export const fetchClassList = (userInfo, setClassList) => {
 };
 
 export const fetchClassworkList = (classNumber, classList, setClassList) => {
-  // console.log('FETCHING CLASSWORKS...');
   const classId = classList[classNumber].classId;
   let classListCopy = [...classList];
   let classworkList = [];
   firestore()
     .collection(`classes/${classId}/classworks`)
+    .orderBy('createdAt', 'desc')
     .get()
     .then(documentSnapshot => {
       documentSnapshot.forEach(res => {
@@ -77,6 +76,7 @@ export const fetchClassworkList = (classNumber, classList, setClassList) => {
           id: res.id,
           title: res.data().title,
           deadline: res.data().deadline,
+          closeOnDeadline: res.data().closeOnDeadline,
           instruction: res.data().instruction,
           points: res.data().points,
           isActivity: res.data().isActivity,
@@ -125,7 +125,6 @@ export const fetchSubmissionList = (
   const classId = classList[classNumber].classId;
   let classListCopy = [...classList];
   let submissionList = [];
-  // console.log('FETCHING CLASSWORK SUBMISSIONS...');
   for (let i in classList[classNumber].students) {
     firestore()
       .collection(`classes/${classId}/classworks/${classworkId}/submissions`)
@@ -170,7 +169,6 @@ export const fetchSubmision = (
   setClassList,
   userInfo,
 ) => {
-  // console.log('FETCHING CLASSWORK SUBMISSION...');
   const classworkId = classList[classNumber].classworkList[classworkNumber].id;
   const classId = classList[classNumber].classId;
   const studenId = userInfo.id;

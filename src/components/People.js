@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   BackHandler,
+  Image,
 } from 'react-native';
 import ClassroomHeader from './ClassroomHeader';
 import firestore from '@react-native-firebase/firestore';
@@ -57,7 +58,18 @@ const People = ({userInfo}) => {
         classList[classNumber].teachers.map((item, index) => {
           if (item.id === userInfo.id || userInfo.isStudent) {
             return (
-              <View style={styles.item} key={index}>
+              <View
+                style={[
+                  styles.item,
+                  {flexDirection: 'row', justifyContent: 'flex-start'},
+                ]}
+                key={index}>
+                <Image
+                  style={styles.itemPic}
+                  source={{
+                    uri: item.photoUrl,
+                  }}
+                />
                 <View style={styles.deleteButton}>
                   <View>
                     <Text>{item.name}</Text>
@@ -82,9 +94,17 @@ const People = ({userInfo}) => {
                   )
                 }>
                 <View style={styles.deleteButton}>
-                  <View>
-                    <Text>{item.name}</Text>
-                    <Text style={styles.subtitle}>{item.id}</Text>
+                  <View style={{flexDirection: 'row'}}>
+                    <Image
+                      style={styles.itemPic}
+                      source={{
+                        uri: item.photoUrl,
+                      }}
+                    />
+                    <View>
+                      <Text>{item.name}</Text>
+                      <Text style={styles.subtitle}>{item.id}</Text>
+                    </View>
                   </View>
                   <IconRemove height={30} width={30} color={'red'} />
                 </View>
@@ -125,9 +145,17 @@ const People = ({userInfo}) => {
                   )
                 }>
                 <View style={styles.deleteButton}>
-                  <View>
-                    <Text>{item.name}</Text>
-                    <Text style={styles.subtitle}>{item.id}</Text>
+                  <View style={{flexDirection: 'row'}}>
+                    <Image
+                      style={styles.itemPic}
+                      source={{
+                        uri: item.photoUrl,
+                      }}
+                    />
+                    <View>
+                      <Text>{item.name}</Text>
+                      <Text style={styles.subtitle}>{item.id}</Text>
+                    </View>
                   </View>
                   <IconRemove height={30} width={30} color={'red'} />
                 </View>
@@ -135,7 +163,18 @@ const People = ({userInfo}) => {
             );
           } else {
             return (
-              <View style={styles.item} key={index}>
+              <View
+                style={[
+                  styles.item,
+                  {flexDirection: 'row', justifyContent: 'flex-start'},
+                ]}
+                key={index}>
+                <Image
+                  style={styles.itemPic}
+                  source={{
+                    uri: item.photoUrl,
+                  }}
+                />
                 <View>
                   <Text>{item.name}</Text>
                   <Text style={styles.subtitle}>{item.id}</Text>
@@ -489,6 +528,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  itemPic: {
+    marginRight: 10,
+    borderRadius: 50,
+    height: 50,
+    width: 50,
+    alignSelf: 'center',
+  },
   addButton: {
     alignContent: 'center',
     justifyContent: 'center',
@@ -522,6 +568,7 @@ const styles = StyleSheet.create({
   deleteButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
 export default People;

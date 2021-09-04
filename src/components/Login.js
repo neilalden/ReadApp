@@ -13,13 +13,12 @@ import Nav from './Nav';
 import {useHistory} from 'react-router';
 import IconLib from '../../assets/login.svg';
 
-const Login = ({userInfo}) => {
+const Login = ({userInfo, setUserInfo}) => {
   const {user} = useContext(AuthContext);
   const history = useHistory();
   useEffect(() => {
     if (user) {
-      console.log(user);
-      if (Object.keys(userInfo).length === 0 && user) {
+      if (Object.keys(userInfo).length === 0) {
         // user logged in but no information on them
         fetchUser(user.displayName, setUserInfo);
         history.push('/');

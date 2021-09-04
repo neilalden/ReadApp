@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   RefreshControl,
+  PermissionsAndroid,
 } from 'react-native';
 import {useHistory} from 'react-router';
 import {ClassContext, fetchSubmissionList} from '../context/ClassContext';
@@ -88,7 +89,7 @@ const Grades = () => {
         score /= keys.length - 1;
         let temp = {};
         temp.Student = data[i].Student;
-        temp.Average = score;
+        temp.Average = score.toFixed(2);
         for (const j of Object.keys(data[i])) {
           temp[j] = data[i][j];
         }
@@ -226,7 +227,17 @@ const Grades = () => {
         disabled={!isLoaded}
         onPress={() => {
           const fileName = `${classList[classNumber].subject}-${classList[classNumber].section}.xlsx`;
-          saveFile(fileName, data);
+          PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          )
+            .then(res => {
+              if (res) {
+                saveFile(fileName, data);
+              } else {
+                requestStoragePermission(fileName, data);
+              }
+            })
+            .catch(e => alert('Alert', `${e}`));
         }}>
         <Text style={styles.marginH5}>Save file</Text>
         <IconDownload
@@ -239,8 +250,9 @@ const Grades = () => {
     </>
   );
 };
-const alert = (title = 'Error', msg = `something's wrong`) =>
-  Alert.alert(title, msg, [{text: 'OK', onPress: () => true}]);
+const alert = (title = 'Alert', msg = `something's wrong`) =>
+  Alert.alert(title, `${msg}`, [{text: 'OK', onPress: () => true}]);
+
 const saveFile = (fileName = 'ReadApp.xlsx', data) => {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
@@ -255,9 +267,35 @@ const saveFile = (fileName = 'ReadApp.xlsx', data) => {
       );
     })
     .catch(e => {
-      alert('Error', e);
+      alert('Error', `${e}`);
     });
 };
+
+const requestStoragePermission = async (fileName, data) => {
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      {
+        title: 'ReadApp Storage Permission',
+        message:
+          'ReadApp needs access to your storage ' +
+          'so you can save an excel file of your students grades',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+    );
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      saveFile(fileName, data);
+    } else {
+      // console.log('Camera permission denied');
+      alert('Alert', 'Unable to save excel file');
+    }
+  } catch (err) {
+    alert('Error', `${err}`);
+  }
+};
+
 const styles = StyleSheet.create({
   saveButton: {
     marginVertical: 5,

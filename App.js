@@ -84,7 +84,12 @@ const App = () => {
           )}
         />
         <Route path="/Register" component={Register} />
-        <Route path="/Login" component={() => <Login userInfo={userInfo} />} />
+        <Route
+          path="/Login"
+          component={() => (
+            <Login userInfo={userInfo} setUserInfo={setUserInfo} />
+          )}
+        />
         <ClassContextProvider>
           <Route
             path="/Account"
@@ -136,7 +141,7 @@ const alert = (title = 'Error', msg) => {
     ]);
   } else {
     Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
-      {text: 'OK', onPress: () => console.log('OK Pressed')},
+      {text: 'OK', onPress: () => true},
     ]);
   }
 };
