@@ -21,6 +21,9 @@ DerivedData
 *.ipa
 *.xcuserstate
 
+# APK
+*.apk
+
 # Android/IntelliJ
 #
 build/
