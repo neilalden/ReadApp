@@ -689,9 +689,10 @@ const ActivityWork = ({
         if (response) {
           DocumentPicker.pickMultiple({
             type: [DocumentPicker.types.allFiles],
+            mode: 'open',
+            copyTo: 'cachesDirectory',
           })
             .then(res => {
-              console.log(res[0]);
               setFiles(prev => [
                 ...prev,
                 {fileName: res[0].name, uri: res[0].fileCopyUri},
@@ -703,6 +704,8 @@ const ActivityWork = ({
           if (permission) {
             DocumentPicker.pickMultiple({
               type: [DocumentPicker.types.allFiles],
+              mode: 'open',
+              copyTo: 'cachesDirectory',
             })
               .then(res => {
                 setFiles(prev => [
@@ -776,7 +779,7 @@ const ActivityWork = ({
           const documentUri = await getPathForFirebaseStorage(files[i].uri);
           const reference = storage().ref(filePath + files[i].fileName);
           reference
-            .putFile(documentUri)
+            .putFile(files[i].uri)
             .then(() => {
               urls.push(filePath + files[i].fileName);
               if (urls.length === files.length) {

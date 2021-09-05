@@ -110,7 +110,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
         <View>
           <Text style={styles.header}>Score</Text>
           <Text style={styles.item}>
-            {submission && submission.score
+            {submission
               ? `${submission.score}/${classwork.points}`
               : 'no grades yet'}
           </Text>

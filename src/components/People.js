@@ -460,12 +460,20 @@ const addPersonToClass = (
                         if (isStudent) {
                           classListCopy[classNumber].students = [
                             ...students,
-                            {id: accountId, name: res.data().name},
+                            {
+                              id: accountId,
+                              name: res.data().name,
+                              photoUrl: res.data().photoUrl,
+                            },
                           ];
                         } else {
                           classListCopy[classNumber].teachers = [
                             ...teachers,
-                            {id: accountId, name: res.data().name},
+                            {
+                              id: accountId,
+                              name: res.data().name,
+                              photoUrl: res.data().photoUrl,
+                            },
                           ];
                         }
                         setClassList(classListCopy);

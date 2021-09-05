@@ -157,38 +157,43 @@ const Grades = () => {
     classList[classNumber].students.length == 0
   ) {
     return (
-      <>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         <ClassroomHeader
           subject={classList[classNumber].subject}
           isStudent={false}
         />
         <Text style={styles.subtitle}>No students to grade yet</Text>
-      </>
+      </ScrollView>
     );
   }
   if (!isLoaded) {
     return (
-      <>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         <ClassroomHeader
           subject={classList[classNumber].subject}
           isStudent={false}
         />
         <Text style={styles.subtitle}>Loading, please wait</Text>
-      </>
+      </ScrollView>
     );
   }
   return (
-    <>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }>
       <ClassroomHeader
         subject={classList[classNumber].subject}
         isStudent={false}
       />
       <View style={styles.container}>
-        <ScrollView
-          horizontal={true}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }>
+        <ScrollView horizontal={true}>
           <View>
             <Table borderStyle={{borderWidth: 1}}>
               <Row
@@ -247,7 +252,7 @@ const Grades = () => {
           color={Colors.black}
         />
       </TouchableOpacity>
-    </>
+    </ScrollView>
   );
 };
 const alert = (title = 'Alert', msg = `something's wrong`) =>
@@ -288,7 +293,6 @@ const requestStoragePermission = async (fileName, data) => {
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
       saveFile(fileName, data);
     } else {
-      // console.log('Camera permission denied');
       alert('Alert', 'Unable to save excel file');
     }
   } catch (err) {

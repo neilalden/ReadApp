@@ -586,6 +586,8 @@ const openFile = setFiles => {
       if (response) {
         DocumentPicker.pickMultiple({
           type: [DocumentPicker.types.allFiles],
+          mode: 'open',
+          copyTo: 'cachesDirectory',
         })
           .then(res => {
             setFiles(prev => [
@@ -599,6 +601,8 @@ const openFile = setFiles => {
         if (permission) {
           DocumentPicker.pickMultiple({
             type: [DocumentPicker.types.allFiles],
+            mode: 'open',
+            copyTo: 'cachesDirectory',
           })
             .then(res => {
               setFiles(prev => [
