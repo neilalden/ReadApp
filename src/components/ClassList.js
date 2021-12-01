@@ -19,13 +19,13 @@ import {
 } from 'react-native';
 import {AuthContext} from '../context/AuthContext';
 import {ClassContext, fetchClassList} from '../context/ClassContext';
+import {signOut} from '../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
 import {Link, useHistory} from 'react-router-native';
 import Nav from './Nav';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import IconAddClass from '../../assets/addClass.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-import IconLib from '../../assets/undraw_teaching_f1cm.svg';
 // STUDENT ACCOUNT TYPE SEES: TEACHER NAME IN THE SUBJECT
 // TEACHER ACCOUNT TYPE SEES: SECTION NAME IN THE SUBJECT
 //                          : BUTTON TO SHOW ADD CLASS COMPONENT
@@ -89,9 +89,46 @@ export default function ClassList({userInfo, setUserInfo}) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }>
           <View style={styles.classHeader}>
-            <View style={{marginTop: 0}}>
-              <View style={styles.iconLogin}>
-                <IconLib height={200} width={400} />
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    'Logout?',
+                    `Are you sure you want to logout your account? `,
+                    [
+                      {text: 'Yes', onPress: () => signOut()},
+                      {
+                        text: 'No',
+                        onPress: () => {
+                          true;
+                        },
+                      },
+                    ],
+                  );
+                }}>
+                <Image
+                  style={styles.profileImage}
+                  source={
+                    user
+                      ? {
+                          uri: user.photoURL,
+                        }
+                      : ''
+                  }
+                />
+              </TouchableOpacity>
+              <View style={{alignItems: 'center'}}>
+                <View style={styles.accountContainer}>
+                  <Text style={styles.accountType}>{userInfo.name}</Text>
+                </View>
+                <Text style={[styles.itemSubtitle, {fontSize: 16}]}>
+                  {userInfo.id}
+                </Text>
               </View>
             </View>
           </View>
@@ -284,6 +321,7 @@ const AddClass = ({
           {id: userInfo.id, name: userInfo.name, photoUrl: user.photoURL},
         ],
         students: [],
+        queues: [],
       })
       .then(() => {
         firestore()
@@ -306,6 +344,7 @@ const AddClass = ({
             {id: userInfo.id, name: userInfo.name, photoUrl: user.photoURL},
           ],
           students: [],
+          queues: [],
         });
         setClassList(classListCopy);
       })
@@ -450,8 +489,26 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato-Regular',
     padding: 15,
   },
-  iconLogin: {
+  profileImage: {
+    borderRadius: 50,
+    height: 100,
+    width: 100,
+    margin: 10,
     alignSelf: 'center',
+  },
+  accountContainer: {
+    backgroundColor: '#333333',
+    width: 'auto',
+    marginHorizontal: 20,
+    justifyContent: 'center',
+  },
+  accountType: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 20,
+    padding: 10,
+    textAlign: 'center',
+    color: 'white',
+    minWidth: '75%',
   },
   classHeaderText: {
     fontSize: 25,

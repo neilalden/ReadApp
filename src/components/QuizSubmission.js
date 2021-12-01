@@ -8,10 +8,14 @@ import {
   StyleSheet,
   ScrollView,
   BackHandler,
+  ToastAndroid,
 } from 'react-native';
 import {ClassContext, fetchSubmision} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import {useHistory} from 'react-router';
+
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const QuizSubmission = ({userInfo, student, setStudent}) => {
   const {
@@ -34,7 +38,12 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
     classList[classNumber].classworkList[classworkNumber].pointsPerRight;
   const pointsPerWrong =
     classList[classNumber].classworkList[classworkNumber].pointsPerWrong;
+  const [isConnected, setIsConnected] = useState(true);
+
   useEffect(() => {
+    NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
     if (!userInfo.isStudent) {
       setStudentInfo(student);
       setSubmission(
@@ -62,7 +71,15 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
         );
       }
     }
-    if (new Date() > classwork.deadline.toDate() && classwork.closeOnDeadline) {
+    if (
+      new Date() >
+        new Date(
+          classwork.deadline.toDate
+            ? classwork.deadline.toDate()
+            : classwork.deadline.seconds * 1000,
+        ) &&
+      classwork.closeOnDeadline
+    ) {
       setIsClosed(true);
     }
     BackHandler.addEventListener('hardwareBackPress', () => {
@@ -110,7 +127,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
         <View>
           <Text style={styles.header}>Score</Text>
           <Text style={styles.item}>
-            {submission
+            {submission && (submission.score || submission.score === 0)
               ? `${submission.score}/${classwork.points}`
               : 'no grades yet'}
           </Text>
@@ -118,7 +135,16 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
 
         {submission.submittedAt &&
         classwork &&
-        submission.submittedAt.toDate() > classwork.deadline.toDate() ? (
+        new Date(
+          submission.submittedAt.toDate
+            ? submission.submittedAt.toDate()
+            : submission.submittedAt.seconds * 1000,
+        ) >
+          new Date(
+            classwork.deadline.toDate
+              ? classwork.deadline.toDate()
+              : classwork.deadline.seconds * 1000,
+          ) ? (
           <Text style={[styles.subtitle, {color: '#666'}]}>
             Late submission
           </Text>
@@ -132,7 +158,11 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
       {/* > Student has NOT taken the quiz */}
 
       {(() => {
-        if (isClosed && studentInfo.isStudent) {
+        if (
+          isClosed &&
+          studentInfo.isStudent &&
+          (!submission.work || Object.keys(submission.work).length === 0)
+        ) {
           return (
             <View style={styles.questionContainer}>
               <Text style={[styles.subtitle, {color: '#666'}]}>
@@ -150,21 +180,13 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
               {classwork.questions.map((item, index) => {
                 return (
                   <View key={index} style={styles.questionContainer}>
-                    <Text style={styles.header}>Question</Text>
-                    <Text style={styles.item}>{item.question}</Text>
+                    <Text style={styles.header}>{item.question}</Text>
                     <View>
-                      <Text style={styles.header}>Correct answer</Text>
-                      <Text style={styles.item}>{item['answer']}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.header}>
-                        {userInfo.isStudent ? `Your ` : `Student's `}
-                        answer
-                      </Text>
                       <Text
                         style={[
                           styles.item,
-                          item['answer'] == submission.work[item.question]
+                          item['answer'].toLowerCase() ==
+                          submission.work[item.question].toLowerCase()
                             ? {backgroundColor: 'forestgreen'}
                             : {backgroundColor: 'crimson'},
                         ]}>
@@ -188,7 +210,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
                   if (options) options.sort();
                   return (
                     <View key={index} style={styles.questionContainer}>
-                      <Text style={styles.item}>{item.question}</Text>
+                      <Text style={styles.header}>{item.question}</Text>
                       {options ? (
                         <View style={styles.optionsContainer}>
                           {options.map((itm, idx) => {
@@ -241,23 +263,45 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
                 })}
               </ScrollView>
               {userInfo.isStudent ? (
-                <TouchableOpacity
-                  style={styles.submitButton}
-                  disabled={!userInfo.isStudent || isClosed}
-                  onPress={() =>
-                    handleFinishQuiz(
-                      userInfo,
-                      userAnswers,
-                      classwork,
-                      classId,
-                      setReload,
-                      pointsPerRight,
-                      pointsPerWrong,
-                      isClosed,
-                    )
-                  }>
-                  <Text>Finish</Text>
-                </TouchableOpacity>
+                <>
+                  {isConnected && (
+                    <TouchableOpacity
+                      style={styles.submitButton}
+                      disabled={!userInfo.isStudent || isClosed}
+                      onPress={() =>
+                        handleFinishQuiz(
+                          userInfo,
+                          userAnswers,
+                          classwork,
+                          classId,
+                          setReload,
+                          pointsPerRight,
+                          pointsPerWrong,
+                          isClosed,
+                          isConnected,
+                          setUserAnswers,
+                        )
+                      }>
+                      <Text>Finish</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={() =>
+                      saveToDrafts(
+                        userInfo,
+                        userAnswers,
+                        classwork,
+                        classId,
+                        setReload,
+                        pointsPerRight,
+                        pointsPerWrong,
+                        setUserAnswers,
+                      )
+                    }>
+                    <Text>Save to drafts</Text>
+                  </TouchableOpacity>
+                </>
               ) : (
                 <></>
               )}
@@ -267,6 +311,77 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
       })()}
     </View>
   );
+};
+
+const saveToDrafts = (
+  userInfo,
+  userAnswers,
+  classwork,
+  classId,
+  setReload,
+  pointsPerRight,
+  pointsPerWrong,
+  setUserAnswers,
+) => {
+  // fetch asynch storage
+  // get existing drafts
+  // push new draft
+  if (Object.keys(userAnswers).length !== classwork.questions.length) {
+    ToastAndroid.showWithGravity(
+      'Please answer every question first',
+      ToastAndroid.LONG,
+      ToastAndroid.CENTER,
+    );
+    return;
+  }
+  AsyncStorage.getItem(`drafts-${classId}`)
+    .then(jsonValue => {
+      let draftsArr = JSON.parse(jsonValue) ? JSON.parse(jsonValue).drafts : [];
+      for (let i in draftsArr) {
+        if (draftsArr[i].title == classwork.title) {
+          draftsArr.splice(i, 1);
+        }
+      }
+      let score = 0;
+      for (const i in classwork.questions) {
+        if (
+          classwork.questions[i].answer.toLowerCase() ==
+          userAnswers[classwork.questions[i].question].toLowerCase()
+        ) {
+          score += pointsPerRight;
+        } else {
+          score += pointsPerWrong;
+        }
+      }
+      let work = {};
+      for (let i in classwork.questions) {
+        work[classwork.questions[i].question] = classwork.questions[i].answer;
+      }
+      draftsArr.push({
+        work: work,
+        score: score,
+        path: `classes/${classId}/classworks/${classwork.id}/submissions`,
+        title: classwork.title,
+        id: userInfo.id,
+        isActivity: false,
+      });
+      AsyncStorage.setItem(
+        `drafts-${classId}`,
+        JSON.stringify({drafts: draftsArr}),
+      )
+        .then(() => {
+          ToastAndroid.showWithGravity(
+            'Classwork saved!',
+            ToastAndroid.LONG,
+            ToastAndroid.CENTER,
+          );
+          setUserAnswers({});
+          setReload(true);
+        })
+        .catch(e => alert(e.message));
+    })
+    .catch(e => alert(e.message));
+  return;
 };
 
 const handleAnswer = (userAnswers, setUserAnswers, value, index) => {
@@ -283,6 +398,8 @@ const handleFinishQuiz = (
   pointsPerRight,
   pointsPerWrong,
   isClosed,
+  isConnected,
+  setUserAnswers,
 ) => {
   if (isClosed) alert('This quiz is close');
   if (!userInfo.isStudent) alert('You are not a student');
@@ -296,13 +413,26 @@ const handleFinishQuiz = (
         return;
       }
     }
+    if (!isConnected) {
+      saveToDrafts(
+        userInfo,
+        userAnswers,
+        classwork,
+        classId,
+        setReload,
+        pointsPerRight,
+        pointsPerWrong,
+        setUserAnswers,
+      );
+    }
+
     // USER HAS ANSWERED EVERY QUESTION
     // SCORING USER
     let score = 0;
     for (const i in classwork.questions) {
       if (
-        classwork.questions[i].answer ==
-        userAnswers[classwork.questions[i].question]
+        classwork.questions[i].answer.toLowerCase() ==
+        userAnswers[classwork.questions[i].question].toLowerCase()
       ) {
         score += pointsPerRight;
       } else {
@@ -310,6 +440,18 @@ const handleFinishQuiz = (
       }
     }
     // SAVE TO DB USER SUBMISSION
+    NetInfo.addEventListener(state => {
+      if (state.type == 'wifi') {
+        if (state.details.strength < 25) {
+          alert(
+            'Failed to submit quiz due to week internet connection.\n Try again later',
+            'Unable to submit quiz',
+          );
+          return;
+        }
+      }
+    });
+
     firestore()
       .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
       .doc(userInfo.id)
@@ -318,14 +460,14 @@ const handleFinishQuiz = (
         score: score,
         submittedAt: firestore.FieldValue.serverTimestamp(),
       })
-      .then(res => {
+      .then(() => {
         setReload(true);
       })
       .catch(e => alert(e));
   }
 };
-const alert = e =>
-  Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
+const alert = (e, title = `Alert`) =>
+  Alert.alert(`${title}`, `${e ? e : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => true},
   ]);
 
@@ -372,8 +514,7 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: '#ADD8E6',
     borderRadius: 10,
-    marginTop: 5,
-    marginBottom: 20,
+    marginVertical: 5,
     marginHorizontal: 20,
     padding: 15,
     alignItems: 'center',

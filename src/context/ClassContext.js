@@ -1,6 +1,8 @@
-import React, {useState, createContext} from 'react';
+import React, {useState, createContext, useEffect} from 'react';
 import firestore from '@react-native-firebase/firestore';
 import {Alert} from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const ClassContext = createContext();
 
@@ -15,7 +17,6 @@ export default ClassContextProvider = props => {
   // TO KEEP TRACK OF WHAT CLASSWORK IN THE CLASSWORKLIST ARRAY IS OPEN
   const [classworkNumber, setClassworkNumber] = useState(0);
   const [submissionListNumber, setSubmissionListNumber] = useState(0);
-
   return (
     <ClassContext.Provider
       value={{
@@ -35,66 +36,85 @@ export default ClassContextProvider = props => {
   );
 };
 
-export const fetchClassList = (userInfo, setClassList) => {
-  const classes = userInfo.classes;
-  for (let i in classes) {
-    firestore()
-      .collection('classes')
-      .doc(classes[i])
-      .get()
-      .then(res => {
-        setClassList(prev => [
-          ...prev,
-          {
-            classId: res.data().classId,
-            subject: res.data().subject,
-            section: res.data().section,
-            students: res.data().students,
-            teachers: res.data().teachers,
-          },
-        ]);
-      })
-      .catch(e => alert(e, 'You may have disconnected'));
-  }
+export const fetchClassList = async (userInfo, setClassList) => {
+  NetInfo.fetch().then(state => {
+    if (!state.isConnected) {
+      getData('classList', setClassList);
+    } else {
+      const classes = userInfo.classes;
+      let classListCopy = [];
+      for (let i in classes) {
+        firestore()
+          .collection('classes')
+          .doc(classes[i])
+          .get()
+          .then(res => {
+            const data = {
+              classId: res.data().classId,
+              subject: res.data().subject,
+              section: res.data().section,
+              students: res.data().students,
+              teachers: res.data().teachers,
+              queues: res.data().queues,
+            };
+            classListCopy.push(data);
+            setClassList(prev => [...prev, data]);
+            if (classListCopy.length === classes.length) {
+              storeData('classList', {classList: classListCopy});
+            }
+          })
+          .catch(e => alert(e, 'You may have disconnected'));
+      }
+    }
+  });
 };
 
 export const fetchClassworkList = (classNumber, classList, setClassList) => {
-  const classId = classList[classNumber].classId;
-  let classListCopy = [...classList];
-  let classworkList = [];
-  firestore()
-    .collection(`classes/${classId}/classworks`)
-    .orderBy('createdAt', 'desc')
-    .get()
-    .then(documentSnapshot => {
-      documentSnapshot.forEach(res => {
-        let questions = undefined;
-        if (res.data().questions) {
-          questions = shuffle(res.data().questions);
-        }
-        classworkList.push({
-          id: res.id,
-          title: res.data().title,
-          deadline: res.data().deadline,
-          closeOnDeadline: res.data().closeOnDeadline,
-          instruction: res.data().instruction,
-          points: res.data().points,
-          isActivity: res.data().isActivity,
-          files: res.data().files,
-          questions: questions,
-          pointsPerRight: res.data().pointsPerRight,
-          pointsPerWrong: res.data().pointsPerWrong,
-        });
-      });
+  NetInfo.fetch().then(state => {
+    if (!state.isConnected) {
+      getData('classList', setClassList);
+    } else {
+      const classId = classList[classNumber].classId;
+      let classListCopy = [...classList];
+      let classworkList = [];
+      firestore()
+        .collection(`classes/${classId}/classworks`)
+        .orderBy('createdAt', 'desc')
+        .get()
+        .then(documentSnapshot => {
+          documentSnapshot.forEach(res => {
+            let questions = undefined;
+            if (res.data().questions) {
+              questions = shuffle(res.data().questions);
+            }
+            classworkList.push({
+              id: res.id,
+              title: res.data().title,
+              deadline: res.data().deadline,
+              closeOnDeadline: res.data().closeOnDeadline,
+              instruction: res.data().instruction,
+              points: res.data().points,
+              isActivity: res.data().isActivity,
+              files: res.data().files,
+              questions: questions,
+              pointsPerRight: res.data().pointsPerRight,
+              pointsPerWrong: res.data().pointsPerWrong,
+            });
+          });
 
-      for (const i in classListCopy) {
-        if (classListCopy[classNumber].classId == classListCopy[i].classId) {
-          classListCopy[classNumber].classworkList = classworkList;
-        }
-      }
-      setClassList(classListCopy);
-    })
-    .catch(e => alert(e, 'You may have disconnected'));
+          for (const i in classListCopy) {
+            if (
+              classListCopy[classNumber].classId == classListCopy[i].classId
+            ) {
+              classListCopy[classNumber].classworkList = classworkList;
+            }
+          }
+          setClassList(classListCopy);
+          storeData('classList', {classList: classListCopy});
+        })
+        .catch(e => alert(e, 'You may have disconnected'));
+    }
+  });
 };
 function shuffle(array) {
   var currentIndex = array.length,
@@ -121,44 +141,59 @@ export const fetchSubmissionList = (
   classList,
   setClassList,
 ) => {
-  const classworkId = classList[classNumber].classworkList[classworkNumber].id;
-  const classId = classList[classNumber].classId;
-  let classListCopy = [...classList];
-  let submissionList = [];
-  for (let i in classList[classNumber].students) {
-    firestore()
-      .collection(`classes/${classId}/classworks/${classworkId}/submissions`)
-      .doc(classList[classNumber].students[i].id)
-      .get()
-      .then(res => {
-        let data = {};
-        if (res.data()) {
-          data = {
-            submittedBy: classList[classNumber].students[i],
-            submittedAt: res.data().submittedAt,
-            work: res.data().work,
-            files: res.data().files,
-            score: res.data().score,
-          };
-        } else {
-          data = {submittedBy: classList[classNumber].students[i]};
+  NetInfo.fetch()
+    .then(state => {
+      if (!state.isConnected) {
+        getData('classList', setClassList);
+      } else {
+        const classworkId =
+          classList[classNumber].classworkList[classworkNumber].id;
+        const classId = classList[classNumber].classId;
+        let classListCopy = [...classList];
+        let submissionList = [];
+        for (let i in classList[classNumber].students) {
+          firestore()
+            .collection(
+              `classes/${classId}/classworks/${classworkId}/submissions`,
+            )
+            .doc(classList[classNumber].students[i].id)
+            .get()
+            .then(res => {
+              let data = {};
+              if (res.data()) {
+                data = {
+                  submittedBy: classList[classNumber].students[i],
+                  submittedAt: res.data().submittedAt,
+                  work: res.data().work,
+                  files: res.data().files,
+                  score: res.data().score,
+                };
+              } else {
+                data = {submittedBy: classList[classNumber].students[i]};
+              }
+              submissionList.push(data);
+              if (
+                submissionList.length === classList[classNumber].students.length
+              ) {
+                for (const j in classListCopy) {
+                  if (
+                    classListCopy[classNumber].classId ==
+                    classListCopy[j].classId
+                  ) {
+                    classListCopy[classNumber].classworkList[
+                      classworkNumber
+                    ].submissionList = submissionList;
+                  }
+                }
+                setClassList(classListCopy);
+                storeData('classList', {classList: classListCopy});
+              }
+            })
+            .catch(e => alert(e, 'You may have disconnected'));
         }
-        submissionList.push(data);
-        if (submissionList.length === classList[classNumber].students.length) {
-          for (const j in classListCopy) {
-            if (
-              classListCopy[classNumber].classId == classListCopy[j].classId
-            ) {
-              classListCopy[classNumber].classworkList[
-                classworkNumber
-              ].submissionList = submissionList;
-            }
-          }
-          setClassList(classListCopy);
-        }
-      })
-      .catch(e => alert(e, 'You may have disconnected'));
-  }
+      }
+    })
+    .catch(e => alert(e));
 };
 
 // ELSE IF ACCOUNT TYPE IS STUDENT, FETCH THE SUBMISSION OF THAT STUDENT
@@ -169,31 +204,39 @@ export const fetchSubmision = (
   setClassList,
   userInfo,
 ) => {
-  const classworkId = classList[classNumber].classworkList[classworkNumber].id;
-  const classId = classList[classNumber].classId;
-  const studenId = userInfo.id;
-  let classListCopy = [...classList];
-  let submission = {};
-  firestore()
-    .collection(`classes/${classId}/classworks/${classworkId}/submissions`)
-    .doc(studenId)
-    .get()
-    .then(res => {
-      if (res.data()) {
-        submission = {
-          submittedAt: res.data().submittedAt,
-          work: res.data().work,
-          score: res.data().score,
-          files: res.data().files,
-        };
-      } else {
-        submission = {};
-      }
-      classListCopy[classNumber].classworkList[classworkNumber].submission =
-        submission;
-      setClassList(classListCopy);
-    })
-    .catch(e => alert(e, 'You may have disconnected'));
+  NetInfo.fetch().then(state => {
+    if (!state.isConnected) {
+      getData('classList', setClassList);
+    } else {
+      const classworkId =
+        classList[classNumber].classworkList[classworkNumber].id;
+      const classId = classList[classNumber].classId;
+      const studenId = userInfo.id;
+      let classListCopy = [...classList];
+      let submission = {};
+      firestore()
+        .collection(`classes/${classId}/classworks/${classworkId}/submissions`)
+        .doc(studenId)
+        .get()
+        .then(res => {
+          if (res.data()) {
+            submission = {
+              submittedAt: res.data().submittedAt,
+              work: res.data().work,
+              score: res.data().score,
+              files: res.data().files,
+            };
+          } else {
+            submission = {};
+          }
+          classListCopy[classNumber].classworkList[classworkNumber].submission =
+            submission;
+          setClassList(classListCopy);
+          storeData('classList', {classList: classListCopy});
+        })
+        .catch(e => alert(e, 'You may have disconnected'));
+    }
+  });
 };
 
 export const createClasswork = (data, classList, classNumber) => {
@@ -205,10 +248,71 @@ export const createClasswork = (data, classList, classNumber) => {
     .catch(e => alert(e, 'You may have disconnected'));
 };
 
+export const addPersonToQueue = (personInfo, classQueues) => {
+  firestore()
+    .collection(`queues`)
+    .doc(personInfo.id)
+    .get()
+    .then(res => {
+      if (!res.data()) {
+        // if person has nt been queued once
+        // add them to queue collecetion
+        firestore()
+          .collection(`queues`)
+          .doc(personInfo.id)
+          .set(personInfo)
+          .then(() => {
+            // add this reference to the class
+            firestore()
+              .collection(`classes`)
+              .doc(personInfo.classes[0])
+              .update({queues: classQueues})
+              .then()
+              .catch(e => {
+                alert(e, 'Line 229');
+              });
+          })
+          .catch(e => alert(e, 'Line 231'));
+      } else {
+        // person has been queued before
+        let queuedClasses = res.data().classes;
+        firestore()
+          .collection(`queues`)
+          .doc(personInfo.id)
+          .update({classes: queuedClasses.concat(personInfo.classes)})
+          .then(() => {
+            // add this reference to the class
+            firestore()
+              .collection(`classes`)
+              .doc(personInfo.classes[0])
+              .update({queues: classQueues})
+              .then()
+              .catch(e => alert(e, 'Line 246'));
+          })
+          .catch(e => alert(e, 'Line 248'));
+      }
+    })
+    .catch(e => alert(e, 'Line'));
+};
+
 const alert = (msg, title = 'Error') => {
-  Alert.alert(
-    `${title ? title : 'Errpr'}`,
-    `${msg ? msg : 'Fill up the form properly'}`,
-    [{text: 'OK', onPress: () => true}],
-  );
+  Alert.alert(`${title}`, `${msg ? msg : 'Fill up the form properly'}`, [
+    {text: 'OK', onPress: () => true},
+  ]);
+};
+
+const storeData = async (key, value) => {
+  try {
+    const jsonValue = JSON.stringify(value);
+    await AsyncStorage.setItem(key, jsonValue);
+  } catch (e) {
+    alert(e.message);
+  }
+};
+const getData = async (key, setFunction) => {
+  AsyncStorage.getItem(key)
+    .then(jsonValue => {
+      setFunction(JSON.parse(jsonValue).classList);
+    })
+    .catch(e => alert(e.message));
 };

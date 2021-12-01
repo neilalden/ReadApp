@@ -7,6 +7,7 @@
  */
 import React, {useEffect, useState} from 'react';
 import {NativeRouter, Route, Link} from 'react-router-native';
+import {Alert, BackHandler, PermissionsAndroid} from 'react-native';
 import AuthContextProvider from './src/context/AuthContext';
 import ClassContextProvider from './src/context/ClassContext';
 import Library from './src/components/Library';
@@ -17,42 +18,53 @@ import Classwork from './src/components/Classwork';
 import Account from './src/components/Account';
 import Classroom from './src/components/Classroom';
 import People from './src/components/People';
-import {Alert, BackHandler} from 'react-native';
 import Materials from './src/components/Materials';
 import Grades from './src/components/Grades';
 import CreateClasswork from './src/components/CreateClasswork';
+
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
+  const [subjects, setSubjects] = useState([]);
+  const [currSubj, setCurrSubj] = useState({});
+  const [libSvgRandNum, setLibSvgRandNum] = useState(1);
 
-  const [subjects, setSubjects] = useState([
-    {
-      subject: 'Advance machine learning',
-      materials: ['Module 1.pdf', 'Module 2.docx'],
-    },
-    {
-      subject: 'Algorithms and complexity',
-      materials: ['Spanning tree.pptx'],
-    },
-    {
-      subject: 'Computational science',
-      materials: ['CSEL 303 - Week 2.pptx'],
-    },
-    {
-      subject: 'Natural language processing',
-      materials: ['ISI 03 - Week 2.pptx'],
-    },
-    {
-      subject: 'Culinary arts',
-      materials: ['fried chicken habang medyo maulan.mp4'],
-    },
-    {
-      subject: 'Software engineering',
-      materials: ['435_Chapter1.pptx'],
-    },
-  ]);
-  const [subjectName, setSubjectName] = useState('');
-  useEffect(() => {
+  useEffect(async () => {
+    const libRandNum = Math.floor(Math.random() * 16) + 1;
+    setLibSvgRandNum(libRandNum);
     // TO STOP THE BACK BUTTON FROM CLOSING APP
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: 'ReadApp Storage Permission',
+          message:
+            'ReadApp needs access to your storage ' +
+            'so you can upload files from your storage',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+    } catch (err) {
+      alert('Error', `${err}`);
+    }
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        {
+          title: 'ReadApp Storage Permission',
+          message:
+            'ReadApp needs access to your storage ' +
+            'so you can save files to your storage',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+    } catch (err) {
+      alert('Error', `${err}`);
+    }
+
     BackHandler.addEventListener('hardwareBackPress', () => {
       return true;
     });
@@ -68,20 +80,15 @@ const App = () => {
           component={() => (
             <Library
               subjects={subjects}
-              subjects={subjects}
-              setSubjectName={setSubjectName}
+              setSubjects={setSubjects}
+              setCurrSubj={setCurrSubj}
+              libSvgRandNum={libSvgRandNum}
             />
           )}
         />
         <Route
           path="/Materials"
-          component={() => (
-            <Materials
-              subjects={subjects}
-              subjects={subjects}
-              subjectName={subjectName}
-            />
-          )}
+          component={() => <Materials currSubj={currSubj} />}
         />
         <Route path="/Register" component={Register} />
         <Route

@@ -145,7 +145,6 @@ const createAccount = (
   history,
   setReload,
 ) => {
-  // user.updateProfile({photoURL:"http://"})
   firestore()
     .collection('users')
     .doc(id)
@@ -163,7 +162,64 @@ const createAccount = (
           displayName: id,
         })
         .then(() => {
+          // needs stable connection, move to cloud functions
+          firestore()
+            .collection(`queues`)
+            .doc(id)
+            .get()
+            .then(res => {
+              if (res.data()) {
+                let queuedClasses = res.data().classes;
+                for (let i in queuedClasses) {
+                  firestore()
+                    .collection(`classes`)
+                    .doc(queuedClasses[i])
+                    .get()
+                    .then(res => {
+                      let qs = res.data().queues;
+                      for (let i in qs) {
+                        if (qs[i].id == id) {
+                          qs.splice(i, 1);
+                        }
+                      }
+                      let people = isStudent
+                        ? res.data().students
+                        : res.data().teachers;
+                      people.push({
+                        id: id,
+                        name: name,
+                        photoUrl: user.photoURL,
+                      });
+                      firestore()
+                        .collection(`classes`)
+                        .doc(queuedClasses[i])
+                        .update(
+                          isStudent
+                            ? {students: people, queues: qs}
+                            : {teachers: people, queues: qs},
+                        )
+                        .then()
+                        .catch(e => alert(e));
+                    })
+                    .catch(e => alert(e));
+                }
+                firestore()
+                  .collection(`queues`)
+                  .doc(id)
+                  .delete()
+                  .then(() => {
+                    firestore()
+                      .collection('users')
+                      .doc(id)
+                      .update({classes: queuedClasses})
+                      .then()
+                      .catch(e => alert(e));
+                  })
+                  .catch(e => alert(e));
+              }
+            });
           setReload(prev => !prev);
+
           history.push('/');
         })
         .catch(e => {

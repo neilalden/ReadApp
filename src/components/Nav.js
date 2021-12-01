@@ -21,12 +21,6 @@ const Nav = () => {
           <Text style={styles.navText}>Classes</Text>
         </View>
       </Link>
-      <Link to="/Account" underlayColor="#f0f4f7">
-        <View style={styles.iconView}>
-          <IconAccount height={20} width={40} color={Colors.black} />
-          <Text style={styles.navText}>Account</Text>
-        </View>
-      </Link>
     </View>
   );
 };
@@ -46,7 +40,7 @@ const styles = StyleSheet.create({
   iconView: {
     alignItems: 'center',
     paddingVertical: 15,
-    minWidth: 90,
+    minWidth: '50%',
   },
 });
 

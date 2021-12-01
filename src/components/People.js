@@ -13,14 +13,21 @@ import {
 import ClassroomHeader from './ClassroomHeader';
 import firestore from '@react-native-firebase/firestore';
 import RBSheet from 'react-native-raw-bottom-sheet';
-import {ClassContext} from '../context/ClassContext';
+import {
+  ClassContext,
+  fetchSubmissionList,
+  addPersonToQueue,
+} from '../context/ClassContext';
 import IconAddClass from '../../assets/addClass.svg';
 import IconRemove from '../../assets/x-circle.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {useHistory} from 'react-router';
+import IconGoBack from '../../assets/goback.svg';
 
 const People = ({userInfo}) => {
   const {classNumber, classList, setClassList} = useContext(ClassContext);
+  const [showWorks, setShowWorks] = useState(false);
+  const [workBy, setWorkBy] = useState({});
   const [isStudent, setIsStudent] = useState(true);
   const [accountId, setAccountId] = useState('');
   const refRBSheet = useRef();
@@ -33,6 +40,61 @@ const People = ({userInfo}) => {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
+  const showStudentWorks = student => {
+    if (userInfo.isStudent) {
+      alert('Stop!', 'Teachers are only allowed to add people to classes');
+      return;
+    }
+    setShowWorks(true);
+    setWorkBy(student);
+    for (let i in classList[classNumber].classworkList) {
+      fetchSubmissionList(classNumber, i, classList, setClassList);
+    }
+  };
+  if (showWorks && !userInfo.isStudent) {
+    return (
+      <ScrollView>
+        <ClassroomHeader
+          subject={classList[classNumber].subject}
+          isStudent={userInfo.isStudent}
+        />
+        <View style={styles.headerContainer}>
+          <Text style={[styles.header, {color: 'white'}]}>{workBy.name}</Text>
+          <TouchableOpacity
+            onPress={() => setShowWorks(false)}
+            style={{alignSelf: 'center'}}>
+            <IconGoBack height={40} width={40} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
+        {classList[classNumber].classworkList &&
+          classList[classNumber].classworkList.map((item, index) => {
+            let submitted = false;
+            let score = 0;
+            const slist = item.submissionList;
+            for (let i in slist) {
+              if (
+                (slist[i].submittedBy.id == workBy.id &&
+                  slist[i].work &&
+                  slist[i].work !== '') ||
+                (slist[i].files && slist[i].files.length !== 0)
+              ) {
+                submitted = true;
+                score = slist[i].score;
+              }
+            }
+            return (
+              <View key={index} style={[styles.item, {flexDirection: 'row'}]}>
+                <View>
+                  <Text>{item.title}</Text>
+                  <Text>{submitted ? 'Submitted' : 'Missing'}</Text>
+                </View>
+                <Text>{score}</Text>
+              </View>
+            );
+          })}
+      </ScrollView>
+    );
+  }
   return (
     <ScrollView>
       <ClassroomHeader
@@ -127,39 +189,44 @@ const People = ({userInfo}) => {
           <></>
         )}
       </View>
+      {/* STUDENTS MAP */}
       {classList[classNumber].students &&
         classList[classNumber].students.map((item, index) => {
           if (!userInfo.isStudent) {
             return (
-              <TouchableOpacity
-                style={styles.item}
-                key={index}
-                onPress={() =>
-                  deletePersonFromClass(
-                    true,
-                    item,
-                    classNumber,
-                    classList,
-                    setClassList,
-                    userInfo,
-                  )
-                }>
+              <View style={styles.item} key={index}>
                 <View style={styles.deleteButton}>
-                  <View style={{flexDirection: 'row'}}>
-                    <Image
-                      style={styles.itemPic}
-                      source={{
-                        uri: item.photoUrl,
-                      }}
-                    />
+                  <TouchableOpacity
+                    onPress={() => showStudentWorks(item)}
+                    style={{flexDirection: 'row'}}>
+                    <View>
+                      <Image
+                        style={styles.itemPic}
+                        source={{
+                          uri: item.photoUrl,
+                        }}
+                      />
+                    </View>
                     <View>
                       <Text>{item.name}</Text>
                       <Text style={styles.subtitle}>{item.id}</Text>
                     </View>
-                  </View>
-                  <IconRemove height={30} width={30} color={'red'} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      deletePersonFromClass(
+                        true,
+                        item,
+                        classNumber,
+                        classList,
+                        setClassList,
+                        userInfo,
+                      )
+                    }>
+                    <IconRemove height={30} width={30} color={'red'} />
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             );
           } else {
             return (
@@ -183,6 +250,50 @@ const People = ({userInfo}) => {
             );
           }
         })}
+      {!userInfo.isStudent &&
+      classList[classNumber].queues &&
+      classList[classNumber].queues.length !== 0 ? (
+        <ScrollView>
+          <Text
+            style={[
+              styles.header,
+              {
+                alignSelf: 'flex-start',
+                color: 'black',
+              },
+            ]}>
+            People to be added autmomatically after they create an account
+          </Text>
+          <ScrollView>
+            {classList[classNumber].queues.map((item, index) => {
+              return (
+                <View key={index} style={[styles.item, {flexDirection: 'row'}]}>
+                  <View>
+                    <Text>{item.id}</Text>
+                    <Text>{item.isStudent ? 'Student' : 'Teacher'}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      deletePersonFromQueue(
+                        item.id,
+                        classList[classNumber].classId,
+                        classList[classNumber].queues,
+                        classNumber,
+                        classList,
+                        setClassList,
+                        index,
+                      );
+                    }}>
+                    <IconRemove height={30} width={30} color={'red'} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </ScrollView>
+      ) : (
+        <></>
+      )}
 
       <RBSheet
         ref={refRBSheet}
@@ -256,8 +367,8 @@ const AddPeople = ({
           addPersonToClass(
             isStudent,
             accountId,
-            classNumber,
             setAccountId,
+            classNumber,
             classList,
             setClassList,
             refRBSheet,
@@ -276,6 +387,62 @@ const alert = (title = 'Error', msg) => {
     `${msg ? msg : 'Fill up the form properly'}`,
     [{text: 'OK', onPress: () => true}],
   );
+};
+
+const deletePersonFromQueue = (
+  id,
+  classId,
+  queues,
+  classNumber,
+  classList,
+  setClassList,
+  index,
+) => {
+  Alert.alert(`Alert`, `Are you sure you want to cancel queue for ${id}`, [
+    {
+      text: 'yes',
+      onPress: () => {
+        let copyQueues = [...queues];
+        for (let i in copyQueues) {
+          if (copyQueues[i].id == id) {
+            copyQueues.splice(index, 1);
+          }
+        }
+        firestore()
+          .collection(`classes`)
+          .doc(classId)
+          .update({queues: copyQueues})
+          .then(() => {
+            let copyClassList = [...classList];
+            copyClassList[classNumber].queues = copyQueues;
+            setClassList(copyClassList);
+            // update queued persons queue list
+            firestore()
+              .collection(`queues`)
+              .doc(id)
+              .get()
+              .then(res => {
+                let queuedClasses = res.data().classes;
+                for (let i in queuedClasses) {
+                  if (queuedClasses[i] == classId) {
+                    queuedClasses.splice(i, 1);
+                  }
+                }
+
+                firestore()
+                  .collection(`queues`)
+                  .doc(id)
+                  .update({classes: queuedClasses})
+                  .then()
+                  .catch(e => alert(e));
+              })
+              .catch(e => alert(e));
+          })
+          .catch(e => alert(e));
+      },
+    },
+    {text: 'no', onPress: () => true},
+  ]);
 };
 
 const deletePersonFromClass = (
@@ -369,8 +536,8 @@ const deletePersonFromClass = (
 const addPersonToClass = (
   isStudent,
   accountId,
-  classNumber,
   setAccountId,
+  classNumber,
   classList,
   setClassList,
   refRBSheet,
@@ -391,7 +558,49 @@ const addPersonToClass = (
     .then(res => {
       if (!res.data()) {
         // USER DOES NOT EXIST
-        alert('Error', 'user does not exist');
+        // prompt the teacher to wheter to add them to queue
+        Alert.alert(
+          `${accountId} does not exist yet.`,
+          `Do you want to add them to queue so that when they create an account they are autmomatically added in this class`,
+          [
+            {
+              text: 'YES',
+              onPress: () => {
+                if (userInfo.isStudent) {
+                  alert(
+                    'Stop!',
+                    'Teachers are only allowed to add people to queue',
+                  );
+                  return;
+                }
+                for (let i in classList[classNumber].queues) {
+                  if (classList[classNumber].queues[i].id === accountId) {
+                    // if user is already in queue
+                    alert(
+                      'Alert',
+                      `${accountId} is already queued for this class`,
+                    );
+                    return;
+                  }
+                }
+                const data = {
+                  isStudent,
+                  classes: [classId],
+                  id: accountId,
+                };
+                let copyClassList = [...classList];
+                copyClassList[classNumber].queues
+                  ? copyClassList[classNumber].queues.push(data)
+                  : (copyClassList[classNumber].queues = [data]);
+                setClassList(copyClassList);
+                const classQueues = copyClassList[classNumber].queues;
+                addPersonToQueue(data, classQueues);
+                refRBSheet.current.close();
+              },
+            },
+            {text: 'NO', onPress: () => true},
+          ],
+        );
       } else if (res.data().isStudent !== isStudent) {
         // USER ACCOUNT TYPE DOES NOT MATCH
         alert(
@@ -518,17 +727,26 @@ const styles = StyleSheet.create({
     marginVertical: 3,
   },
   header: {
+    color: 'black',
+    textAlign: 'center',
     fontFamily: 'Lato-Regular',
     fontSize: 18,
-    margin: 15,
+    padding: 15,
+  },
+  headerContainer: {
+    backgroundColor: '#3d3d3d',
+    justifyContent: 'space-between',
+    width: 'auto',
+    marginHorizontal: 15,
+    marginVertical: 10,
+    borderRadius: 10,
+    flexDirection: 'row',
   },
   subtitle: {
     fontSize: 10,
   },
   itemSubtitle: {
-    fontFamily: 'Lato-Regular',
-    marginVertical: 15,
-    marginHorizontal: 5,
+    fontSize: 12,
   },
   itemSubtitleContainer: {
     marginHorizontal: 4,

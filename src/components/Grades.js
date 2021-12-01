@@ -184,16 +184,17 @@ const Grades = () => {
     );
   }
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }>
+    <>
       <ClassroomHeader
         subject={classList[classNumber].subject}
         isStudent={false}
       />
       <View style={styles.container}>
-        <ScrollView horizontal={true}>
+        <ScrollView
+          horizontal={true}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
           <View>
             <Table borderStyle={{borderWidth: 1}}>
               <Row
@@ -252,7 +253,7 @@ const Grades = () => {
           color={Colors.black}
         />
       </TouchableOpacity>
-    </ScrollView>
+    </>
   );
 };
 const alert = (title = 'Alert', msg = `something's wrong`) =>

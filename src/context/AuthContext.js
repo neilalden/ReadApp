@@ -11,23 +11,6 @@ GoogleSignin.configure({
 });
 
 export const AuthContext = createContext();
-export async function onGoogleButtonPress() {
-  try {
-    const {idToken} = await GoogleSignin.signIn();
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    return auth().signInWithCredential(googleCredential);
-  } catch (e) {
-    alert(`${e}`);
-  }
-}
-export const signOut = () => {
-  auth()
-    .signOut()
-    .then(async function () {
-      await GoogleSignin.revokeAccess();
-    })
-    .catch(err => alert(`${err}`));
-};
 
 const AuthContextProvider = props => {
   const [user, setUser] = useState({});
@@ -48,6 +31,24 @@ const AuthContextProvider = props => {
       {props.children}
     </AuthContext.Provider>
   );
+};
+
+export async function onGoogleButtonPress() {
+  try {
+    const {idToken} = await GoogleSignin.signIn();
+    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+    return auth().signInWithCredential(googleCredential);
+  } catch (e) {
+    alert(`${e}`);
+  }
+}
+export const signOut = () => {
+  auth()
+    .signOut()
+    .then(async function () {
+      await GoogleSignin.revokeAccess();
+    })
+    .catch(err => alert(`${err}`));
 };
 
 const alert = (msg, title = 'Alert') => {

@@ -24,7 +24,8 @@ import DocumentPicker from 'react-native-document-picker';
 import RNFetchBlob from 'rn-fetch-blob';
 
 const CreateClasswork = () => {
-  const {classList, classNumber, classworkNumber} = useContext(ClassContext);
+  const {classList, setClassList, classNumber, classworkNumber} =
+    useContext(ClassContext);
   const history = useHistory();
   const [isQuiz, setIsQuiz] = useState(true);
   //
@@ -95,7 +96,7 @@ const CreateClasswork = () => {
             style={[
               styles.button,
               styles.toggleLeft,
-              isQuiz ? {backgroundColor: '#ADD8E6'} : {backgroundColor: '#CCC'},
+              isQuiz ? styles.toggleHighlight : styles.toggleUnhighlight,
             ]}
             onPress={() => {
               setIsQuiz(true);
@@ -108,7 +109,7 @@ const CreateClasswork = () => {
             style={[
               styles.button,
               styles.toggleRight,
-              isQuiz ? {backgroundColor: '#CCC'} : {backgroundColor: '#ADD8E6'},
+              isQuiz ? styles.toggleUnhighlight : styles.toggleHighlight,
             ]}
             onPress={() => {
               setIsQuiz(false);
@@ -126,6 +127,7 @@ const CreateClasswork = () => {
         <QuizWork
           classNumber={classNumber}
           classList={classList}
+          setClassList={setClassList}
           title={title}
           setTitle={setTitle}
           date={date}
@@ -161,6 +163,7 @@ const CreateClasswork = () => {
           setFiles={setFiles}
           classNumber={classNumber}
           classList={classList}
+          setClassList={setClassList}
           title={title}
           setTitle={setTitle}
           date={date}
@@ -187,6 +190,7 @@ const QuizWork = ({
   setTitle,
   classNumber,
   classList,
+  setClassList,
   date,
   setDate,
   mode,
@@ -312,12 +316,19 @@ const QuizWork = ({
         pointsPerWrong: parsedPointsPerWrong,
       };
       createClasswork(data, classList, classNumber);
+      let copyClassList = [...classList];
+      copyClassList[classNumber].classworkList.push(data);
+      setClassList(copyClassList);
+
       setTitle('');
       setInstruction('');
       setDate(new Date());
       setQuizItems([]);
       setPointsPerRight(5);
       setPointsPerWrong(0);
+      alert('Classwork posted!');
+
+      return;
     };
 
     if (date.getDate() === new Date().getDate()) {
@@ -395,7 +406,11 @@ const QuizWork = ({
             />
           )}
         </View>
-        <Text style={styles.item}>{`${date}`}</Text>
+        <Text
+          style={[
+            styles.header,
+            {backgroundColor: '#ADD8E6'},
+          ]}>{`${date}`}</Text>
         <Text style={styles.header}>Close on deadline </Text>
         <View style={styles.flexRow}>
           <TouchableOpacity
@@ -405,8 +420,12 @@ const QuizWork = ({
               {margin: 5, padding: 5, minWidth: 150},
 
               closeOnDeadline
-                ? {backgroundColor: '#E8EAED'}
-                : {borderWidth: 3, borderColor: '#E8EAED'},
+                ? {backgroundColor: '#63b4cf'}
+                : {
+                    borderWidth: 3,
+                    borderColor: '#E8EAED',
+                    backgroundColor: '#E8EAED',
+                  },
             ]}
             onPress={() => setCloseOnDeadline(true)}>
             <Text style={styles.buttonText}>Yes</Text>
@@ -417,8 +436,8 @@ const QuizWork = ({
               styles.toggleRight,
               {margin: 5, padding: 5, minWidth: 150},
               !closeOnDeadline
-                ? {backgroundColor: '#E8EAED'}
-                : {borderWidth: 3, borderColor: '#E8EAED'},
+                ? styles.toggleHighlight
+                : styles.toggleUnhighlight,
             ]}
             onPress={() => setCloseOnDeadline(false)}>
             <Text style={styles.buttonText}>No</Text>
@@ -459,9 +478,8 @@ const QuizWork = ({
           </Text>
         </View>
 
-        <Text style={styles.header}>This quiz is worth </Text>
-        <Text style={styles.item}>
-          {quizItems.length * pointsPerRight} points
+        <Text style={styles.header}>
+          Points for this quiz : {quizItems.length * pointsPerRight} points
         </Text>
         <Text style={styles.subtitle}>
           (number of questions * points per ✔️)
@@ -487,9 +505,7 @@ const QuizWork = ({
                 styles.toggleLeft,
                 {margin: 5, padding: 5, minWidth: 150},
 
-                isOptions
-                  ? {backgroundColor: '#E8EAED'}
-                  : {borderWidth: 3, borderColor: '#E8EAED'},
+                isOptions ? styles.toggleHighlight : styles.toggleUnhighlight,
               ]}
               onPress={() => setIsOptions(true)}>
               <Text style={styles.buttonText}>Options</Text>
@@ -500,8 +516,12 @@ const QuizWork = ({
                 styles.toggleRight,
                 {margin: 5, padding: 5, minWidth: 150},
                 !isOptions
-                  ? {backgroundColor: '#E8EAED'}
-                  : {borderWidth: 3, borderColor: '#E8EAED'},
+                  ? {backgroundColor: '#63b4cf'}
+                  : {
+                      borderWidth: 3,
+                      borderColor: '#E8EAED',
+                      backgroundColor: '#E8EAED',
+                    },
               ]}
               onPress={() => setIsOptions(false)}>
               <Text style={styles.buttonText}>Write</Text>
@@ -646,6 +666,7 @@ const ActivityWork = ({
   setFiles,
   classNumber,
   classList,
+  setClassList,
   title,
   setTitle,
   date,
@@ -794,11 +815,16 @@ const ActivityWork = ({
                   files: urls,
                 };
                 createClasswork(data, classList, classNumber);
+                let copyClassList = [...classList];
+                copyClassList[classNumber].classworkList.push(data);
+                setClassList(copyClassList);
                 setTitle('');
                 setDate(new Date());
                 setInstruction('');
                 setPointsPerRight(100);
                 setFiles([]);
+                alert('Classwork posted!');
+                return;
               }
             })
             .catch(e => {
@@ -816,11 +842,16 @@ const ActivityWork = ({
           isActivity: true,
         };
         createClasswork(data, classList, classNumber);
+        let copyClassList = [...classList];
+        copyClassList[classNumber].classworkList.push(data);
+        setClassList(copyClassList);
         setTitle('');
         setDate(new Date());
         setInstruction('');
         setPointsPerRight(100);
         setFiles([]);
+        alert('Classwork posted!');
+        return;
       }
     };
 
@@ -899,7 +930,11 @@ const ActivityWork = ({
             />
           )}
         </View>
-        <Text style={styles.item}>{`${date}`}</Text>
+        <Text
+          style={[
+            styles.header,
+            {backgroundColor: '#ADD8E6'},
+          ]}>{`${date}`}</Text>
         <Text style={styles.header}>Close on deadline </Text>
         <View style={styles.flexRow}>
           <TouchableOpacity
@@ -909,8 +944,8 @@ const ActivityWork = ({
               {margin: 5, padding: 5, minWidth: 150},
 
               closeOnDeadline
-                ? {backgroundColor: '#E8EAED'}
-                : {borderWidth: 3, borderColor: '#E8EAED'},
+                ? styles.toggleHighlight
+                : styles.toggleUnhighlight,
             ]}
             onPress={() => setCloseOnDeadline(true)}>
             <Text style={styles.buttonText}>Yes</Text>
@@ -921,8 +956,12 @@ const ActivityWork = ({
               styles.toggleRight,
               {margin: 5, padding: 5, minWidth: 150},
               !closeOnDeadline
-                ? {backgroundColor: '#E8EAED'}
-                : {borderWidth: 3, borderColor: '#E8EAED'},
+                ? {backgroundColor: '#63b4cf'}
+                : {
+                    borderWidth: 3,
+                    borderColor: '#E8EAED',
+                    backgroundColor: '#E8EAED',
+                  },
             ]}
             onPress={() => setCloseOnDeadline(false)}>
             <Text style={styles.buttonText}>No</Text>
@@ -962,6 +1001,11 @@ const ActivityWork = ({
           </TouchableOpacity>
         );
       })}
+      <Text style={[styles.subtitle, {paddingHorizontal: 10}]}>
+        Reminder: Most devices only support images, videos, text, and PDF files.
+        Any other file types would require students to have the neccesarry
+        application to open them
+      </Text>
       <TouchableOpacity
         onPress={openFile}
         style={[
@@ -1061,6 +1105,12 @@ const styles = StyleSheet.create({
     borderTopStartRadius: 0,
     borderBottomStartRadius: 0,
     marginLeft: 0,
+  },
+  toggleHighlight: {backgroundColor: '#63b4cf'},
+  toggleUnhighlight: {
+    borderWidth: 3,
+    borderColor: '#E8EAED',
+    backgroundColor: '#E8EAED',
   },
   flexRow: {
     flexDirection: 'row',

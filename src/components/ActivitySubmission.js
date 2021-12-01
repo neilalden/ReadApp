@@ -9,6 +9,9 @@ import {
   BackHandler,
   Platform,
   PermissionsAndroid,
+  KeyboardAvoidingView,
+  Keyboard,
+  ToastAndroid,
 } from 'react-native';
 import {ClassContext, fetchSubmision} from '../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
@@ -21,6 +24,8 @@ import {Colors} from 'react-native/Libraries/NewAppScreen';
 import IconRemove from '../../assets/x-circle.svg';
 import {useHistory} from 'react-router';
 import RNFetchBlob from 'rn-fetch-blob';
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
   const [files, setFiles] = useState([]);
@@ -31,6 +36,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
   const [submission, setSubmission] = useState({});
   const [score, setScore] = useState('');
   const [isClosed, setIsClosed] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
   const {
     classNumber,
@@ -45,6 +51,9 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
   const classwork = classList[classNumber].classworkList[classworkNumber];
 
   useEffect(() => {
+    NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
     if (!userInfo.isStudent) {
       setStudentInfo(student);
       setSubmission(
@@ -73,7 +82,15 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
       }
     }
 
-    if (new Date() > classwork.deadline.toDate() && classwork.closeOnDeadline) {
+    if (
+      new Date() >
+        new Date(
+          classwork.deadline.toDate
+            ? classwork.deadline.toDate()
+            : classwork.deadline.seconds * 1000,
+        ) &&
+      classwork.closeOnDeadline
+    ) {
       setIsClosed(true);
     }
 
@@ -164,7 +181,16 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
           })}
         {submission.submittedAt &&
         classwork &&
-        submission.submittedAt.toDate() > classwork.deadline.toDate() ? (
+        new Date(
+          submission.submittedAt.toDate
+            ? submission.submittedAt.toDate()
+            : submission.submittedAt.seconds * 1000,
+        ) >
+          new Date(
+            classwork.deadline.toDate
+              ? classwork.deadline.toDate()
+              : classwork.deadline.seconds * 1000,
+          ) ? (
           <Text style={[styles.subtitle, {color: '#666'}]}>
             Late submission
           </Text>
@@ -297,11 +323,13 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
             <>
               <View style={styles.questionContainer}>
                 <Text style={styles.header}>Answer/Comment</Text>
+
                 <TextInput
                   style={styles.item}
                   placeholder="type your answer or comment here.."
                   multiline={true}
                   value={text}
+                  onEndEditing={() => Keyboard.dismiss()}
                   onChangeText={val => onChangeText(val)}
                 />
               </View>
@@ -315,23 +343,44 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                     <IconUpload height={20} width={20} color={Colors.black} />
                   </View>
                 </TouchableOpacity>
+                {isConnected && (
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={() =>
+                      submit(
+                        isClosed,
+                        classId,
+                        classwork,
+                        files,
+                        studentInfo,
+                        text,
+                        submission,
+                        setFiles,
+                        setIsEdit,
+                        setReload,
+                        isConnected,
+                        onChangeText,
+                      )
+                    }>
+                    <Text>Submit</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   style={styles.submitButton}
-                  onPress={() =>
-                    submit(
-                      isClosed,
+                  onPress={() => {
+                    saveToDrafts(
                       classId,
                       classwork,
                       files,
                       studentInfo,
                       text,
-                      submission,
                       setFiles,
                       setIsEdit,
                       setReload,
-                    )
-                  }>
-                  <Text>Submit</Text>
+                      onChangeText,
+                    );
+                  }}>
+                  <Text>Save to drafts</Text>
                 </TouchableOpacity>
               </View>
               {files.map((item, index) => {
@@ -499,6 +548,8 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                           setFiles,
                           setIsEdit,
                           setReload,
+                          isConnected,
+                          onChangeText,
                         )
                       }>
                       <Text>Save</Text>
@@ -619,6 +670,62 @@ const openFile = setFiles => {
     .catch(e => alert('Alert', `${e}`));
 };
 
+const saveToDrafts = (
+  classId,
+  classwork,
+  files,
+  studentInfo,
+  text,
+  setFiles,
+  setIsEdit,
+  setReload,
+  onChangeText,
+) => {
+  if (files.length === 0 && text === '') {
+    ToastAndroid.showWithGravity(
+      'Please answer the activity or add a file',
+      ToastAndroid.LONG,
+      ToastAndroid.CENTER,
+    );
+    return;
+  }
+  AsyncStorage.getItem(`drafts-${classId}`)
+    .then(jsonValue => {
+      let draftsArr = JSON.parse(jsonValue) ? JSON.parse(jsonValue).drafts : [];
+      for (let i in draftsArr) {
+        if (draftsArr[i].title == classwork.title) {
+          draftsArr.splice(i, 1);
+        }
+      }
+      draftsArr.push({
+        files: files,
+        work: text,
+        path: `classes/${classId}/classworks/${classwork.id}/submissions`,
+        title: classwork.title,
+        isActivity: true,
+        id: studentInfo.id,
+      });
+      AsyncStorage.setItem(
+        `drafts-${classId}`,
+        JSON.stringify({drafts: draftsArr}),
+      )
+        .then(() => {
+          ToastAndroid.showWithGravity(
+            'Classwork saved!',
+            ToastAndroid.LONG,
+            ToastAndroid.CENTER,
+          );
+
+          setFiles([]);
+          onChangeText('');
+          setIsEdit(false);
+          setReload(true);
+        })
+        .catch(e => alert(e.message));
+    })
+    .catch(e => alert(e.message));
+};
+
 const submit = async (
   isClosed,
   classId,
@@ -630,9 +737,11 @@ const submit = async (
   setFiles,
   setIsEdit,
   setReload,
+  isConnected,
+  onChangeText,
 ) => {
   if (isClosed) {
-    alert('This quiz is close');
+    alert('This activity is close');
     return;
   }
   const filePath = `${classId}/classworks/${classwork.id}/`;
@@ -649,120 +758,92 @@ const submit = async (
       alert(`${e}`, 'Move file to internal storage');
     }
   };
-
-  if (files.length !== 0) {
-    for (let i in files) {
-      const documentUri = await getPathForFirebaseStorage(files[i].uri);
-      const reference = storage().ref(filePath + files[i].fileName);
-      reference
-        .putFile(documentUri)
-        .then(() => {
-          urls.push(filePath + files[i].fileName);
-          if (urls.length === files.length) {
-            saveToDb(
-              classId,
-              classwork,
-              urls,
-              studentInfo,
-              text,
-              submission,
-              setFiles,
-              setIsEdit,
-              setReload,
-            );
-          }
-        })
-        .catch(e => {
-          alert(e);
-        });
-    }
-  } else {
-    saveToDb(
+  if (!isConnected) {
+    saveToDrafts(
       classId,
       classwork,
-      urls,
+      files,
       studentInfo,
       text,
-      submission,
       setFiles,
       setIsEdit,
       setReload,
+      onChangeText,
     );
+  } else {
+    NetInfo.addEventListener(state => {
+      if (state.type == 'wifi') {
+        if (state.details.strength < 25) {
+          alert(
+            'Failed to submit activity due to week internet connection.\n Try again later',
+            'Unable to submit activity',
+          );
+          return;
+        }
+      }
+    });
+
+    if (files.length > 0) {
+      for (let i in files) {
+        const documentUri = await getPathForFirebaseStorage(files[i].uri);
+        const reference = storage().ref(filePath + files[i].fileName);
+        reference
+          .putFile(documentUri)
+          .then(() => {
+            urls.push(filePath + files[i].fileName);
+            if (urls.length === files.length) {
+              const filePath = `${classId}/classworks/${classwork.id}/`;
+              urls = urls.concat(submission.files ? submission.files : []);
+
+              firestore()
+                .collection(
+                  `classes/${classId}/classworks/${classwork.id}/submissions`,
+                )
+                .doc(studentInfo.id)
+                .set({
+                  submittedAt: firestore.FieldValue.serverTimestamp(),
+                  files: urls,
+                  work: text,
+                })
+                .then(res => {
+                  alert(`Success`);
+                  setFiles([]);
+                  setIsEdit(false);
+                  setReload(true);
+                })
+                .catch(e => alert(e));
+            }
+          })
+          .catch(e => {
+            alert(e);
+          });
+      }
+    } else {
+      firestore()
+        .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
+        .doc(studentInfo.id)
+        .set({
+          submittedAt: firestore.FieldValue.serverTimestamp(),
+          files: [],
+          work: text,
+        })
+        .then(res => {
+          alert(`Success`);
+          setFiles([]);
+          setIsEdit(false);
+          setReload(true);
+        })
+        .catch(e => alert(e));
+    }
   }
 };
 
-const saveToDb = (
-  classId,
-  classwork,
-  urls,
-  studentInfo,
-  text,
-  submission,
-  setFiles,
-  setIsEdit,
-  setReload,
-) => {
-  const filePath = `${classId}/classworks/${classwork.id}/`;
-  urls = urls.concat(submission.files ? submission.files : []);
-  if (text != undefined && text != '' && urls.length !== 0) {
-    // if student wrote something and added files (text at files parehas meron)
-    firestore()
-      .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(studentInfo.id)
-      .set({
-        submittedAt: firestore.FieldValue.serverTimestamp(),
-        files: urls,
-        work: text,
-      })
-      .then(res => {
-        setFiles([]);
-        setIsEdit(false);
-        setReload(true);
-      })
-      .catch(e => alert(e));
-  } else if ((text == '' || text == undefined) && urls.length !== 0) {
-    // if student did not write anything but submitted files (text wala, files meron)
-    firestore()
-      .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(studentInfo.id)
-      .set({submittedAt: firestore.FieldValue.serverTimestamp(), files: urls})
-      .then(res => {
-        setFiles([]);
-        setIsEdit(false);
-        setReload(true);
-      })
-      .catch(e => alert(e));
-  } else if (text != '' && text != undefined && urls.length === 0) {
-    // if student did wrote something but did not submit files (text meron, files wala)
-    firestore()
-      .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(studentInfo.id)
-      .set({
-        submittedAt: firestore.FieldValue.serverTimestamp(),
-        work: text,
-      })
-      .then(res => {
-        setIsEdit(false);
-        setReload(true);
-      })
-      .catch(e => alert(e));
-  } else {
-    firestore()
-      .collection(`classes/${classId}/classworks/${classwork.id}/submissions`)
-      .doc(studentInfo.id)
-      .set({
-        submittedAt: firestore.FieldValue.serverTimestamp(),
-        work: '',
-        files: [],
-      })
-      .then(res => {
-        setIsEdit(false);
-        setReload(true);
-      })
-      .catch(e => alert(e));
-  }
-};
 const viewFile = (file, classId, classwork, fromInstructions) => {
+  ToastAndroid.showWithGravity(
+    'Loading...',
+    ToastAndroid.SHORT,
+    ToastAndroid.CENTER,
+  );
   const filePath = fromInstructions
     ? `${classId}/classworks/`
     : `${classId}/classworks/${classwork.id}/`;
