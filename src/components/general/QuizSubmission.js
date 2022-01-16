@@ -10,7 +10,7 @@ import {
   BackHandler,
   ToastAndroid,
 } from 'react-native';
-import {ClassContext, fetchSubmision} from '../context/ClassContext';
+import {ClassContext, fetchSubmision} from '../../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import {useHistory} from 'react-router';
 
@@ -145,9 +145,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
               ? classwork.deadline.toDate()
               : classwork.deadline.seconds * 1000,
           ) ? (
-          <Text style={[styles.subtitle, {color: '#666'}]}>
-            Late submission
-          </Text>
+          <Text style={styles.subtitle}>Late submission</Text>
         ) : (
           <></>
         )}
@@ -165,9 +163,7 @@ const QuizSubmission = ({userInfo, student, setStudent}) => {
         ) {
           return (
             <View style={styles.questionContainer}>
-              <Text style={[styles.subtitle, {color: '#666'}]}>
-                Quiz is close
-              </Text>
+              <Text style={styles.subtitle}>Quiz is close</Text>
             </View>
           );
         } else if (
@@ -502,7 +498,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Lato-Regular',
     textAlign: 'center',
-    color: '#ccc',
+    color: '#000',
   },
   questionContainer: {
     backgroundColor: '#ADD8E6',

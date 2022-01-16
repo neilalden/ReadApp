@@ -17,14 +17,15 @@ import {
   ClassContext,
   fetchSubmissionList,
   addPersonToQueue,
-} from '../context/ClassContext';
-import IconAddClass from '../../assets/addClass.svg';
-import IconRemove from '../../assets/x-circle.svg';
+} from '../../context/ClassContext';
+import IconAddClass from '../../../assets/addClass.svg';
+import IconRemove from '../../../assets/x-circle.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {useHistory} from 'react-router';
-import IconGoBack from '../../assets/goback.svg';
+import IconGoBack from '../../../assets/goback.svg';
+import ClassroomNav from './ClassroomNav';
 
-const People = ({userInfo}) => {
+const PeoplePage = ({userInfo}) => {
   const {classNumber, classList, setClassList} = useContext(ClassContext);
   const [showWorks, setShowWorks] = useState(false);
   const [workBy, setWorkBy] = useState({});
@@ -56,7 +57,7 @@ const People = ({userInfo}) => {
       <ScrollView>
         <ClassroomHeader
           subject={classList[classNumber].subject}
-          isStudent={userInfo.isStudent}
+          section={classList[classNumber].section}
         />
         <View style={styles.headerContainer}>
           <Text style={[styles.header, {color: 'white'}]}>{workBy.name}</Text>
@@ -96,238 +97,241 @@ const People = ({userInfo}) => {
     );
   }
   return (
-    <ScrollView>
-      <ClassroomHeader
-        subject={classList[classNumber].subject}
-        isStudent={userInfo.isStudent}
-      />
-      <View style={styles.itemSubtitleContainer}>
-        <Text style={styles.header}>Teachers</Text>
-        {!userInfo.isStudent ? (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              setIsStudent(false);
-              refRBSheet.current.open();
-            }}>
-            <IconAddClass height={30} width={30} color={Colors.black} />
-          </TouchableOpacity>
-        ) : (
-          <></>
-        )}
-      </View>
-      {classList[classNumber].teachers &&
-        classList[classNumber].teachers.map((item, index) => {
-          if (item.id === userInfo.id || userInfo.isStudent) {
-            return (
-              <View
-                style={[
-                  styles.item,
-                  {flexDirection: 'row', justifyContent: 'flex-start'},
-                ]}
-                key={index}>
-                <Image
-                  style={styles.itemPic}
-                  source={{
-                    uri: item.photoUrl,
-                  }}
-                />
-                <View style={styles.deleteButton}>
-                  <View>
-                    <Text>{item.name}</Text>
-                    <Text style={styles.subtitle}>{item.id}</Text>
-                  </View>
-                </View>
-              </View>
-            );
-          } else {
-            return (
-              <TouchableOpacity
-                style={styles.item}
-                key={index}
-                onPress={() =>
-                  deletePersonFromClass(
-                    false,
-                    item,
-                    classNumber,
-                    classList,
-                    setClassList,
-                    userInfo,
-                  )
-                }>
-                <View style={styles.deleteButton}>
-                  <View style={{flexDirection: 'row'}}>
-                    <Image
-                      style={styles.itemPic}
-                      source={{
-                        uri: item.photoUrl,
-                      }}
-                    />
+    <>
+      <ScrollView style={{backgroundColor: '#fff'}}>
+        <ClassroomHeader
+          subject={classList[classNumber].subject}
+          section={classList[classNumber].section}
+        />
+        <View style={styles.itemSubtitleContainer}>
+          <Text style={[styles.header, {padding: 13}]}>Teachers</Text>
+          {!userInfo.isStudent && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setIsStudent(false);
+                refRBSheet.current.open();
+              }}>
+              <IconAddClass height={30} width={30} style={styles.addIcon} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {classList[classNumber].teachers &&
+          classList[classNumber].teachers.map((item, index) => {
+            if (item.id === userInfo.id || userInfo.isStudent) {
+              return (
+                <View
+                  style={[
+                    styles.item,
+                    {flexDirection: 'row', justifyContent: 'flex-start'},
+                  ]}
+                  key={index}>
+                  <Image
+                    style={styles.itemPic}
+                    source={{
+                      uri: item.photoUrl,
+                    }}
+                  />
+                  <View style={styles.deleteButton}>
                     <View>
                       <Text>{item.name}</Text>
                       <Text style={styles.subtitle}>{item.id}</Text>
                     </View>
                   </View>
-                  <IconRemove height={30} width={30} color={'red'} />
                 </View>
-              </TouchableOpacity>
-            );
-          }
-        })}
-      <View style={styles.itemSubtitleContainer}>
-        <Text style={styles.header}>Students</Text>
-        {!userInfo.isStudent ? (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              setIsStudent(true);
-              refRBSheet.current.open();
-            }}>
-            <IconAddClass height={30} width={30} color={Colors.black} />
-          </TouchableOpacity>
-        ) : (
-          <></>
-        )}
-      </View>
-      {/* STUDENTS MAP */}
-      {classList[classNumber].students &&
-        classList[classNumber].students.map((item, index) => {
-          if (!userInfo.isStudent) {
-            return (
-              <View style={styles.item} key={index}>
-                <View style={styles.deleteButton}>
-                  <TouchableOpacity
-                    onPress={() => showStudentWorks(item)}
-                    style={{flexDirection: 'row'}}>
-                    <View>
+              );
+            } else {
+              return (
+                <TouchableOpacity
+                  style={styles.item}
+                  key={index}
+                  onPress={() =>
+                    deletePersonFromClass(
+                      false,
+                      item,
+                      classNumber,
+                      classList,
+                      setClassList,
+                      userInfo,
+                    )
+                  }>
+                  <View style={styles.deleteButton}>
+                    <View style={{flexDirection: 'row'}}>
                       <Image
                         style={styles.itemPic}
                         source={{
                           uri: item.photoUrl,
                         }}
                       />
+                      <View>
+                        <Text>{item.name}</Text>
+                        <Text style={styles.subtitle}>{item.id}</Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text>{item.name}</Text>
-                      <Text style={styles.subtitle}>{item.id}</Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() =>
-                      deletePersonFromClass(
-                        true,
-                        item,
-                        classNumber,
-                        classList,
-                        setClassList,
-                        userInfo,
-                      )
-                    }>
                     <IconRemove height={30} width={30} color={'red'} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          } else {
-            return (
-              <View
-                style={[
-                  styles.item,
-                  {flexDirection: 'row', justifyContent: 'flex-start'},
-                ]}
-                key={index}>
-                <Image
-                  style={styles.itemPic}
-                  source={{
-                    uri: item.photoUrl,
-                  }}
-                />
-                <View>
-                  <Text>{item.name}</Text>
-                  <Text style={styles.subtitle}>{item.id}</Text>
-                </View>
-              </View>
-            );
-          }
-        })}
-      {!userInfo.isStudent &&
-      classList[classNumber].queues &&
-      classList[classNumber].queues.length !== 0 ? (
-        <ScrollView>
-          <Text
-            style={[
-              styles.header,
-              {
-                alignSelf: 'flex-start',
-                color: 'black',
-              },
-            ]}>
-            People to be added autmomatically after they create an account
-          </Text>
-          <ScrollView>
-            {classList[classNumber].queues.map((item, index) => {
-              return (
-                <View key={index} style={[styles.item, {flexDirection: 'row'}]}>
-                  <View>
-                    <Text>{item.id}</Text>
-                    <Text>{item.isStudent ? 'Student' : 'Teacher'}</Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      deletePersonFromQueue(
-                        item.id,
-                        classList[classNumber].classId,
-                        classList[classNumber].queues,
-                        classNumber,
-                        classList,
-                        setClassList,
-                        index,
-                      );
-                    }}>
-                    <IconRemove height={30} width={30} color={'red'} />
-                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            }
+          })}
+        <View style={styles.itemSubtitleContainer}>
+          <Text style={[styles.header, {paddingVertical: 13}]}>Students</Text>
+          {!userInfo.isStudent && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setIsStudent(true);
+                refRBSheet.current.open();
+              }}>
+              <IconAddClass height={30} width={30} style={styles.addIcon} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {/* STUDENTS MAP */}
+        {classList[classNumber].students &&
+          classList[classNumber].students.map((item, index) => {
+            if (!userInfo.isStudent) {
+              return (
+                <View style={styles.item} key={index}>
+                  <View style={styles.deleteButton}>
+                    <TouchableOpacity
+                      onPress={() => showStudentWorks(item)}
+                      style={{flexDirection: 'row'}}>
+                      <View>
+                        <Image
+                          style={styles.itemPic}
+                          source={{
+                            uri: item.photoUrl,
+                          }}
+                        />
+                      </View>
+                      <View>
+                        <Text>{item.name}</Text>
+                        <Text style={styles.subtitle}>{item.id}</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() =>
+                        deletePersonFromClass(
+                          true,
+                          item,
+                          classNumber,
+                          classList,
+                          setClassList,
+                          userInfo,
+                        )
+                      }>
+                      <IconRemove height={30} width={30} color={'red'} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               );
-            })}
+            } else {
+              return (
+                <View
+                  style={[
+                    styles.item,
+                    {flexDirection: 'row', justifyContent: 'flex-start'},
+                  ]}
+                  key={index}>
+                  <Image
+                    style={styles.itemPic}
+                    source={{
+                      uri: item.photoUrl,
+                    }}
+                  />
+                  <View>
+                    <Text>{item.name}</Text>
+                    <Text style={styles.subtitle}>{item.id}</Text>
+                  </View>
+                </View>
+              );
+            }
+          })}
+        {!userInfo.isStudent &&
+        classList[classNumber].queues &&
+        classList[classNumber].queues.length !== 0 ? (
+          <ScrollView>
+            <Text
+              style={[
+                styles.header,
+                {
+                  alignSelf: 'flex-start',
+                  color: 'black',
+                },
+              ]}>
+              People to be added autmomatically after they create an account
+            </Text>
+            <ScrollView>
+              {classList[classNumber].queues.map((item, index) => {
+                return (
+                  <View
+                    key={index}
+                    style={[styles.item, {flexDirection: 'row'}]}>
+                    <View>
+                      <Text>{item.id}</Text>
+                      <Text style={styles.subtitle}>
+                        {item.isStudent ? 'Student' : 'Teacher'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        deletePersonFromQueue(
+                          item.id,
+                          classList[classNumber].classId,
+                          classList[classNumber].queues,
+                          classNumber,
+                          classList,
+                          setClassList,
+                          index,
+                        );
+                      }}>
+                      <IconRemove height={30} width={30} color={'red'} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </ScrollView>
           </ScrollView>
-        </ScrollView>
-      ) : (
-        <></>
-      )}
+        ) : (
+          <></>
+        )}
 
-      <RBSheet
-        ref={refRBSheet}
-        closeOnDragDown={true}
-        closeOnPressMask={true}
-        closeOnPressBack={true}
-        animationType="slide"
-        onClose={() => {
-          setAccountId('');
-        }}
-        customStyles={{
-          wrapper: {
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          },
-          draggableIcon: {
-            backgroundColor: '#000',
-          },
-          container: {
-            borderTopLeftRadius: 15,
-            borderTopRightRadius: 15,
-          },
-        }}>
-        <AddPeople
-          isStudent={isStudent}
-          accountId={accountId}
-          setAccountId={setAccountId}
-          classNumber={classNumber}
-          classList={classList}
-          setClassList={setClassList}
-          refRBSheet={refRBSheet}
-          userInfo={userInfo}
-        />
-      </RBSheet>
-    </ScrollView>
+        <RBSheet
+          ref={refRBSheet}
+          closeOnDragDown={true}
+          closeOnPressMask={true}
+          closeOnPressBack={true}
+          animationType="slide"
+          onClose={() => {
+            setAccountId('');
+          }}
+          customStyles={{
+            wrapper: {
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+            draggableIcon: {
+              backgroundColor: '#000',
+            },
+            container: {
+              borderTopLeftRadius: 15,
+              borderTopRightRadius: 15,
+            },
+          }}>
+          <AddPeople
+            isStudent={isStudent}
+            accountId={accountId}
+            setAccountId={setAccountId}
+            classNumber={classNumber}
+            classList={classList}
+            setClassList={setClassList}
+            refRBSheet={refRBSheet}
+            userInfo={userInfo}
+          />
+        </RBSheet>
+      </ScrollView>
+      <ClassroomNav isStudent={userInfo.isStudent} />
+    </>
   );
 };
 
@@ -750,7 +754,7 @@ const styles = StyleSheet.create({
   },
   itemSubtitleContainer: {
     marginHorizontal: 4,
-    width: '98%',
+    width: '99%',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -765,13 +769,6 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     justifyContent: 'center',
     margin: 10,
-  },
-  addIcon: {
-    marginLeft: 14.5,
-    marginBottom: 1,
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#fff',
   },
   addPeopleContainer: {
     alignItems: 'center',
@@ -796,5 +793,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  addIcon: {
+    backgroundColor: '#ADD8E6',
+    color: '#fff',
+    borderRadius: 50,
+  },
 });
-export default People;
+export default PeoplePage;

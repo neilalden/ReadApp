@@ -4,16 +4,15 @@ import {
   Text,
   Button,
   StyleSheet,
-  Alert,
   ScrollView,
   BackHandler,
 } from 'react-native';
-import {AuthContext, onGoogleButtonPress} from '../context/AuthContext';
-import Nav from './Nav';
 import {useHistory} from 'react-router';
-import IconLib from '../../assets/login.svg';
+import {AuthContext, onGoogleButtonPress} from '../../context/AuthContext';
+import IconLib from '../../../assets/login.svg';
+import Nav from './Nav';
 
-const Login = ({userInfo, setUserInfo}) => {
+const LoginPage = ({userInfo, setUserInfo}) => {
   const {user} = useContext(AuthContext);
   const history = useHistory();
   useEffect(() => {
@@ -56,17 +55,12 @@ const Login = ({userInfo, setUserInfo}) => {
   );
 };
 
-const alert = e =>
-  Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => true},
-  ]);
-
 const styles = StyleSheet.create({
   container: {marginTop: 20},
   span: {
     fontSize: 12,
     marginTop: 10,
-    color: '#666',
+    color: '#000',
     fontFamily: 'Lato-Regular',
     textAlign: 'center',
   },
@@ -86,4 +80,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Login;
+export default LoginPage;

@@ -11,19 +11,19 @@ import {
   Platform,
   PermissionsAndroid,
 } from 'react-native';
-import IconUpload from '../../assets/uploadFile.svg';
-import IconGoBack from '../../assets/goback.svg';
-import IconRemove from '../../assets/x-circle.svg';
+import IconUpload from '../../../assets/uploadFile.svg';
+import IconGoBack from '../../../assets/goback.svg';
+import IconRemove from '../../../assets/x-circle.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {useHistory} from 'react-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import {ClassContext, createClasswork} from '../context/ClassContext';
+import {ClassContext, createClasswork} from '../../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import DocumentPicker from 'react-native-document-picker';
 import RNFetchBlob from 'rn-fetch-blob';
 
-const CreateClasswork = () => {
+const CreateClassworkPage = () => {
   const {classList, setClassList, classNumber, classworkNumber} =
     useContext(ClassContext);
   const history = useHistory();
@@ -120,7 +120,7 @@ const CreateClasswork = () => {
         </View>
 
         <TouchableOpacity style={styles.iconContainer} onPress={backAlert}>
-          <IconGoBack height={40} width={80} color={Colors.black} />
+          <IconGoBack height={30} width={30} color={'#ADD8E6'} />
         </TouchableOpacity>
       </View>
       {isQuiz ? (
@@ -357,7 +357,7 @@ const QuizWork = ({
             marginTop: 0,
           },
         ]}>
-        <Text style={styles.header}>Quiz title </Text>
+        <Text style={styles.header}>Quiz title</Text>
         <TextInput
           placeholder="Quiz 1"
           multiline={true}
@@ -479,7 +479,11 @@ const QuizWork = ({
         </View>
 
         <Text style={styles.header}>
-          Points for this quiz : {quizItems.length * pointsPerRight} points
+          Points for this quiz :{' '}
+          <Text style={{fontWeight: 'bold'}}>
+            {quizItems.length * pointsPerRight}
+            &nbsp;points
+          </Text>
         </Text>
         <Text style={styles.subtitle}>
           (number of questions * points per ✔️)
@@ -1072,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    color: '#666',
+    color: '#000',
     fontSize: 12,
     marginBottom: 5,
   },
@@ -1121,9 +1125,8 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     alignSelf: 'center',
-    borderRadius: 5,
-    marginHorizontal: 10,
-    paddingVertical: 10,
+    borderRadius: 50,
+    padding: 5,
   },
   mark: {
     height: 25,
@@ -1146,4 +1149,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateClasswork;
+export default CreateClassworkPage;

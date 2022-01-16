@@ -11,15 +11,16 @@ import {
   PermissionsAndroid,
 } from 'react-native';
 import {useHistory} from 'react-router';
-import {ClassContext, fetchSubmissionList} from '../context/ClassContext';
-import ClassroomHeader from './ClassroomHeader';
-import RNFS, {writeFile} from 'react-native-fs';
-import XLSX from 'xlsx';
-import IconDownload from '../../assets/download.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {Table, Row} from 'react-native-table-component';
+import XLSX from 'xlsx';
+import RNFS, {writeFile} from 'react-native-fs';
+import IconDownload from '../../../assets/download.svg';
+import ClassroomHeader from '../general/ClassroomHeader';
+import ClassroomNav from '../general/ClassroomNav';
+import {ClassContext, fetchSubmissionList} from '../../context/ClassContext';
 
-const Grades = () => {
+const GradesPage = ({userInfo}) => {
   const [data, setData] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [tableHeader, setTableHeader] = useState({
@@ -100,9 +101,9 @@ const Grades = () => {
     if (classListGrades[classId]) {
       // Data is loaded before
       setIsLoaded(true);
-      renderData();
+      // renderData();
     }
-
+    return;
     for (const i in classworkList) {
       if (!classworkList[i].submissionList) {
         fetchSubmissionList(classNumber, i, classList, setClassList);
@@ -157,40 +158,50 @@ const Grades = () => {
     classList[classNumber].students.length == 0
   ) {
     return (
-      <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
-        <ClassroomHeader
-          subject={classList[classNumber].subject}
-          isStudent={false}
-        />
-        <Text style={styles.subtitle}>No students to grade yet</Text>
-      </ScrollView>
+      <>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
+          <ClassroomHeader
+            subject={classList[classNumber].subject}
+            section={classList[classNumber].section}
+          />
+          <Text style={styles.subtitle}>No students to grade yet</Text>
+        </ScrollView>
+
+        <ClassroomNav isStudent={false} />
+      </>
     );
   }
   if (!isLoaded) {
     return (
-      <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
-        <ClassroomHeader
-          subject={classList[classNumber].subject}
-          isStudent={false}
-        />
-        <Text style={styles.subtitle}>Loading, please wait</Text>
-      </ScrollView>
+      <>
+        <ScrollView
+          style={{backgroundColor: '#fff'}}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
+          <ClassroomHeader
+            subject={classList[classNumber].subject}
+            section={classList[classNumber].section}
+          />
+          <Text style={styles.subtitle}>Loading, please wait</Text>
+        </ScrollView>
+
+        <ClassroomNav isStudent={false} />
+      </>
     );
   }
   return (
     <>
       <ClassroomHeader
         subject={classList[classNumber].subject}
-        isStudent={false}
+        section={classList[classNumber].section}
       />
       <View style={styles.container}>
         <ScrollView
+          style={{backgroundColor: '#fff'}}
           horizontal={true}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -225,11 +236,7 @@ const Grades = () => {
         </ScrollView>
       </View>
       <TouchableOpacity
-        style={
-          isLoaded
-            ? styles.saveButton
-            : [styles.saveButton, {backgroundColor: '#ccc'}]
-        }
+        style={styles.saveButton}
         disabled={!isLoaded}
         onPress={() => {
           const fileName = `${classList[classNumber].subject}-${classList[classNumber].section}.xlsx`;
@@ -245,7 +252,7 @@ const Grades = () => {
             })
             .catch(e => alert('Alert', `${e}`));
         }}>
-        <Text style={styles.marginH5}>Save file</Text>
+        <Text style={styles.marginH5}>Save grades as excel file</Text>
         <IconDownload
           style={styles.marginH5}
           height={20}
@@ -253,6 +260,8 @@ const Grades = () => {
           color={Colors.black}
         />
       </TouchableOpacity>
+
+      <ClassroomNav isStudent={false} />
     </>
   );
 };
@@ -267,10 +276,7 @@ const saveFile = (fileName = 'ReadApp.xlsx', data) => {
   const file = RNFS.ExternalStorageDirectoryPath + '/' + fileName;
   writeFile(file, wbout, 'ascii')
     .then(() => {
-      alert(
-        'File saved!',
-        `Look for the file "${fileName}" in your device storage`,
-      );
+      alert('File saved!', `Look for the file "${fileName}" in your storage`);
     })
     .catch(e => {
       alert('Error', `${e}`);
@@ -317,7 +323,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    marginHorizontal: 10,
     alignItems: 'center',
   },
   header: {
@@ -330,12 +335,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 12,
     fontFamily: 'Lato-Regular',
     textAlign: 'center',
-    color: '#ccc',
+    color: '#000',
   },
   dataWrapper: {marginTop: -1},
   row: {height: 40, backgroundColor: '#c4e3ed'},
 });
-export default Grades;
+export default GradesPage;

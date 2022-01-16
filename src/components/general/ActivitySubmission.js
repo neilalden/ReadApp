@@ -9,19 +9,19 @@ import {
   BackHandler,
   Platform,
   PermissionsAndroid,
-  KeyboardAvoidingView,
   Keyboard,
   ToastAndroid,
 } from 'react-native';
-import {ClassContext, fetchSubmision} from '../context/ClassContext';
+
+import {ClassContext, fetchSubmision} from '../../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import RNFS from 'react-native-fs';
 import DocumentPicker from 'react-native-document-picker';
 import FileViewer from 'react-native-file-viewer';
-import IconUpload from '../../assets/uploadFile.svg';
+import IconUpload from '../../../assets/uploadFile.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-import IconRemove from '../../assets/x-circle.svg';
+import IconRemove from '../../../assets/x-circle.svg';
 import {useHistory} from 'react-router';
 import RNFetchBlob from 'rn-fetch-blob';
 import NetInfo from '@react-native-community/netinfo';
@@ -191,9 +191,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
               ? classwork.deadline.toDate()
               : classwork.deadline.seconds * 1000,
           ) ? (
-          <Text style={[styles.subtitle, {color: '#666'}]}>
-            Late submission
-          </Text>
+          <Text style={styles.subtitle}>Late submission</Text>
         ) : (
           <></>
         )}
@@ -213,9 +211,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
         ) {
           return (
             <View style={styles.questionContainer}>
-              <Text style={[styles.subtitle, {color: '#666'}]}>
-                Activity is close
-              </Text>
+              <Text style={styles.subtitle}>Activity is close</Text>
             </View>
           );
         } else if (!userInfo.isStudent) {
@@ -943,7 +939,7 @@ const styles = StyleSheet.create({
   itemSubtitle: {
     fontFamily: 'Lato-Regular',
     marginRight: 5,
-    color: '#666',
+    color: '#000',
   },
 
   header: {
@@ -1012,7 +1008,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Lato-Regular',
     textAlign: 'center',
-    color: '#ccc',
+    color: '#000',
   },
 });
 export default ActivitySubmission;

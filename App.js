@@ -10,27 +10,28 @@ import {NativeRouter, Route, Link} from 'react-router-native';
 import {Alert, BackHandler, PermissionsAndroid} from 'react-native';
 import AuthContextProvider from './src/context/AuthContext';
 import ClassContextProvider from './src/context/ClassContext';
-import Library from './src/components/Library';
-import ClassList from './src/components/ClassList';
-import Register from './src/components/Register';
-import Login from './src/components/Login';
-import Classwork from './src/components/Classwork';
-import Account from './src/components/Account';
-import Classroom from './src/components/Classroom';
-import People from './src/components/People';
-import Materials from './src/components/Materials';
-import Grades from './src/components/Grades';
-import CreateClasswork from './src/components/CreateClasswork';
+
+import LibraryPage from './src/components/general/LibraryPage';
+import MaterialsPage from './src/components/general/MaterialsPage';
+import LoginPage from './src/components/general/LoginPage';
+import RegisterPage from './src/components/general/RegisterPage';
+import ClassListPage from './src/components/general/ClassListPage';
+import ClassroomPage from './src/components/general/ClassroomPage';
+import ClassworkPage from './src/components/general/ClassworkPage';
+import GradesPage from './src/components/teacher/GradesPage';
+import PeoplePage from './src/components/general/PeoplePage';
+import CreateClassworkPage from './src/components/teacher/CreateClassworkPage';
+import FeedPage from './src/components/general/FeedPage';
 
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
   const [subjects, setSubjects] = useState([]);
-  const [currSubj, setCurrSubj] = useState({});
-  const [libSvgRandNum, setLibSvgRandNum] = useState(1);
+  const [currentFolder, setCurrentFolder] = useState({});
+  const [headerImageRandNum, setHeaderImageRandNum] = useState(1);
 
   useEffect(async () => {
     const libRandNum = Math.floor(Math.random() * 16) + 1;
-    setLibSvgRandNum(libRandNum);
+    setHeaderImageRandNum(libRandNum);
     // TO STOP THE BACK BUTTON FROM CLOSING APP
     try {
       const granted = await PermissionsAndroid.request(
@@ -78,57 +79,55 @@ const App = () => {
           exact
           path="/"
           component={() => (
-            <Library
+            <LibraryPage
               subjects={subjects}
               setSubjects={setSubjects}
-              setCurrSubj={setCurrSubj}
-              libSvgRandNum={libSvgRandNum}
+              setCurrentFolder={setCurrentFolder}
+              headerImageRandNum={headerImageRandNum}
             />
           )}
         />
         <Route
           path="/Materials"
-          component={() => <Materials currSubj={currSubj} />}
+          component={() => <MaterialsPage currentFolder={currentFolder} />}
         />
-        <Route path="/Register" component={Register} />
+        <Route path="/Register" component={RegisterPage} />
         <Route
           path="/Login"
           component={() => (
-            <Login userInfo={userInfo} setUserInfo={setUserInfo} />
+            <LoginPage userInfo={userInfo} setUserInfo={setUserInfo} />
           )}
         />
         <ClassContextProvider>
           <Route
-            path="/Account"
-            component={() => (
-              <Account userInfo={userInfo} setUserInfo={setUserInfo} />
-            )}
-          />
-          <Route
             path="/ClassList"
             component={() => (
-              <ClassList userInfo={userInfo} setUserInfo={setUserInfo} />
+              <ClassListPage userInfo={userInfo} setUserInfo={setUserInfo} />
             )}
           />
           <Route
             path="/Classroom"
-            component={() => <Classroom userInfo={userInfo} />}
+            component={() => <ClassroomPage userInfo={userInfo} />}
           />
           <Route
             path="/CreateClasswork"
-            component={() => <CreateClasswork userInfo={userInfo} />}
+            component={() => <CreateClassworkPage userInfo={userInfo} />}
           />
           <Route
             path="/Classwork"
-            component={() => <Classwork userInfo={userInfo} />}
+            component={() => <ClassworkPage userInfo={userInfo} />}
           />
           <Route
-            path="/Grades"
-            component={() => <Grades userInfo={userInfo} />}
+            path="/Feed"
+            component={() => <FeedPage userInfo={userInfo} />}
           />
           <Route
             path="/People"
-            component={() => <People userInfo={userInfo} />}
+            component={() => <PeoplePage userInfo={userInfo} />}
+          />
+          <Route
+            path="/Grades"
+            component={() => <GradesPage userInfo={userInfo} />}
           />
         </ClassContextProvider>
       </AuthContextProvider>

@@ -10,20 +10,20 @@ import {
   ToastAndroid,
 } from 'react-native';
 import {useHistory} from 'react-router';
-import IconLib from '../../assets/books.svg';
-import IconGoBack from '../../assets/goback.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import FileViewer from 'react-native-file-viewer';
 import RNFS from 'react-native-fs';
-import IconRemove from '../../assets/x-circle.svg';
+import IconLib from '../../../assets/books.svg';
+import IconGoBack from '../../../assets/goback.svg';
+import IconRemove from '../../../assets/x-circle.svg';
 
-const Materials = ({currSubj}) => {
+const MaterialsPage = ({currentFolder}) => {
   const history = useHistory();
   const [materials, setMaterials] = useState([]);
   const [refresh, setRefresh] = useState(true);
   useEffect(() => {
     if (refresh) {
-      RNFS.readDir(currSubj.path)
+      RNFS.readDir(currentFolder.path)
         .then(res => {
           setMaterials(res);
           setRefresh(false);
@@ -43,12 +43,12 @@ const Materials = ({currSubj}) => {
         <IconLib height={40} width={40} color={Colors.black} />
         <Text style={styles.headerText}>Library</Text>
         <TouchableOpacity onPress={() => history.push('/')}>
-          <IconGoBack height={25} width={40} color={Colors.black} />
+          <IconGoBack height={30} width={30} color={Colors.black} />
         </TouchableOpacity>
       </View>
       <ScrollView>
         <View style={styles.subtitleContainer}>
-          <Text style={styles.itemSubtitle}>{currSubj.name}</Text>
+          <Text style={styles.itemSubtitle}>{currentFolder.name}</Text>
         </View>
 
         {materials.map((item, index) => {
@@ -59,7 +59,7 @@ const Materials = ({currSubj}) => {
                 onPress={() => handleOpenFile(item.path, item.name)}>
                 <Text>{item.name}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={{
                   width: '20%',
                   padding: 20,
@@ -68,7 +68,7 @@ const Materials = ({currSubj}) => {
                   handleDeleteFile(item.path, item.name, setRefresh)
                 }>
                 <IconRemove height={30} width={30} color={'red'} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           );
         })}
@@ -134,7 +134,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   itemText: {
-    width: '80%',
+    height: 50,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -155,4 +156,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Materials;
+export default MaterialsPage;

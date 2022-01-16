@@ -11,13 +11,12 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import {useHistory} from 'react-router';
-import {AuthContext} from '../context/AuthContext';
+import {AuthContext} from '../../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
 import Nav from './Nav';
-import IconLib from '../../assets/register.svg';
-import auth from '@react-native-firebase/auth';
+import IconLib from '../../../assets/register.svg';
 
-const Register = () => {
+const RegisterPage = () => {
   const [id, setId] = useState('');
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -268,4 +267,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Register;
+export default RegisterPage;
