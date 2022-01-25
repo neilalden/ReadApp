@@ -1,6 +1,7 @@
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import React, {useContext} from 'react';
+import {View, Text, StyleSheet, Image} from 'react-native';
 import {ClassContext} from '../../context/ClassContext';
+import {Link} from 'react-router-native';
 
 const StudentClassList = () => {
   const {classList, setClassNumber} = useContext(ClassContext);
@@ -50,11 +51,11 @@ const styles = StyleSheet.create({
   item: {
     backgroundColor: '#ADD8E6',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 15,
     justifyContent: 'space-between',
     flexDirection: 'row',
     marginHorizontal: 10,
-    marginVertical: 3,
+    marginVertical: 5,
   },
   header: {
     fontFamily: 'Lato-Regular',
@@ -71,6 +72,13 @@ const styles = StyleSheet.create({
   },
   teachersNameContainer: {
     flexDirection: 'row',
+  },
+  itemPic: {
+    flexDirection: 'row',
+    borderRadius: 50,
+    height: 50,
+    width: 50,
+    alignSelf: 'center',
   },
 });
 

@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexDirection: 'row',
     marginHorizontal: 10,
-    marginVertical: 3,
+    marginVertical: 5,
   },
   header: {
     fontFamily: 'Lato-Regular',

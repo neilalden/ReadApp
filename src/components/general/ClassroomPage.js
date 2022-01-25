@@ -12,10 +12,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 import {Link, useHistory} from 'react-router-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
+import IconGoBack from '../../../assets/goback.svg';
 import IconAddClass from '../../../assets/addClass.svg';
-import IconDrafts from '../../../assets/sd-card.svg';
+import IconDrafts from '../../../assets/archive.svg';
+import IconDelete from '../../../assets/trash.svg';
 
 import {ClassContext, fetchClassworkList} from '../../context/ClassContext';
 import ClassroomHeader from './ClassroomHeader';
@@ -88,11 +91,23 @@ const ClassroomPage = ({userInfo}) => {
           classNumber={classNumber}
           history={history}
         />
-        <ClassworkList
-          classList={classList}
-          classNumber={classNumber}
-          setClassworkNumber={setClassworkNumber}
-        />
+        {showDrafts ? (
+          <DraftsList
+            drafts={drafts}
+            setDrafts={setDrafts}
+            classList={classList}
+            classNumber={classNumber}
+            isConnected={isConnected}
+            onRefresh={onRefresh}
+            setShowDrafts={setShowDrafts}
+          />
+        ) : (
+          <ClassworkList
+            classList={classList}
+            classNumber={classNumber}
+            setClassworkNumber={setClassworkNumber}
+          />
+        )}
       </ScrollView>
       <ClassroomNav isStudent={userInfo.isStudent} />
     </>
@@ -116,7 +131,7 @@ const ClassworkList = ({classList, classNumber, setClassworkNumber}) => {
             const year = dt.getFullYear();
             const hour = dt.getHours();
             const minute = dt.getMinutes();
-            const ampm = hour >= 12 ? 'pm' : 'am';
+            const ampm = hour > 12 ? 'pm' : 'am';
             return (
               <Link
                 to="/Classwork"
@@ -131,7 +146,7 @@ const ClassworkList = ({classList, classNumber, setClassworkNumber}) => {
                     <Text style={styles.itemText}>{item.title}</Text>
                     <Text style={styles.itemTextSubs}>
                       Deadline: {MONTHS[month]}/{day}/{year}{' '}
-                      {hour >= 12 ? hour - 12 : hour}:{minute} {ampm}
+                      {hour > 12 ? hour - 12 : hour}:{minute} {ampm}
                     </Text>
                   </View>
                   {item.closeOnDeadline && (
@@ -185,12 +200,22 @@ const Segment = ({
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={[styles.addButton, {flexDirection: 'row'}]}
+          style={[
+            showDrafts ? styles.addButton : styles.archiveButton,
+            {flexDirection: 'row'},
+          ]}
           onPress={handleShowDrafts}>
           {showDrafts ? (
-            <IconGoBack height={25} width={25} style={styles.addIcon} />
+            <IconGoBack height={30} width={30} style={styles.addIcon} />
           ) : (
-            <IconDrafts height={25} width={25} style={styles.addIcon} />
+            <IconDrafts
+              height={20}
+              width={20}
+              style={{
+                color: '#fff',
+                alignSelf: 'center',
+              }}
+            />
           )}
         </TouchableOpacity>
       )}
@@ -198,17 +223,228 @@ const Segment = ({
   );
 };
 
+const DraftsList = ({
+  drafts,
+  setDrafts,
+  classList,
+  classNumber,
+  isConnected,
+  onRefresh,
+  setShowDrafts,
+}) => {
+  return (
+    <ScrollView>
+      {drafts.length > 0 ? (
+        drafts.map((item, index) => {
+          return (
+            <View key={index} style={styles.item}>
+              <TouchableOpacity
+                style={{padding: 15, width: '85%'}}
+                onPress={() =>
+                  submitDraft(
+                    drafts,
+                    setDrafts,
+                    index,
+                    classList[classNumber].classId,
+                    isConnected,
+                    onRefresh,
+                    setShowDrafts,
+                  )
+                }>
+                <Text>{item.title}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteIconContainer}
+                onPress={() =>
+                  removeDraft(
+                    drafts,
+                    setDrafts,
+                    index,
+                    classList[classNumber].classId,
+                  )
+                }>
+                <IconDelete height={30} width={30} color={'red'} />
+              </TouchableOpacity>
+            </View>
+          );
+        })
+      ) : (
+        <Text style={styles.itemTextSubs}>No drafts</Text>
+      )}
+    </ScrollView>
+  );
+};
+
+const submitDraft = (
+  drafts,
+  setDrafts,
+  index,
+  classId,
+  isConnected,
+  onRefresh,
+  setShowDrafts,
+) => {
+  // check for connection
+  // check if graded, if graded remove draft
+  // if there are files, get url
+  if (!isConnected) {
+    alert('You need internet connection to submit classworks');
+  } else {
+    NetInfo.addEventListener(state => {
+      if (state.type == 'wifi') {
+        if (state.details.strength < 5) {
+          alert(
+            'Failed to submit activity due to week internet connection.\n Try again later',
+            'Unable to submit activity',
+          );
+          return;
+        } else {
+          firestore()
+            .collection(`${drafts[index].path}`)
+            .doc(drafts[index].id)
+            .get()
+            .then(async res => {
+              if (res.data() && res.data().score) {
+                let draftsArr = [...drafts];
+                draftsArr.splice(index, 1);
+                setDrafts(draftsArr);
+                AsyncStorage.setItem(
+                  `drafts-${classId}`,
+                  JSON.stringify({drafts: draftsArr}),
+                )
+                  .then(() => {})
+                  .catch(e => alert(e.message));
+                alert(`You have already complied in this classwork`);
+              } else {
+                // check for files
+                let files = drafts[index].files ? drafts[index].files : [];
+                let work = drafts[index].work ? drafts[index].work : '';
+
+                if (files.length > 0) {
+                  for (let i in files) {
+                    const pathArr = drafts[index].path.split('/');
+                    const filePath = `${pathArr[1]}/${pathArr[2]}/${pathArr[3]}/`;
+                    // const documentUri = await getPathForFirebaseStorage(files[i].uri);
+                    const reference = storage().ref(
+                      filePath + files[i].fileName,
+                    );
+                    let urls = [];
+                    reference
+                      .putFile(files[i].uri)
+                      .then(() => {
+                        urls.push(filePath + files[i].fileName);
+                        if (urls.length === files.length) {
+                          firestore()
+                            .collection(drafts[index].path)
+                            .doc(drafts[index].id)
+                            .set({
+                              submittedAt:
+                                firestore.FieldValue.serverTimestamp(),
+                              files: urls,
+                              work: work,
+                            })
+                            .then(() => {
+                              let copyDrafts = [...drafts];
+                              copyDrafts.splice(index, 1);
+                              AsyncStorage.setItem(
+                                `drafts-${classId}`,
+                                JSON.stringify({drafts: copyDrafts}),
+                              )
+                                .then(() => {
+                                  setDrafts(copyDrafts);
+                                  setShowDrafts(false);
+                                  onRefresh();
+                                  alert(`Success`);
+                                })
+                                .catch(e => alert(e.message));
+                            })
+                            .catch(e => alert(e));
+                        }
+                      })
+                      .catch(e => {
+                        alert(e);
+                      });
+                  }
+                } else {
+                  // quiz classwork has score attribute
+                  let score = drafts[index].score;
+                  firestore()
+                    .collection(drafts[index].path)
+                    .doc(drafts[index].id)
+                    .set(
+                      score
+                        ? {
+                            submittedAt: firestore.FieldValue.serverTimestamp(),
+                            files: [],
+                            work: work,
+                            score: score,
+                          }
+                        : {
+                            submittedAt: firestore.FieldValue.serverTimestamp(),
+                            files: [],
+                            work: work,
+                          },
+                    )
+                    .then(() => {
+                      let copyDrafts = [...drafts];
+                      copyDrafts.splice(index, 1);
+                      AsyncStorage.setItem(
+                        `drafts-${classId}`,
+                        JSON.stringify({drafts: copyDrafts}),
+                      )
+                        .then(() => {
+                          setDrafts(copyDrafts);
+                          setShowDrafts(false);
+                          onRefresh();
+                          alert(`Success`);
+                        })
+                        .catch(e => alert(e.message));
+                    })
+                    .catch(e => alert(e));
+                }
+
+                // save to firestore
+              }
+            })
+            .catch(e => alert(e.message));
+        }
+      }
+    });
+  }
+};
+const removeDraft = (drafts, setDrafts, index, classId) => {
+  let copyDrafts = [...drafts];
+  copyDrafts.splice(index, 1);
+  AsyncStorage.setItem(
+    `drafts-${classId}`,
+    JSON.stringify({drafts: copyDrafts}),
+  )
+    .then(() => {
+      setDrafts(copyDrafts);
+    })
+    .catch(e => alert(e.message));
+};
+
 const styles = StyleSheet.create({
   addButton: {
     margin: 10,
     alignSelf: 'flex-end',
   },
+  archiveButton: {
+    margin: 10,
+    alignSelf: 'flex-end',
+    backgroundColor: '#ADD8E6',
+    borderRadius: 50,
+    height: 30,
+    width: 30,
+    justifyContent: 'center',
+  },
   item: {
     height: 70,
-    marginHorizontal: 10,
-    paddingHorizontal: 15,
-    marginBottom: 5,
     borderRadius: 10,
+    paddingHorizontal: 15,
+    marginHorizontal: 10,
+    marginVertical: 5,
     backgroundColor: '#ADD8E6',
     fontFamily: 'Lato-Regular',
     flexDirection: 'row',
@@ -220,7 +456,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   itemTextSubs: {
-    fontFamily: 'Lato-Regular',
     fontSize: 12,
     fontFamily: 'Lato-Regular',
     textAlign: 'center',
@@ -235,6 +470,13 @@ const styles = StyleSheet.create({
   addIcon: {
     backgroundColor: '#ADD8E6',
     color: '#fff',
+    borderRadius: 50,
+  },
+  deleteIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 5,
+    backgroundColor: '#fff',
     borderRadius: 50,
   },
 });

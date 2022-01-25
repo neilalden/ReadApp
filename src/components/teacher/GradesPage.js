@@ -20,6 +20,7 @@ import ClassroomHeader from '../general/ClassroomHeader';
 import ClassroomNav from '../general/ClassroomNav';
 import {ClassContext, fetchSubmissionList} from '../../context/ClassContext';
 
+import NetInfo from '@react-native-community/netinfo';
 const GradesPage = ({userInfo}) => {
   const [data, setData] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -36,6 +37,7 @@ const GradesPage = ({userInfo}) => {
     setClassListGrades,
   } = useContext(ClassContext);
   const history = useHistory();
+  const [isConnected, setIsConnected] = useState(true);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -47,6 +49,9 @@ const GradesPage = ({userInfo}) => {
   };
 
   useEffect(() => {
+    NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
     const classworkList = classList[classNumber].classworkList;
     const students = classList[classNumber].students;
     const classId = classList[classNumber].classId;
@@ -101,9 +106,8 @@ const GradesPage = ({userInfo}) => {
     if (classListGrades[classId]) {
       // Data is loaded before
       setIsLoaded(true);
-      // renderData();
+      if (isConnected) renderData();
     }
-    return;
     for (const i in classworkList) {
       if (!classworkList[i].submissionList) {
         fetchSubmissionList(classNumber, i, classList, setClassList);
@@ -154,7 +158,7 @@ const GradesPage = ({userInfo}) => {
   }, [classList, isLoaded, refreshing]);
 
   if (
-    !classList[classNumber].students ||
+    classList[classNumber].classworkList.length == 0 ||
     classList[classNumber].students.length == 0
   ) {
     return (
@@ -167,7 +171,7 @@ const GradesPage = ({userInfo}) => {
             subject={classList[classNumber].subject}
             section={classList[classNumber].section}
           />
-          <Text style={styles.subtitle}>No students to grade yet</Text>
+          <Text style={styles.subtitle}>No students or classworks yet</Text>
         </ScrollView>
 
         <ClassroomNav isStudent={false} />
@@ -201,7 +205,7 @@ const GradesPage = ({userInfo}) => {
       />
       <View style={styles.container}>
         <ScrollView
-          style={{backgroundColor: '#fff'}}
+          style={{backgroundColor: '#fff', marginHorizontal: 1}}
           horizontal={true}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

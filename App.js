@@ -8,6 +8,10 @@
 import React, {useEffect, useState} from 'react';
 import {NativeRouter, Route, Link} from 'react-router-native';
 import {Alert, BackHandler, PermissionsAndroid} from 'react-native';
+
+import messaging from '@react-native-firebase/messaging';
+import PushNotification from 'react-native-push-notification';
+
 import AuthContextProvider from './src/context/AuthContext';
 import ClassContextProvider from './src/context/ClassContext';
 
@@ -21,6 +25,7 @@ import ClassworkPage from './src/components/general/ClassworkPage';
 import GradesPage from './src/components/teacher/GradesPage';
 import PeoplePage from './src/components/general/PeoplePage';
 import CreateClassworkPage from './src/components/teacher/CreateClassworkPage';
+import CreatePostPage from './src/components/general/CreatePostPage';
 import FeedPage from './src/components/general/FeedPage';
 
 const App = () => {
@@ -66,11 +71,15 @@ const App = () => {
       alert('Error', `${err}`);
     }
 
-    BackHandler.addEventListener('hardwareBackPress', () => {
-      return true;
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      PushNotification.localNotification({
+        message: remoteMessage.notification.body,
+        title: remoteMessage.notification.title,
+        bigPictureUrl: remoteMessage.notification.android.imageUrl,
+        smallIcon: remoteMessage.notification.android.imageUrl,
+      });
     });
-    return () =>
-      BackHandler.removeEventListener('hardwareBackPress', () => true);
+    return unsubscribe;
   }, []);
   return (
     <NativeRouter>
@@ -114,6 +123,10 @@ const App = () => {
             component={() => <CreateClassworkPage userInfo={userInfo} />}
           />
           <Route
+            path="/CreatePost"
+            component={() => <CreatePostPage userInfo={userInfo} />}
+          />
+          <Route
             path="/Classwork"
             component={() => <ClassworkPage userInfo={userInfo} />}
           />
@@ -134,6 +147,7 @@ const App = () => {
     </NativeRouter>
   );
 };
+
 const alert = (title = 'Error', msg) => {
   if (title == 'Exit') {
     Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [

@@ -20,9 +20,9 @@ import {
 } from '../../context/ClassContext';
 import IconAddClass from '../../../assets/addClass.svg';
 import IconRemove from '../../../assets/x-circle.svg';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
-import {useHistory} from 'react-router';
+import IconLeave from '../../../assets/leave.svg';
 import IconGoBack from '../../../assets/goback.svg';
+import {useHistory} from 'react-router';
 import ClassroomNav from './ClassroomNav';
 
 const PeoplePage = ({userInfo}) => {
@@ -35,12 +35,16 @@ const PeoplePage = ({userInfo}) => {
   const history = useHistory();
   useEffect(() => {
     BackHandler.addEventListener('hardwareBackPress', () => {
-      history.push('/ClassList');
+      if (showWorks) {
+        setShowWorks(false);
+      } else {
+        history.push('/ClassList');
+      }
       return true;
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, []);
+  }, [showWorks]);
   const showStudentWorks = student => {
     if (userInfo.isStudent) {
       alert('Stop!', 'Teachers are only allowed to add people to classes');
@@ -54,46 +58,60 @@ const PeoplePage = ({userInfo}) => {
   };
   if (showWorks && !userInfo.isStudent) {
     return (
-      <ScrollView>
-        <ClassroomHeader
-          subject={classList[classNumber].subject}
-          section={classList[classNumber].section}
-        />
-        <View style={styles.headerContainer}>
-          <Text style={[styles.header, {color: 'white'}]}>{workBy.name}</Text>
-          <TouchableOpacity
-            onPress={() => setShowWorks(false)}
-            style={{alignSelf: 'center'}}>
-            <IconGoBack height={40} width={40} color={Colors.white} />
-          </TouchableOpacity>
-        </View>
-        {classList[classNumber].classworkList &&
-          classList[classNumber].classworkList.map((item, index) => {
-            let submitted = false;
-            let score = 0;
-            const slist = item.submissionList;
-            for (let i in slist) {
-              if (
-                (slist[i].submittedBy.id == workBy.id &&
-                  slist[i].work &&
-                  slist[i].work !== '') ||
-                (slist[i].files && slist[i].files.length !== 0)
-              ) {
-                submitted = true;
-                score = slist[i].score;
+      <>
+        <ScrollView>
+          <View style={styles.headerContainer}>
+            <TouchableOpacity
+              onPress={() =>
+                deletePersonFromClass(
+                  true,
+                  workBy,
+                  classNumber,
+                  classList,
+                  setClassList,
+                  userInfo,
+                  setShowWorks,
+                )
               }
-            }
-            return (
-              <View key={index} style={[styles.item, {flexDirection: 'row'}]}>
-                <View>
-                  <Text>{item.title}</Text>
-                  <Text>{submitted ? 'Submitted' : 'Missing'}</Text>
+              style={styles.iconContainer}>
+              <IconLeave height={25} width={25} style={styles.leaveIcon} />
+            </TouchableOpacity>
+            <Text style={[styles.header, {color: 'white'}]}>{workBy.name}</Text>
+            <TouchableOpacity
+              onPress={() => setShowWorks(false)}
+              style={styles.iconContainer}>
+              <IconGoBack height={25} width={25} style={styles.backIcon} />
+            </TouchableOpacity>
+          </View>
+          {classList[classNumber].classworkList &&
+            classList[classNumber].classworkList.map((item, index) => {
+              let submitted = false;
+              let score = 0;
+              const slist = item.submissionList;
+              for (let i in slist) {
+                if (
+                  (slist[i].submittedBy.id == workBy.id &&
+                    slist[i].work &&
+                    slist[i].work !== '') ||
+                  (slist[i].files && slist[i].files.length !== 0)
+                ) {
+                  submitted = true;
+                  score = slist[i].score;
+                }
+              }
+              return (
+                <View key={index} style={[styles.item, {flexDirection: 'row'}]}>
+                  <View>
+                    <Text>{item.title}</Text>
+                    <Text>{submitted ? 'Submitted' : 'Missing'}</Text>
+                  </View>
+                  <Text>{score}</Text>
                 </View>
-                <Text>{score}</Text>
-              </View>
-            );
-          })}
-      </ScrollView>
+              );
+            })}
+        </ScrollView>
+        <ClassroomNav isStudent={userInfo.isStudent} />
+      </>
     );
   }
   return (
@@ -118,61 +136,27 @@ const PeoplePage = ({userInfo}) => {
         </View>
         {classList[classNumber].teachers &&
           classList[classNumber].teachers.map((item, index) => {
-            if (item.id === userInfo.id || userInfo.isStudent) {
-              return (
-                <View
-                  style={[
-                    styles.item,
-                    {flexDirection: 'row', justifyContent: 'flex-start'},
-                  ]}
-                  key={index}>
-                  <Image
-                    style={styles.itemPic}
-                    source={{
-                      uri: item.photoUrl,
-                    }}
-                  />
-                  <View style={styles.deleteButton}>
-                    <View>
-                      <Text>{item.name}</Text>
-                      <Text style={styles.subtitle}>{item.id}</Text>
-                    </View>
+            return (
+              <View
+                style={[
+                  styles.item,
+                  {flexDirection: 'row', justifyContent: 'flex-start'},
+                ]}
+                key={index}>
+                <Image
+                  style={styles.itemPic}
+                  source={{
+                    uri: item.photoUrl,
+                  }}
+                />
+                <View style={styles.deleteButton}>
+                  <View>
+                    <Text>{item.name}</Text>
+                    <Text style={styles.subtitle}>{item.id}</Text>
                   </View>
                 </View>
-              );
-            } else {
-              return (
-                <TouchableOpacity
-                  style={styles.item}
-                  key={index}
-                  onPress={() =>
-                    deletePersonFromClass(
-                      false,
-                      item,
-                      classNumber,
-                      classList,
-                      setClassList,
-                      userInfo,
-                    )
-                  }>
-                  <View style={styles.deleteButton}>
-                    <View style={{flexDirection: 'row'}}>
-                      <Image
-                        style={styles.itemPic}
-                        source={{
-                          uri: item.photoUrl,
-                        }}
-                      />
-                      <View>
-                        <Text>{item.name}</Text>
-                        <Text style={styles.subtitle}>{item.id}</Text>
-                      </View>
-                    </View>
-                    <IconRemove height={30} width={30} color={'red'} />
-                  </View>
-                </TouchableOpacity>
-              );
-            }
+              </View>
+            );
           })}
         <View style={styles.itemSubtitleContainer}>
           <Text style={[styles.header, {paddingVertical: 13}]}>Students</Text>
@@ -192,39 +176,25 @@ const PeoplePage = ({userInfo}) => {
           classList[classNumber].students.map((item, index) => {
             if (!userInfo.isStudent) {
               return (
-                <View style={styles.item} key={index}>
+                <TouchableOpacity
+                  onPress={() => showStudentWorks(item)}
+                  style={[styles.item, {flexDirection: 'row'}]}
+                  key={index}>
                   <View style={styles.deleteButton}>
-                    <TouchableOpacity
-                      onPress={() => showStudentWorks(item)}
-                      style={{flexDirection: 'row'}}>
-                      <View>
-                        <Image
-                          style={styles.itemPic}
-                          source={{
-                            uri: item.photoUrl,
-                          }}
-                        />
-                      </View>
-                      <View>
-                        <Text>{item.name}</Text>
-                        <Text style={styles.subtitle}>{item.id}</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() =>
-                        deletePersonFromClass(
-                          true,
-                          item,
-                          classNumber,
-                          classList,
-                          setClassList,
-                          userInfo,
-                        )
-                      }>
-                      <IconRemove height={30} width={30} color={'red'} />
-                    </TouchableOpacity>
+                    <View>
+                      <Image
+                        style={styles.itemPic}
+                        source={{
+                          uri: item.photoUrl,
+                        }}
+                      />
+                    </View>
+                    <View>
+                      <Text>{item.name}</Text>
+                      <Text style={styles.subtitle}>{item.id}</Text>
+                    </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             } else {
               return (
@@ -254,11 +224,8 @@ const PeoplePage = ({userInfo}) => {
           <ScrollView>
             <Text
               style={[
-                styles.header,
-                {
-                  alignSelf: 'flex-start',
-                  color: 'black',
-                },
+                styles.subtitle,
+                {margin: 10, marginTop: 30, textAlign: 'center'},
               ]}>
               People to be added autmomatically after they create an account
             </Text>
@@ -347,9 +314,8 @@ const AddPeople = ({
 }) => {
   return (
     <View style={styles.addPeopleContainer}>
-      <Text style={styles.header}>Add {isStudent ? 'student' : 'seacher'}</Text>
       <TextInput
-        placeholder="ID"
+        placeholder={`${isStudent ? 'Student' : 'Teacher'} ID`}
         keyboardType="numeric"
         value={accountId}
         style={styles.addPeopleInput}
@@ -379,7 +345,7 @@ const AddPeople = ({
             userInfo,
           );
         }}>
-        <Text>Add</Text>
+        <Text>Add {isStudent ? 'student' : 'teacher'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -450,12 +416,13 @@ const deletePersonFromQueue = (
 };
 
 const deletePersonFromClass = (
-  isStudent,
+  toDeleteIsStudent,
   account,
   classNumber,
   classList,
   setClassList,
   userInfo,
+  setShowWorks,
 ) => {
   if (userInfo.isStudent) {
     alert('Stop!', 'Teachers are only allowed to remove people from classes');
@@ -463,7 +430,7 @@ const deletePersonFromClass = (
   }
   Alert.alert(
     'Are you sure?',
-    `Remove ${account.name} from ${classList[classNumber].subject}`,
+    `Remove ${account.name} from ${classList[classNumber].subject} class`,
     [
       {
         text: 'Yes',
@@ -472,7 +439,7 @@ const deletePersonFromClass = (
           let students = [...classList[classNumber].students];
           let teachers = [...classList[classNumber].teachers];
           // UPDATE CLASS COLLECTION
-          if (isStudent) {
+          if (toDeleteIsStudent) {
             for (const i in students) {
               if (students[i].id === account.id) {
                 students.splice(i, 1);
@@ -486,7 +453,7 @@ const deletePersonFromClass = (
             }
           }
           let data = {};
-          isStudent
+          toDeleteIsStudent
             ? (data = {students: students})
             : (data = {teachers: teachers});
           // UPDATE THE CLASS COLLECTION WITH DELETE USER
@@ -496,7 +463,7 @@ const deletePersonFromClass = (
             .update(data)
             .then(() => {
               let classListCopy = [...classList];
-              if (isStudent) {
+              if (toDeleteIsStudent) {
                 classListCopy[classNumber].students = students;
               } else {
                 classListCopy[classNumber].teachers = teachers;
@@ -518,7 +485,9 @@ const deletePersonFromClass = (
                     .collection(`users`)
                     .doc(account.id)
                     .update({classes: userClasses})
-                    .then(() => {})
+                    .then(() => {
+                      setShowWorks(false);
+                    })
                     .catch(e => {
                       alert('error in updating user classes', e);
                     });
@@ -634,7 +603,7 @@ const addPersonToClass = (
           'Are you sure?',
           `Add ${res.data().name} as a ${
             isStudent ? 'student' : 'teacher'
-          } to ${classList[classNumber].subject}`,
+          } to ${classList[classNumber].subject} class`,
           [
             {
               text: 'Yes',
@@ -728,7 +697,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'space-between',
     marginHorizontal: 10,
-    marginVertical: 3,
+    marginVertical: 5,
   },
   header: {
     color: 'black',
@@ -741,15 +710,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#3d3d3d',
     justifyContent: 'space-between',
     width: 'auto',
+    height: 60,
     marginHorizontal: 15,
     marginVertical: 10,
     borderRadius: 10,
     flexDirection: 'row',
   },
   subtitle: {
-    fontSize: 10,
+    fontFamily: 'Lato-Regular',
+    color: '#000',
+    fontSize: 12,
   },
   itemSubtitle: {
+    fontFamily: 'Lato-Regular',
     fontSize: 12,
   },
   itemSubtitleContainer: {
@@ -772,6 +745,7 @@ const styles = StyleSheet.create({
   },
   addPeopleContainer: {
     alignItems: 'center',
+    marginTop: 20,
   },
   addPeopleInput: {
     minWidth: 200,
@@ -779,7 +753,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     padding: 0,
     width: 200,
-    marginTop: 5,
+    marginVertical: 10,
   },
   addPeopleButton: {
     backgroundColor: '#ADD8E6',
@@ -797,6 +771,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#ADD8E6',
     color: '#fff',
     borderRadius: 50,
+  },
+  backIcon: {
+    color: '#ADD8E6',
+  },
+  leaveIcon: {
+    color: 'red',
+  },
+  iconContainer: {
+    backgroundColor: '#fff',
+    padding: 5,
+    borderRadius: 50,
+    alignSelf: 'center',
+    marginHorizontal: 5,
   },
 });
 export default PeoplePage;

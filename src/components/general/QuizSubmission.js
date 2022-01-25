@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   },
   questionContainer: {
     backgroundColor: '#ADD8E6',
-    borderRadius: 15,
+    borderRadius: 10,
     marginHorizontal: 15,
     marginVertical: 5,
     paddingVertical: 10,

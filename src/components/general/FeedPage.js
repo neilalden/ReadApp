@@ -1,4 +1,4 @@
-import React, {useContext, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -7,139 +7,236 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ToastAndroid,
+  BackHandler,
+  RefreshControl,
 } from 'react-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {useHistory} from 'react-router';
-import {ClassContext} from '../../context/ClassContext';
+import {ClassContext, fetchPosts} from '../../context/ClassContext';
 import {AuthContext} from '../../context/AuthContext';
 import IconAddClass from '../../../assets/addClass.svg';
 import IconSend from '../../../assets/send.svg';
 import ClassroomHeader from './ClassroomHeader';
 import ClassroomNav from './ClassroomNav';
+import ViewPostPage from './ViewPostPage';
 const FeedPage = ({userInfo}) => {
-  /***HOOKS***/
+  /***STATES***/
   const {classNumber, classList, setClassList} = useContext(ClassContext);
   const {user} = useContext(AuthContext);
   const history = useHistory();
-  const [posts, setPosts] = useState([
-    {
-      title: 'Lorem Ipsum',
-      body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam ac dolor ut nibh iaculis fermentum nec eu augue. Integer vitae iaculis odio, vel dictum diam. Duis tristique urna id nibh malesuada blandit. Nunc tempus faucibus rutrum. Integer porttitor diam nec convallis blandit. Donec dui nisl, pharetra suscipit ante at, cursus gravida odio. Etiam pretium orci eget enim pulvinar, vitae condimentum tortor consequat. Sed tincidunt molestie turpis a porta. Aliquam vitae tempus est.',
-      files: ['image.png'],
-    },
+  const [viewPost, setViewPost] = useState(false);
+  const [post, setPost] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
 
-    {
-      title: 'Lorem Ipsum',
-      body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam ac dolor ut nibh iaculis fermentum nec eu augue. Integer vitae iaculis odio, vel dictum diam. Duis tristique urna id nibh malesuada blandit. Nunc tempus faucibus rutrum. Integer porttitor diam nec convallis blandit. Donec dui nisl, pharetra suscipit ante at, cursus gravida odio. Etiam pretium orci eget enim pulvinar, vitae condimentum tortor consequat. Sed tincidunt molestie turpis a porta. Aliquam vitae tempus est.',
-      files: ['image.png'],
-    },
+  /***HOOKS***/
 
-    {
-      title: 'Lorem Ipsum',
-      body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam ac dolor ut nibh iaculis fermentum nec eu augue. Integer vitae iaculis odio, vel dictum diam. Duis tristique urna id nibh malesuada blandit. Nunc tempus faucibus rutrum. Integer porttitor diam nec convallis blandit. Donec dui nisl, pharetra suscipit ante at, cursus gravida odio. Etiam pretium orci eget enim pulvinar, vitae condimentum tortor consequat. Sed tincidunt molestie turpis a porta. Aliquam vitae tempus est.',
-      files: ['image.png'],
-    },
+  useEffect(() => {
+    if (
+      classList[classNumber].posts === undefined ||
+      classList[classNumber].posts.length === 0
+    ) {
+      fetchPosts(classNumber, classList, setClassList);
+    }
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      if (viewPost) {
+        setViewPost(false);
+      } else {
+        history.push('/ClassList');
+      }
+      return true;
+    });
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
+  }, [viewPost]);
 
-    {
-      title: 'Lorem Ipsum',
-      body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam ac dolor ut nibh iaculis fermentum nec eu augue. Integer vitae iaculis odio, vel dictum diam. Duis tristique urna id nibh malesuada blandit. Nunc tempus faucibus rutrum. Integer porttitor diam nec convallis blandit. Donec dui nisl, pharetra suscipit ante at, cursus gravida odio. Etiam pretium orci eget enim pulvinar, vitae condimentum tortor consequat. Sed tincidunt molestie turpis a porta. Aliquam vitae tempus est.',
-      files: ['image.png'],
-    },
-  ]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPosts(classNumber, classList, setClassList);
+    wait(1000).then(() => setRefreshing(false));
+  }, []);
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
 
   return (
     <>
-      <ScrollView style={{backgroundColor: '#fff'}}>
-        <ClassroomHeader
-          subject={classList[classNumber].subject}
-          section={classList[classNumber].section}
-        />
-        <Segment />
-        {posts.map((item, index) => {
-          return (
-            <TouchableOpacity key={index} style={styles.cardContainer}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardBody}>
-                  {item.body.length > 255
-                    ? `${item.body.substr(0, 255)}...`
-                    : item.body}
-                </Text>
-                <View style={styles.sendContainer}>
-                  <TextInput
-                    style={styles.cardTextInput}
-                    placeholder="Type here"
-                  />
-                  <TouchableOpacity
-                    style={styles.cardSendIcon}
-                    onPress={() => {
-                      ToastAndroid.show(
-                        'A pikachu appeared nearby !',
-                        ToastAndroid.LONG,
-                      );
-                    }}>
-                    <IconSend height={30} width={30} color={Colors.black} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <ScrollView
+        style={{backgroundColor: '#fff'}}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
+        {!viewPost && (
+          <ClassroomHeader
+            subject={classList[classNumber].subject}
+            section={classList[classNumber].section}
+          />
+        )}
+        {!viewPost && <Segment history={history} />}
+        {viewPost ? (
+          <ViewPostPage
+            userInfo={userInfo}
+            post={post}
+            setPost={setPost}
+            setViewPost={setViewPost}
+          />
+        ) : (
+          <PostList
+            posts={classList[classNumber].posts}
+            setPost={setPost}
+            setViewPost={setViewPost}
+            classList={classList}
+            classNumber={classNumber}
+          />
+        )}
       </ScrollView>
       <ClassroomNav isStudent={userInfo.isStudent} />
     </>
   );
 };
-const Segment = () => {
+
+/***COMPONENTS***/
+const Segment = ({history}) => {
   return (
     <View style={styles.curvedSegment}>
-      <Text style={[styles.header]}>
-        <TouchableOpacity
-          style={styles.settingsToggle}
-          onPress={() => {
-            ToastAndroid.show('hello world', ToastAndroid.LONG);
-          }}>
-          <IconAddClass height={30} width={30} style={styles.addIcon} />
-        </TouchableOpacity>
-      </Text>
+      <TouchableOpacity
+        style={styles.settingsToggle}
+        onPress={() => {
+          history.push('/CreatePost');
+        }}>
+        <IconAddClass height={30} width={30} style={styles.addIcon} />
+      </TouchableOpacity>
     </View>
   );
 };
+const PostList = ({posts, setPost, setViewPost, classNumber, classList}) => {
+  const handlePostClick = post => {
+    setViewPost(true);
+    setPost(post);
+  };
+  const students = classList[classNumber].students;
+  const teachers = classList[classNumber].teachers;
+  const classId = classList[classNumber].classId;
 
+  return (
+    <ScrollView>
+      {posts && posts.length > 0 ? (
+        <ScrollView>
+          {posts.map((post, index) => {
+            let author = {};
+            students.forEach(student => {
+              if (student.id == post.author) {
+                author = student;
+              }
+            });
+            teachers.forEach(teacher => {
+              if (teacher.id == post.author) {
+                author = teacher;
+              }
+            });
+
+            let dt = new Date(
+              post.createdAt.toDate
+                ? post.createdAt.toDate()
+                : post.createdAt.seconds * 1000,
+            );
+            const day = dt.getDate();
+            const month = dt.getMonth();
+            const year = dt.getFullYear();
+            const hour = dt.getHours();
+            const minute = dt.getMinutes();
+            const ampm = hour > 12 ? 'pm' : 'am';
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.card}
+                onPress={() => handlePostClick(post)}>
+                <View style={styles.authorInfoContainer}>
+                  <Image
+                    style={styles.userPic}
+                    source={{
+                      uri: author.photoUrl,
+                    }}
+                  />
+                  <View>
+                    <Text style={styles.cardTitleText}>{author.name}</Text>
+                    <Text style={styles.cardSubtitleText}>
+                      {MONTHS[month]}/{day}/{year}
+                      &nbsp;&nbsp;
+                      {hour > 12 ? hour - 12 : hour}:{minute} {ampm}
+                    </Text>
+                  </View>
+                </View>
+                {post.body !== '' && (
+                  <View style={styles.cardBodyContainer}>
+                    <Text style={styles.cardBodyText}>{post.body}</Text>
+                  </View>
+                )}
+                <View style={styles.filesCardContainer}>
+                  {post.files &&
+                    post.files.map((file, index) => {
+                      return (
+                        <View
+                          key={index}
+                          style={[
+                            styles.card,
+                            {marginHorizontal: 2, backgroundColor: '#E8EAED'},
+                          ]}>
+                          <Text>
+                            {index >= 2
+                              ? `${post.files.length - 2} more`
+                              : file.replace(`${classId}/posts/`, '')}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      ) : (
+        <Text style={styles.subtitle}>No posts yet</Text>
+      )}
+    </ScrollView>
+  );
+};
 const styles = StyleSheet.create({
-  cardContainer: {
-    borderRadius: 10,
-    margin: 5,
-    elevation: 2,
-  },
   card: {
-    margin: 10,
+    backgroundColor: '#ADD8E6',
+    borderRadius: 10,
+    padding: 10,
+    marginHorizontal: 10,
+    marginVertical: 5,
   },
-  cardTitle: {
+  authorInfoContainer: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  userPic: {
+    borderRadius: 50,
+    height: 50,
+    width: 50,
+    marginLeft: 2,
+    marginRight: 10,
+  },
+  cardTitleText: {
     fontFamily: 'Lato-Regular',
     fontSize: 20,
   },
-  cardBody: {
+  cardSubtitleText: {
     fontFamily: 'Lato-Regular',
     fontSize: 14,
   },
-  sendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  cardBodyContainer: {
+    backgroundColor: '#E8EAED',
+    borderRadius: 10,
+    margin: 2,
+    padding: 10,
   },
-  cardTextInput: {
+  cardBodyText: {
     fontFamily: 'Lato-Regular',
-    borderBottomColor: '#000',
-    borderBottomWidth: 2,
-    width: '90%',
-    padding: 2,
-    fontSize: 14,
+    fontSize: 16,
   },
-  cardSendIcon: {
-    alignSelf: 'flex-end',
-    width: '10%',
-  },
+
   curvedSegment: {
     height: 30,
     margin: 10,
@@ -155,6 +252,31 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     justifyContent: 'center',
   },
+  subtitle: {
+    fontSize: 12,
+    fontFamily: 'Lato-Regular',
+    textAlign: 'center',
+  },
+  filesCardContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginHorizontal: 10,
+  },
 });
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'June',
+  'July',
+  'Aug',
+  'Sept',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 export default FeedPage;

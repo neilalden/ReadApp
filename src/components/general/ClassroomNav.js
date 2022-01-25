@@ -15,7 +15,7 @@ const ClassroomNav = ({isStudent}) => {
             to="/Classroom"
             style={{width: '33.3%'}}
             underlayColor="#f0f4f7">
-            <View style={styles.subtitle}>
+            <View style={styles.navItem}>
               <IconFile height={20} width={20} color={Colors.black} />
               <Text style={styles.subtitleText}>Classwork</Text>
             </View>
@@ -27,7 +27,7 @@ const ClassroomNav = ({isStudent}) => {
             </View>
           </Link>
           <Link to="/People" style={{width: '33.3%'}} underlayColor="#f0f4f7">
-            <View style={styles.subtitle}>
+            <View style={styles.navItem}>
               <IconPeople height={20} width={20} color={Colors.black} />
               <Text style={styles.subtitleText}>People</Text>
             </View>
@@ -93,6 +93,7 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     fontSize: 12,
+    fontFamily: 'Lato-Regular',
   },
 });
 

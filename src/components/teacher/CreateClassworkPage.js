@@ -10,11 +10,11 @@ import {
   TextInput,
   Platform,
   PermissionsAndroid,
+  ToastAndroid,
 } from 'react-native';
 import IconUpload from '../../../assets/uploadFile.svg';
 import IconGoBack from '../../../assets/goback.svg';
 import IconRemove from '../../../assets/x-circle.svg';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {useHistory} from 'react-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {ClassContext, createClasswork} from '../../context/ClassContext';
@@ -119,8 +119,8 @@ const CreateClassworkPage = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.iconContainer} onPress={backAlert}>
-          <IconGoBack height={30} width={30} color={'#ADD8E6'} />
+        <TouchableOpacity style={styles.back} onPress={backAlert}>
+          <IconGoBack height={30} width={30} style={styles.goback} />
         </TouchableOpacity>
       </View>
       {isQuiz ? (
@@ -301,6 +301,7 @@ const QuizWork = ({
       return;
     }
     const addQuiz = () => {
+      ToastAndroid.show('Posting classwork...', ToastAndroid.SHORT);
       const points = quizItems.length * parsedPointsPerRight;
       var date_converted = firestore.Timestamp.fromDate(date);
       let data = {
@@ -316,6 +317,8 @@ const QuizWork = ({
         pointsPerWrong: parsedPointsPerWrong,
       };
       createClasswork(data, classList, classNumber);
+
+      ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
       let copyClassList = [...classList];
       copyClassList[classNumber].classworkList.push(data);
       setClassList(copyClassList);
@@ -408,7 +411,7 @@ const QuizWork = ({
         </View>
         <Text
           style={[
-            styles.header,
+            styles.subtitle,
             {backgroundColor: '#ADD8E6'},
           ]}>{`${date}`}</Text>
         <Text style={styles.header}>Close on deadline </Text>
@@ -610,7 +613,7 @@ const QuizWork = ({
             styles.button,
             styles.marginBottom,
             {
-              marginHorizontal: 15,
+              marginHorizontal: 10,
             },
           ]}
           onPress={handleAddQuestion}>
@@ -797,6 +800,7 @@ const ActivityWork = ({
       return;
     }
     const addActivity = async () => {
+      ToastAndroid.show('Posting classwork...', ToastAndroid.SHORT);
       var date_converted = firestore.Timestamp.fromDate(date);
       let urls = [];
       if (files.length !== 0) {
@@ -819,6 +823,7 @@ const ActivityWork = ({
                   files: urls,
                 };
                 createClasswork(data, classList, classNumber);
+                ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
                 let copyClassList = [...classList];
                 copyClassList[classNumber].classworkList.push(data);
                 setClassList(copyClassList);
@@ -846,6 +851,8 @@ const ActivityWork = ({
           isActivity: true,
         };
         createClasswork(data, classList, classNumber);
+
+        ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
         let copyClassList = [...classList];
         copyClassList[classNumber].classworkList.push(data);
         setClassList(copyClassList);
@@ -936,7 +943,7 @@ const ActivityWork = ({
         </View>
         <Text
           style={[
-            styles.header,
+            styles.subtitle,
             {backgroundColor: '#ADD8E6'},
           ]}>{`${date}`}</Text>
         <Text style={styles.header}>Close on deadline </Text>
@@ -1024,12 +1031,7 @@ const ActivityWork = ({
           },
         ]}>
         <Text>Upload file</Text>
-        <IconUpload
-          height={20}
-          width={20}
-          color={Colors.black}
-          style={{marginLeft: 5}}
-        />
+        <IconUpload style={styles.uploadIcon} />
       </TouchableOpacity>
       <View style={styles.marginBottom}>
         <TouchableOpacity
@@ -1055,8 +1057,8 @@ const styles = StyleSheet.create({
   workContainer: {},
   card: {
     backgroundColor: '#ADD8E6',
-    borderRadius: 15,
-    marginHorizontal: 15,
+    borderRadius: 10,
+    marginHorizontal: 10,
     marginVertical: 5,
     paddingVertical: 10,
   },
@@ -1064,7 +1066,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#E8EAED',
     fontFamily: 'Lato-Regular',
-    marginHorizontal: 15,
+    marginHorizontal: 10,
     marginVertical: 3,
     borderRadius: 10,
     padding: 15,
@@ -1072,7 +1074,8 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 18,
     fontFamily: 'Lato-Regular',
-    marginHorizontal: 15,
+    marginHorizontal: 10,
+    fontWeight: 'bold',
   },
   subtitle: {
     textAlign: 'center',
@@ -1128,6 +1131,21 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 5,
   },
+  back: {
+    borderRadius: 50,
+    backgroundColor: '#ADD8E6',
+    height: 40,
+    width: 40,
+    justifyContent: 'center', //Centered horizontally
+
+    alignSelf: 'center',
+    padding: 5,
+  },
+  goback: {
+    color: '#fff',
+    borderRadius: 50,
+    alignSelf: 'center',
+  },
   mark: {
     height: 25,
     width: 25,
@@ -1142,10 +1160,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#E8EAED',
     flexDirection: 'row',
-    marginHorizontal: 15,
+    marginHorizontal: 10,
     marginVertical: 3,
     padding: 15,
     borderRadius: 10,
+  },
+  uploadIcon: {
+    color: '#000',
+    height: 20,
+    width: 20,
+    marginLeft: 5,
   },
 });
 

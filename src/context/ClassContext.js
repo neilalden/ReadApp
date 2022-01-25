@@ -239,6 +239,45 @@ export const fetchSubmision = (
   });
 };
 
+export const fetchPosts = (classNumber, classList, setClassList) => {
+  NetInfo.fetch().then(state => {
+    if (!state.isConnected) {
+      getData('classList', setClassList);
+    } else {
+      const classId = classList[classNumber].classId;
+      let classListCopy = [...classList];
+      let posts = [];
+      firestore()
+        .collection(`classes/${classId}/posts`)
+        .orderBy('createdAt', 'desc')
+        .get()
+        .then(documentSnapshot => {
+          documentSnapshot.forEach(res => {
+            posts.push({
+              id: res.id,
+              author: res.data().author,
+              body: res.data().body,
+              files: res.data().files,
+              createdAt: res.data().createdAt,
+              comments: res.data().comments,
+            });
+          });
+
+          for (const i in classListCopy) {
+            if (
+              classListCopy[classNumber].classId == classListCopy[i].classId
+            ) {
+              classListCopy[classNumber].posts = posts;
+            }
+          }
+          setClassList(classListCopy);
+          storeData('classList', {classList: classListCopy});
+        })
+        .catch(e => alert(e, 'You may have disconnected'));
+    }
+  });
+};
+
 export const createClasswork = (data, classList, classNumber) => {
   const classId = classList[classNumber].classId;
   firestore()
@@ -246,6 +285,27 @@ export const createClasswork = (data, classList, classNumber) => {
     .add(data)
     .then(() => {})
     .catch(e => alert(e, 'You may have disconnected'));
+};
+
+export const createPost = (data, classList, classNumber) => {
+  const classId = classList[classNumber].classId;
+  firestore()
+    .collection(`classes/${classId}/posts`)
+    .add(data)
+    .then(() => {})
+    .catch(e => alert(e, 'You may have disconnected'));
+};
+
+export const createComment = (postId, data, classList, classNumber) => {
+  const classId = classList[classNumber].classId;
+  firestore()
+    .collection(`classes/${classId}/posts`)
+    .doc(postId)
+    .update({comments: data})
+    .then()
+    .catch(e => {
+      alert(e, 'Line 308');
+    });
 };
 
 export const addPersonToQueue = (personInfo, classQueues) => {
@@ -295,12 +355,6 @@ export const addPersonToQueue = (personInfo, classQueues) => {
     .catch(e => alert(e, 'Line'));
 };
 
-const alert = (msg, title = 'Error') => {
-  Alert.alert(`${title}`, `${msg ? msg : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => true},
-  ]);
-};
-
 const storeData = async (key, value) => {
   try {
     const jsonValue = JSON.stringify(value);
@@ -315,4 +369,10 @@ const getData = async (key, setFunction) => {
       setFunction(JSON.parse(jsonValue).classList);
     })
     .catch(e => alert(e.message));
+};
+
+const alert = (msg, title = 'Error') => {
+  Alert.alert(`${title}`, `${msg ? msg : 'Fill up the form properly'}`, [
+    {text: 'OK', onPress: () => true},
+  ]);
 };

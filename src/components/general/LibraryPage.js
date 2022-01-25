@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   BackHandler,
   Alert,
+  ToastAndroid,
 } from 'react-native';
 import RNFS from 'react-native-fs';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import Nav from './Nav';
 
 import ImageHeader1 from '../../../assets/image_headers/undraw_reading_time_gvg0.svg';
@@ -48,7 +48,7 @@ const LibraryPage = ({headerImageRandNum, setCurrentFolder}) => {
   const [showExistingFiles, setShowExistingFiles] = useState(false);
   const [materialsFolder, setMaterialsFolder] = useState([]);
   const [downloadableMaterials, setDownloadableMaterials] = useState([]);
-  const [filesToDownload, setFilesToDownload] = useState([]);
+  const [filesToDownload, setFilesToDownload] = useState(0);
 
   /***HOOKS***/
   useEffect(() => {
@@ -94,12 +94,12 @@ const LibraryPage = ({headerImageRandNum, setCurrentFolder}) => {
       .then(querySnapshot => {
         querySnapshot.forEach(doc => {
           let material = {
-            year: doc.id,
-            subjects: [],
+            subject: doc.id,
+            files: [],
           };
           Object.keys(doc.data()).forEach(subject => {
             const subjectObject = {subject, files: doc.data()[subject]};
-            material.subjects.push(subjectObject);
+            material.files = subjectObject.files;
           });
           setDownloadableMaterials(prev => [...prev, material]);
         });
@@ -107,19 +107,15 @@ const LibraryPage = ({headerImageRandNum, setCurrentFolder}) => {
       .catch(e => alert(e.message));
   };
 
-  const downloadFiles = (year, subjects) => {
+  const downloadFiles = item => {
     let refs = [];
-    for (let i in subjects) {
-      for (let j in subjects[i].files) {
-        refs.push(
-          `Materials/${year}/${subjects[i].subject}/${subjects[i].files[j]}`,
-        );
-      }
+    for (let i in item.files) {
+      refs.push(`Materials/${item.subject}/${item.files[i]}`);
     }
-    setFilesToDownload(refs);
+    setFilesToDownload(refs.length);
+    ToastAndroid.show('Downloading...', ToastAndroid.LONG);
     for (let i in refs) {
       const filePath = refs[i];
-      let copyfilesToDownload = [...filesToDownload];
       storage()
         .ref(filePath)
         .getDownloadURL()
@@ -131,22 +127,49 @@ const LibraryPage = ({headerImageRandNum, setCurrentFolder}) => {
               ref[ref.length - 1]
             }`,
           };
-          copyfilesToDownload.pop();
-          setFilesToDownload(copyfilesToDownload);
+          setFilesToDownload(parseInt(i) + 1 - refs.length);
 
           RNFS.mkdir(`${RNFS.ExternalDirectoryPath}/${ref[ref.length - 2]}`);
           RNFS.downloadFile(options)
             .promise.then(() => {
               // success
               fetchFiles();
-              if (filesToDownload.length == 0) setShowSettings(false);
+              setShowSettings(false);
             })
             .catch(e => {
-              alert(e.code, e.message);
+              console.log(e.message);
             });
         })
-        .catch(e => alert(e.code, e.message));
+        .catch(e => console.log(e.message, e.code));
     }
+  };
+
+  const handleDeleteFolder = file => {
+    const filePath = file.path;
+    Alert.alert('Are you sure?', `Delete entire materials for ${file.name}`, [
+      {
+        text: 'Yes',
+        onPress: () => {
+          return RNFS.unlink(filePath)
+            .then(() => {
+              if (materialsFolder.length == 1) {
+                fetchFiles();
+              } else {
+                onRefresh();
+              }
+            })
+            .catch(err => {
+              alert(err.message);
+            });
+        },
+      },
+      {
+        text: 'No',
+        onPress: () => {
+          true;
+        },
+      },
+    ]);
   };
 
   return (
@@ -165,6 +188,7 @@ const LibraryPage = ({headerImageRandNum, setCurrentFolder}) => {
         />
         {showSettings ? (
           <SettingsContainer
+            materialsFolder={materialsFolder}
             showDownloadableFiles={showDownloadableFiles}
             setShowDownloadableFiles={setShowDownloadableFiles}
             showExistingFiles={showExistingFiles}
@@ -172,6 +196,9 @@ const LibraryPage = ({headerImageRandNum, setCurrentFolder}) => {
             downloadableMaterials={downloadableMaterials}
             downloadFiles={downloadFiles}
             filesToDownload={filesToDownload}
+            handleDeleteFolder={handleDeleteFolder}
+            setCurrentFolder={setCurrentFolder}
+            history={history}
           />
         ) : (
           <MaterialsFolderList
@@ -233,15 +260,17 @@ const CurvedSegment = ({
   return (
     <View style={{backgroundColor: '#ADD8E6'}}>
       <View style={styles.curvedSegment}>
-        <TouchableOpacity
-          style={styles.settingsToggle}
-          onPress={toggleSettings}>
-          {showSettings ? (
-            <IconGoBack height={25} width={25} style={styles.addIcon} />
-          ) : (
-            <IconGear height={25} width={25} style={styles.addIcon} />
-          )}
-        </TouchableOpacity>
+        {showSettings ? (
+          <TouchableOpacity style={styles.back} onPress={toggleSettings}>
+            <IconGoBack height={25} width={25} style={styles.goback} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.settingsToggle}
+            onPress={toggleSettings}>
+            <IconGear height={23} width={23} style={styles.addIcon} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -270,6 +299,7 @@ const MaterialsFolderList = ({materialsFolder, setCurrentFolder, history}) => {
 };
 
 const SettingsContainer = ({
+  materialsFolder,
   showDownloadableFiles,
   setShowDownloadableFiles,
   showExistingFiles,
@@ -277,6 +307,9 @@ const SettingsContainer = ({
   downloadableMaterials,
   downloadFiles,
   filesToDownload,
+  handleDeleteFolder,
+  setCurrentFolder,
+  history,
 }) => {
   return (
     <>
@@ -286,28 +319,25 @@ const SettingsContainer = ({
             style={styles.item}
             onPress={() => setShowDownloadableFiles(!showDownloadableFiles)}>
             <Text style={{marginHorizontal: 10}}>Download Materials</Text>
-            <IconDownload height={30} width={30} color={'#000000'} />
+            <IconDownload style={styles.uploadIcon} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.item}
             onPress={() => setShowExistingFiles(!showExistingFiles)}>
             <Text style={{marginHorizontal: 10}}>Delete Materials</Text>
-            <IconDelete height={30} width={30} color={'#000000'} />
+            <IconDelete style={styles.uploadIcon} />
           </TouchableOpacity>
         </View>
       ) : (
         <>
           {showDownloadableFiles ? (
-            filesToDownload.length > 0 ? (
-              <>
-                <Text style={styles.span}>
-                  Please don't close the app. {filesToDownload.length} materials
-                  left to download
-                </Text>
-              </>
+            filesToDownload > 0 ? (
+              <Text style={styles.span}>
+                Downloading {filesToDownload} materials. Please don't close the
+                app.
+              </Text>
             ) : (
               <ScrollView>
-                <Text style={styles.span}>Click any materials to download</Text>
                 {downloadableMaterials.map((item, index) => {
                   return (
                     <TouchableOpacity
@@ -320,9 +350,9 @@ const SettingsContainer = ({
                         },
                       ]}
                       onPress={() => {
-                        downloadFiles(item.year, item.subjects);
+                        downloadFiles(item);
                       }}>
-                      <Text>{item.year}</Text>
+                      <Text>{item.subject}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -330,7 +360,30 @@ const SettingsContainer = ({
             )
           ) : (
             <ScrollView>
-              <Text>delete files</Text>
+              {materialsFolder.length > 0 &&
+                materialsFolder.map((item, index) => {
+                  return (
+                    <View
+                      style={[styles.item, {justifyContent: 'space-between'}]}
+                      key={index}>
+                      <TouchableOpacity
+                        style={styles.deleteNameContainer}
+                        onPress={() => {
+                          setCurrentFolder(item);
+                          history.push('/Materials');
+                        }}>
+                        <Text>{item.name}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deleteIconContainer}
+                        onPress={() => {
+                          handleDeleteFolder(item);
+                        }}>
+                        <IconDelete height={30} width={30} color={'red'} />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
             </ScrollView>
           )}
         </>
@@ -352,15 +405,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-  },
-  settingsToggle: {
-    margin: 5,
-    padding: 10,
+    marginTop: 1,
   },
   item: {
     height: 60,
     marginHorizontal: 10,
-    marginBottom: 5,
+    marginVertical: 5,
     borderRadius: 10,
     backgroundColor: '#ADD8E6',
     fontFamily: 'Lato-Regular',
@@ -373,14 +423,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    borderRadius: 5,
     paddingHorizontal: 10,
     marginHorizontal: 10,
     marginVertical: 5,
   },
   addIcon: {
-    color: '#ADD8E6',
+    color: '#fff',
+  },
+  settingsToggle: {
+    margin: 13,
+    backgroundColor: '#ADD8E6',
     borderRadius: 50,
+    padding: 3,
+  },
+
+  back: {
+    borderRadius: 50,
+    backgroundColor: '#ADD8E6',
+    height: 30,
+    width: 30,
+    justifyContent: 'center', //Centered horizontally
+    marginVertical: 12.5,
+    marginHorizontal: 12,
+    padding: 12,
+  },
+  goback: {
+    color: '#fff',
+    borderRadius: 50,
+    alignSelf: 'center',
+  },
+  uploadIcon: {
+    color: '#000',
+    height: 20,
+    width: 20,
+    marginLeft: 5,
+  },
+  deleteIconContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 50,
+    marginRight: 10,
+    padding: 5,
+  },
+  deleteNameContainer: {
+    width: '85%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

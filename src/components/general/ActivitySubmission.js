@@ -14,18 +14,18 @@ import {
 } from 'react-native';
 
 import {ClassContext, fetchSubmision} from '../../context/ClassContext';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import {useHistory} from 'react-router';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
+import RNFetchBlob from 'rn-fetch-blob';
 import DocumentPicker from 'react-native-document-picker';
 import FileViewer from 'react-native-file-viewer';
 import IconUpload from '../../../assets/uploadFile.svg';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import IconRemove from '../../../assets/x-circle.svg';
-import {useHistory} from 'react-router';
-import RNFetchBlob from 'rn-fetch-blob';
-import NetInfo from '@react-native-community/netinfo';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
   const [files, setFiles] = useState([]);
@@ -37,6 +37,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
   const [score, setScore] = useState('');
   const [isClosed, setIsClosed] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
+  const [height, setHeight] = useState(0);
 
   const {
     classNumber,
@@ -106,6 +107,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, [reload, classList]);
+
   const filePath = `${classId}/classworks/${classwork.id}/`;
   return (
     <View>
@@ -134,9 +136,12 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
           submission && submission.score && isEdit ? (
             <TextInput
               keyboardType="numeric"
-              style={styles.item}
               value={score}
               onChangeText={val => setScore(val)}
+              style={[styles.item, {height: Math.max(35, height)}]}
+              onContentSizeChange={e => {
+                setHeight(e.nativeEvent.contentSize.height);
+              }}
             />
           ) : submission && submission.score && !isEdit ? (
             <Text
@@ -148,8 +153,11 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
             <TextInput
               placeholder="no grades yet"
               keyboardType="numeric"
-              style={styles.item}
               value={score}
+              style={[styles.item, {height: Math.max(35, height)}]}
+              onContentSizeChange={e => {
+                setHeight(e.nativeEvent.contentSize.height);
+              }}
               onChangeText={val => setScore(val)}
             />
           ) : (
@@ -163,23 +171,22 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
           }/${classwork.points}`}</Text>
         )}
 
-        {classwork.files ? (
-          <Text style={styles.header}>Activity files</Text>
-        ) : (
-          <></>
-        )}
-        {classwork.files &&
-          classwork.files.map((item, index) => {
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.fileItem}
-                onPress={() => viewFile(item, classId, classwork, true)}>
-                <Text>{item.replace(`${classId}/classworks/`, '')}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        {submission.submittedAt &&
+        {classwork.files && <Text style={styles.header}>Activity files</Text>}
+        <View style={styles.filesCardContainer}>
+          {classwork.files &&
+            classwork.files.map((item, index) => {
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.fileItem}
+                  onPress={() => viewFile(item, classId, classwork, true)}>
+                  <Text>{item.replace(`${classId}/classworks/`, '')}</Text>
+                </TouchableOpacity>
+              );
+            })}
+        </View>
+      </View>
+      {submission.submittedAt &&
         classwork &&
         new Date(
           submission.submittedAt.toDate
@@ -190,12 +197,9 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
             classwork.deadline.toDate
               ? classwork.deadline.toDate()
               : classwork.deadline.seconds * 1000,
-          ) ? (
-          <Text style={styles.subtitle}>Late submission</Text>
-        ) : (
-          <></>
+          ) && (
+          <Text style={[styles.subtitle, {color: 'red'}]}>Late submission</Text>
         )}
-      </View>
 
       {/* Student activity screen has three (3) states */}
       {/* > Student has not complied yet (allows user to send their submissions) */}
@@ -217,21 +221,20 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
         } else if (!userInfo.isStudent) {
           return (
             <>
-              {submission.work && submission.work != '' ? (
+              {submission.work && submission.work != '' && (
                 <View style={styles.questionContainer}>
-                  <Text style={styles.header}>Answer/Comment</Text>
+                  <Text style={styles.header}>Answer</Text>
                   <Text style={styles.item}>{submission.work}</Text>
                 </View>
-              ) : (
-                <></>
               )}
               {submission.files && submission.files.length !== 0 ? (
-                <View style={styles.questionContainer}>
+                <View style={{marginHorizontal: 10}}>
                   <Text style={styles.header}>File submission(s)</Text>
-                  <View style={styles.item}>
+                  <View style={styles.filesCardContainer}>
                     {submission.files.map((item, index) => {
                       return (
                         <TouchableOpacity
+                          style={styles.fileItem}
                           key={index}
                           onPress={() =>
                             viewFile(item, classId, classwork, false)
@@ -318,10 +321,13 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
           return (
             <>
               <View style={styles.questionContainer}>
-                <Text style={styles.header}>Answer/Comment</Text>
+                <Text style={styles.header}>Answer</Text>
 
                 <TextInput
-                  style={styles.item}
+                  style={[styles.item, {height: Math.max(35, height)}]}
+                  onContentSizeChange={e => {
+                    setHeight(e.nativeEvent.contentSize.height);
+                  }}
                   placeholder="type your answer or comment here.."
                   multiline={true}
                   value={text}
@@ -330,13 +336,40 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                 />
               </View>
 
+              <View style={styles.filesCardContainer}>
+                {files.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.fileItem,
+                        {
+                          flexDirection: 'row',
+                        },
+                      ]}
+                      key={index}
+                      onPress={() => {
+                        let filesCopy = [...files];
+                        filesCopy.splice(index, 1);
+                        setFiles(filesCopy);
+                      }}>
+                      <Text style={{maxWidth: '90%'}}>{item.fileName}</Text>
+                      <IconRemove
+                        height={20}
+                        width={20}
+                        style={styles.removeIcon}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
               <View style={styles.buttonsContainer}>
                 <TouchableOpacity
                   style={styles.uploadButton}
                   onPress={() => openFile(setFiles)}>
                   <View style={styles.uploadView}>
                     <Text style={styles.uploadText}>Upload file </Text>
-                    <IconUpload height={20} width={20} color={Colors.black} />
+                    <IconUpload style={styles.uploadIcon} />
                   </View>
                 </TouchableOpacity>
                 {isConnected && (
@@ -379,21 +412,6 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                   <Text>Save to drafts</Text>
                 </TouchableOpacity>
               </View>
-              {files.map((item, index) => {
-                return (
-                  <TouchableOpacity
-                    style={styles.fileItem}
-                    key={index}
-                    onPress={() => {
-                      let filesCopy = [...files];
-                      filesCopy.splice(index, 1);
-                      setFiles(filesCopy);
-                    }}>
-                    <Text style={{maxWidth: '90%'}}>{item.fileName}</Text>
-                    <IconRemove height={30} width={30} color={'red'} />
-                  </TouchableOpacity>
-                );
-              })}
             </>
           );
         } else if (
@@ -411,7 +429,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                   {submission.work && submission.work != '' ? (
                     <>
                       <View style={styles.questionContainer}>
-                        <Text style={styles.header}>Answer/Comment</Text>
+                        <Text style={styles.header}>Answer</Text>
                         <Text style={styles.item}>{submission.work}</Text>
                       </View>
                     </>
@@ -419,9 +437,9 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                     <></>
                   )}
                   {submission.files && submission.files.length !== 0 ? (
-                    <View>
+                    <View style={{marginHorizontal: 10}}>
                       <Text style={styles.header}>File submission(s)</Text>
-                      <View style={[styles.item, {backgroundColor: '#ADD8E6'}]}>
+                      <View style={styles.filesCardContainer}>
                         {submission.files.map((item, index) => {
                           return (
                             <TouchableOpacity
@@ -452,9 +470,12 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                 // student is editting their submission
                 <>
                   <View style={styles.questionContainer}>
-                    <Text style={styles.header}>Answer/Comment</Text>
+                    <Text style={styles.header}>Answer</Text>
                     <TextInput
-                      style={styles.item}
+                      style={[styles.item, {height: Math.max(35, height)}]}
+                      onContentSizeChange={e => {
+                        setHeight(e.nativeEvent.contentSize.height);
+                      }}
                       defaultValue={submission.work}
                       value={text}
                       onChangeText={onChangeText}
@@ -462,72 +483,74 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                     />
                   </View>
 
-                  {submission.files && submission.files.length !== 0 ? (
-                    <View
-                      style={[
-                        styles.questionContainer,
-                        {backgroundColor: '#ADD8E6'},
-                      ]}>
+                  {submission.files && submission.files.length !== 0 && (
+                    <View style={{marginHorizontal: 10}}>
                       <Text style={styles.header}>File submission(s)</Text>
-                      {submission.files.map((item, index) => {
+                      <View style={styles.filesCardContainer}>
+                        {submission.files.map((item, index) => {
+                          return (
+                            <TouchableOpacity
+                              style={[styles.fileItem, {flexDirection: 'row'}]}
+                              key={index}
+                              onPress={() =>
+                                handleDeleteFile(
+                                  submission.files[index],
+                                  submission.files,
+                                  text,
+                                  classId,
+                                  classwork,
+                                  studentInfo,
+                                  setReload,
+                                )
+                              }>
+                              <Text style={{maxWidth: '90%'}}>
+                                {item.replace(filePath, '')}
+                              </Text>
+                              <IconRemove
+                                height={20}
+                                width={20}
+                                style={styles.removeIcon}
+                              />
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                  {files && files.length !== 0 && (
+                    <Text style={styles.header}>Added files</Text>
+                  )}
+                  <View style={styles.filesCardContainer}>
+                    {files &&
+                      files.map((item, index) => {
                         return (
                           <TouchableOpacity
-                            style={styles.fileItem}
+                            style={[styles.fileItem, {flexDirection: 'row'}]}
                             key={index}
-                            onPress={() =>
-                              handleDeleteFile(
-                                submission.files[index],
-                                submission.files,
-                                text,
-                                classId,
-                                classwork,
-                                studentInfo,
-                                setReload,
-                              )
-                            }>
+                            onPress={() => {
+                              let filesCopy = [...files];
+                              filesCopy.splice(index, 1);
+                              setFiles(filesCopy);
+                            }}>
                             <Text style={{maxWidth: '90%'}}>
-                              {item.replace(filePath, '')}
+                              {item.fileName}
                             </Text>
-                            <IconRemove height={30} width={30} color={'red'} />
+                            <IconRemove
+                              height={20}
+                              width={20}
+                              style={styles.removeIcon}
+                            />
                           </TouchableOpacity>
                         );
                       })}
-                    </View>
-                  ) : (
-                    <></>
-                  )}
-                  {files && files.length !== 0 ? (
-                    <Text style={styles.header}>Added files</Text>
-                  ) : (
-                    <></>
-                  )}
-                  {files &&
-                    files.map((item, index) => {
-                      return (
-                        <TouchableOpacity
-                          style={styles.fileItem}
-                          key={index}
-                          onPress={() => {
-                            let filesCopy = [...files];
-                            filesCopy.splice(index, 1);
-                            setFiles(filesCopy);
-                          }}>
-                          <Text style={{maxWidth: '90%'}}>{item.fileName}</Text>
-                          <IconRemove height={30} width={30} color={'red'} />
-                        </TouchableOpacity>
-                      );
-                    })}
+                  </View>
                   <View style={styles.buttonsContainer}>
                     <TouchableOpacity
                       style={styles.uploadButton}
                       onPress={() => openFile(setFiles)}>
                       <View style={styles.uploadView}>
                         <Text style={styles.uploadText}>Upload file </Text>
-                        <IconUpload
-                          height={20}
-                          width={20}
-                          color={Colors.black}
-                        />
+                        <IconUpload style={styles.uploadIcon} />
                       </View>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -568,19 +591,20 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
           return (
             <>
               <View style={styles.questionContainer}>
-                <Text style={styles.header}>Answer/Comment</Text>
+                <Text style={styles.header}>Answer</Text>
                 <Text style={styles.item}>{submission.work}</Text>
               </View>
 
               {/* this is repeating code, honestly i should make it a component */}
               {submission.files ? (
-                <View style={styles.questionContainer}>
+                <View style={{marginHorizontal: 10}}>
                   <Text style={styles.header}>File submission(s)</Text>
-                  <View style={styles.item}>
+                  <View style={styles.filesCardContainer}>
                     {submission.files.map((item, index) => {
                       return (
                         <TouchableOpacity
                           key={index}
+                          style={styles.fileItem}
                           onPress={() =>
                             viewFile(item, classId, classwork, false)
                           }>
@@ -988,18 +1012,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  fileItem: {
-    justifyContent: 'space-between',
-    backgroundColor: '#E8EAED',
+  filesCardContainer: {
     flexDirection: 'row',
-    marginHorizontal: 15,
-    marginVertical: 3,
-    padding: 15,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginHorizontal: 2,
+  },
+  fileItem: {
+    backgroundColor: '#E8EAED',
     borderRadius: 10,
+    padding: 10,
+    marginHorizontal: 2,
+    marginVertical: 5,
   },
   questionContainer: {
     backgroundColor: '#ADD8E6',
-    borderRadius: 15,
+    borderRadius: 10,
     marginHorizontal: 15,
     marginVertical: 5,
     paddingVertical: 10,
@@ -1009,6 +1037,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato-Regular',
     textAlign: 'center',
     color: '#000',
+  },
+  toDeleteFile: {
+    flexDirection: 'row',
+  },
+
+  fileCard: {
+    backgroundColor: '#ADD8E6',
+    borderRadius: 10,
+    padding: 10,
+    marginHorizontal: 2,
+    marginVertical: 5,
+  },
+  removeIcon: {color: 'red', marginLeft: 2},
+
+  uploadIcon: {
+    color: '#000',
+    height: 20,
+    width: 20,
+    marginLeft: 5,
   },
 });
 export default ActivitySubmission;

@@ -16,7 +16,7 @@ import {ClassContext, fetchSubmissionList} from '../../context/ClassContext';
 import ActivitySubmission from '../general/ActivitySubmission';
 import QuizSubmission from '../general/QuizSubmission';
 import IconDelete from '../../../assets/trash.svg';
-
+import IconGoBack from '../../../assets/goback.svg';
 const SubmissionList = ({userInfo}) => {
   /***STATES***/
   const {
@@ -102,45 +102,47 @@ const SubmissionList = ({userInfo}) => {
       {Object.keys(student).length !== 0 ? (
         // Show either activity or quiz submission when a student is clicked
         classwork.isActivity ? (
-          <ActivitySubmission
-            userInfo={userInfo}
-            student={student}
-            setStudent={setStudent}
-            setRefresh={setRefresh}
-          />
+          <>
+            <Segment history={history} setStudent={setStudent} />
+            <ActivitySubmission
+              userInfo={userInfo}
+              student={student}
+              setStudent={setStudent}
+              setRefresh={setRefresh}
+            />
+          </>
         ) : (
-          <QuizSubmission
-            userInfo={userInfo}
-            student={student}
-            setStudent={setStudent}
-          />
+          <>
+            <Segment history={history} setStudent={setStudent} />
+            <QuizSubmission
+              userInfo={userInfo}
+              student={student}
+              setStudent={setStudent}
+            />
+          </>
         )
       ) : (
         <ScrollView
           refreshControl={
             <RefreshControl refresh={refresh} onRefresh={onRefresh} />
           }>
-          <View
-            style={{
-              backgroundColor: '#3d3d3d',
-              marginHorizontal: 15,
-              marginVertical: 10,
-              borderRadius: 10,
-
-              flexDirection: 'row',
-            }}>
-            <View style={styles.headerContainer}>
-              <Text style={styles.header}>{classwork.title}</Text>
-            </View>
-
+          <View style={styles.headerContainer}>
             <TouchableOpacity
-              style={styles.deleteIconContainer}
+              style={styles.iconContainer}
               onPress={handleDeleteTask}>
-              <IconDelete height={30} width={30} color={'red'} />
+              <IconDelete height={25} width={25} style={styles.deleteIcon} />
+            </TouchableOpacity>
+            <View>
+              <Text style={styles.headerText}>{classwork.title}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => history.push('/Classroom')}
+              style={styles.iconContainer}>
+              <IconGoBack height={25} width={25} style={styles.backIcon} />
             </TouchableOpacity>
           </View>
 
-          {classwork.submissionList &&
+          {classwork.submissionList ? (
             classwork.submissionList.map((item, index) => {
               return (
                 <TouchableOpacity
@@ -169,10 +171,37 @@ const SubmissionList = ({userInfo}) => {
                   </View>
                 </TouchableOpacity>
               );
-            })}
+            })
+          ) : (
+            <Text
+              style={[
+                styles.itemSubtitle,
+                {
+                  alignSelf: 'center',
+                },
+              ]}>
+              No submissions
+            </Text>
+          )}
         </ScrollView>
       )}
     </>
+  );
+};
+const Segment = ({setStudent}) => {
+  return (
+    <View style={styles.segmentContainer}>
+      <TouchableOpacity
+        onPress={() => setStudent({})}
+        style={styles.backIconContainer}>
+        <IconGoBack
+          height={30}
+          width={30}
+          style={styles.backIcon}
+          color={'#ffffff'}
+        />
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -182,7 +211,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ADD8E6',
     fontFamily: 'Lato-Regular',
     marginHorizontal: 10,
-    marginVertical: 3,
+    marginVertical: 5,
     borderRadius: 10,
     padding: 15,
   },
@@ -199,23 +228,46 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: '#000',
   },
-  header: {
+  headerText: {
     color: '#ededed',
     fontFamily: 'Lato-Regular',
     fontSize: 18,
     padding: 15,
   },
   headerContainer: {
-    width: '80%',
-    alignItems: 'center',
-    marginLeft: '10%',
-    marginRight: '-5%',
+    backgroundColor: '#3d3d3d',
+    marginHorizontal: 15,
+    marginVertical: 10,
+    borderRadius: 10,
+    height: 60,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  deleteIconContainer: {
+  iconContainer: {
     backgroundColor: '#fff',
     alignSelf: 'center',
     borderRadius: 50,
     padding: 5,
+    marginHorizontal: 5,
+  },
+  deleteIcon: {
+    color: 'red',
+  },
+  segmentContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  backIconContainer: {
+    backgroundColor: '#ADD8E6',
+    height: 40,
+    width: 40,
+    margin: 10,
+    padding: 5,
+    borderRadius: 50,
+  },
+  backIcon: {
+    color: '#ADD8E6',
+    alignSelf: 'center',
   },
 });
 

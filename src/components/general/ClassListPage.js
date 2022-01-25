@@ -19,11 +19,11 @@ import {
 import firestore from '@react-native-firebase/firestore';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import {useHistory} from 'react-router-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {AuthContext} from '../../context/AuthContext';
 import {ClassContext, fetchClassList} from '../../context/ClassContext';
 import {signOut} from '../../context/AuthContext';
 import IconAddClass from '../../../assets/addClass.svg';
+import IconLeave from '../../../assets/leave.svg';
 import Nav from './Nav';
 
 import StudentClassList from '../student/StudentClassList';
@@ -87,10 +87,18 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
       .catch(e => alert(e.message, e.code));
   };
 
+  if (!user) {
+    return <></>;
+  }
+
   return (
     <>
       <ScrollView style={{backgroundColor: '#fff'}}>
-        <ClassListPageHeader user={user} userInfo={userInfo} />
+        <ClassListPageHeader
+          user={user}
+          userInfo={userInfo}
+          history={history}
+        />
         <Segment userInfo={userInfo} refRBSheet={refRBSheet} />
         {userInfo.isStudent ? <StudentClassList /> : <TeacherClassList />}
         <RBSheet
@@ -133,28 +141,46 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
   );
 };
 
-const ClassListPageHeader = ({user, userInfo}) => {
+const ClassListPageHeader = ({user, userInfo, history}) => {
+  const handleLogout = () => {
+    Alert.alert('Logout?', `Are you sure you want to logout your account?`, [
+      {
+        text: 'Yes',
+        onPress: () => {
+          history.push('/Login');
+          signOut();
+        },
+      },
+      {
+        text: 'No',
+        onPress: () => {
+          true;
+        },
+      },
+    ]);
+  };
   return (
     <View style={styles.classListPageHeader}>
       <View style={styles.profileDetailsContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            alert(`Are you sure you want to logout your account?`, 'Logout?');
-          }}>
+        <View style={styles.imageContainer}>
+          <View height={35} width={35}></View>
           <Image
             style={styles.profileImage}
             source={{
               uri: user.photoURL,
             }}
           />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.leaveIconContainer}
+            onPress={handleLogout}>
+            <IconLeave height={25} width={25} style={styles.leaveIcon} />
+          </TouchableOpacity>
+        </View>
         <View style={{alignItems: 'center'}}>
           <View style={styles.profileNameContainer}>
             <Text style={styles.profileName}>{userInfo.name}</Text>
           </View>
-          <Text style={[styles.itemSubtitle, {fontSize: 16}]}>
-            {userInfo.id}
-          </Text>
+          <Text style={styles.itemSubtitle}>{userInfo.id}</Text>
         </View>
       </View>
     </View>
@@ -165,19 +191,15 @@ const Segment = ({userInfo, refRBSheet}) => {
   return (
     <View style={{backgroundColor: '#ADD8E6'}}>
       <View style={styles.curvedSegment}>
-        <Text style={[styles.header]}>
-          {!userInfo.isStudent ? (
-            <TouchableOpacity
-              style={styles.settingsToggle}
-              onPress={() => {
-                refRBSheet.current.open();
-              }}>
-              <IconAddClass height={30} width={30} style={styles.addIcon} />
-            </TouchableOpacity>
-          ) : (
-            <></>
+        <TouchableOpacity
+          style={styles.settingsToggle}
+          onPress={() => {
+            if (!userInfo.isStudent) refRBSheet.current.open();
+          }}>
+          {!userInfo.isStudent && (
+            <IconAddClass height={30} width={30} style={styles.addIcon} />
           )}
-        </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -186,8 +208,7 @@ const Segment = ({userInfo, refRBSheet}) => {
 const styles = StyleSheet.create({
   classListPageHeader: {
     backgroundColor: '#ADD8E6',
-    fontFamily: 'Lato-Regular',
-    padding: 15,
+    padding: 18,
   },
   profileDetailsContainer: {
     flex: 1,
@@ -199,12 +220,12 @@ const styles = StyleSheet.create({
     height: 100,
     width: 100,
     margin: 10,
-    alignSelf: 'center',
   },
   profileNameContainer: {
-    backgroundColor: '#333333',
+    backgroundColor: '#3d3d3d',
     width: 'auto',
-    marginHorizontal: 20,
+    marginHorizontal: 10,
+    borderRadius: 10,
     justifyContent: 'center',
   },
   profileName: {
@@ -217,27 +238,41 @@ const styles = StyleSheet.create({
   },
   itemSubtitle: {
     fontFamily: 'Lato-Regular',
+    fontSize: 16,
     marginTop: 5,
-    marginRight: 5,
     color: '#000',
-    fontSize: 10,
     textAlign: 'left',
   },
   curvedSegment: {
     backgroundColor: '#ffffff',
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    justifyContent: 'flex-end',
+    marginTop: 1,
   },
   settingsToggle: {
-    margin: 5,
-    padding: 10,
+    marginVertical: 12,
+    marginHorizontal: 13,
+    backgroundColor: '#ADD8E6',
+    borderRadius: 50,
   },
   addIcon: {
-    backgroundColor: '#ADD8E6',
     color: '#fff',
+  },
+  leaveIcon: {
+    color: '#ADD8E6',
+  },
+  imageContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  leaveIconContainer: {
     borderRadius: 50,
+    backgroundColor: '#fff',
+    alignSelf: 'flex-start',
+    padding: 5,
   },
 });
 
@@ -245,16 +280,6 @@ const alert = (msg, title) => {
   if (title === 'Exit?') {
     Alert.alert(title, `${msg ? msg : 'Fill up the form properly'}`, [
       {text: 'Yes', onPress: () => BackHandler.exitApp()},
-      {
-        text: 'No',
-        onPress: () => {
-          true;
-        },
-      },
-    ]);
-  } else if (title === 'Logout?') {
-    Alert.alert(title, msg, [
-      {text: 'Yes', onPress: () => signOut()},
       {
         text: 'No',
         onPress: () => {

@@ -13,21 +13,16 @@ const ClassroomHeader = ({subject = 'undefined', section = 'undefined'}) => {
           <Text style={styles.subtitle}>{section}</Text>
         </View>
         <Link to="/ClassList" style={styles.back} underlayColor="#C1E1EC">
-          <IconGoBack height={30} width={30} color={Colors.black} />
+          <IconGoBack height={30} width={30} style={styles.goback} />
         </Link>
       </View>
     </View>
   );
 };
 const styles = StyleSheet.create({
-  back: {
-    padding: 5,
-    borderRadius: 50,
-    alignSelf: 'center',
-  },
   header: {
     backgroundColor: '#ADD8E6',
-    borderRadius: 15,
+    borderRadius: 10,
     padding: 10,
     margin: 5,
   },
@@ -45,6 +40,18 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: 'Lato-Regular',
     fontSize: 12,
+  },
+  back: {
+    borderRadius: 50,
+    backgroundColor: '#fff',
+    height: 40,
+    width: 40,
+    justifyContent: 'center', //Centered horizontally
+  },
+  goback: {
+    color: '#ADD8E6',
+    borderRadius: 50,
+    alignSelf: 'center',
   },
 });
 export default ClassroomHeader;
