@@ -1,19 +1,19 @@
-import React, {useContext} from 'react';
-import {View, Text, StyleSheet, Image} from 'react-native';
-import {ClassContext} from '../../context/ClassContext';
+import React, {useContext, useEffect} from 'react';
+import {View, Text, StyleSheet, Image, ScrollView} from 'react-native';
+import {ClassContext, fetchClassList} from '../../context/ClassContext';
+import firestore from '@react-native-firebase/firestore';
+
 import {Link} from 'react-router-native';
 
-const StudentClassList = () => {
-  const {classList, setClassNumber} = useContext(ClassContext);
+import {AuthContext} from '../../context/AuthContext';
 
+const StudentClassList = ({userInfo}) => {
+  const {classList, setClassList, setClassNumber} = useContext(ClassContext);
+  const {user} = useContext(AuthContext);
   return (
-    <>
+    <ScrollView>
       {classList &&
         classList.map((item, index) => {
-          const teachers = [];
-          for (const i in item.teachers) {
-            teachers.push(item.teachers[i].name);
-          }
           return (
             <Link
               to="/Classroom"
@@ -24,42 +24,66 @@ const StudentClassList = () => {
                 setClassNumber(index);
               }}>
               <>
-                <View>
+                <View style={styles.classInfo}>
                   <Text style={styles.header}>{item.subject}</Text>
-                  <View style={styles.teachersNameContainer}>
-                    <Text style={styles.itemSubtitle}>
-                      {teachers ? teachers.toString().replace(',', ', ') : ''}
-                    </Text>
-                  </View>
+                  {item.teachers[0].name && (
+                    <View style={styles.flexDirectionRow}>
+                      <Image
+                        style={styles.itemPic}
+                        source={{
+                          uri: item.teachers[0].photoUrl,
+                        }}
+                      />
+                      <Text style={styles.textAlignCenter}>
+                        {item.teachers[0].name.length > 20
+                          ? `${item.teachers[0].name.substring(0, 20)}...`
+                          : item.teachers[0].name}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <Image
-                  style={styles.itemPic}
-                  source={{
-                    uri: item.teachers[0].photoUrl,
-                  }}
+                  style={styles.imageHeader}
+                  source={{uri: `asset:/image_headers/${item.classHeader}.png`}}
                 />
               </>
             </Link>
           );
         })}
-    </>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  imageHeader: {
+    resizeMode: 'center',
+    height: 120,
+    width: 120,
+  },
+  classInfo: {
+    paddingVertical: 10,
+    justifyContent: 'space-between',
+  },
+  flexDirectionRow: {
+    flexDirection: 'row',
+  },
+  textAlignCenter: {
+    alignSelf: 'center',
+  },
   item: {
     backgroundColor: '#ADD8E6',
-    padding: 15,
-    borderRadius: 15,
+    paddingHorizontal: 15,
+    borderRadius: 10,
     justifyContent: 'space-between',
     flexDirection: 'row',
     marginHorizontal: 10,
     marginVertical: 5,
+    height: 120,
   },
   header: {
     fontFamily: 'Lato-Regular',
-    fontSize: 15,
+    fontSize: 20,
     textAlign: 'left',
   },
   itemSubtitle: {
@@ -67,7 +91,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginRight: 5,
     color: '#000',
-    fontSize: 10,
+    fontSize: 12,
     textAlign: 'left',
   },
   teachersNameContainer: {
@@ -75,9 +99,11 @@ const styles = StyleSheet.create({
   },
   itemPic: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     borderRadius: 50,
-    height: 50,
-    width: 50,
+    height: 25,
+    width: 25,
+    marginRight: 5,
     alignSelf: 'center',
   },
 });

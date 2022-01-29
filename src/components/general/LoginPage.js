@@ -16,14 +16,6 @@ const LoginPage = ({userInfo, setUserInfo}) => {
   const {user} = useContext(AuthContext);
   const history = useHistory();
   useEffect(() => {
-    if (user) {
-      if (Object.keys(userInfo).length === 0) {
-        // user logged in but no information on them
-        fetchUser(user.displayName, setUserInfo);
-        history.push('/');
-      }
-    }
-
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);

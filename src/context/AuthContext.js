@@ -23,7 +23,7 @@ const AuthContextProvider = props => {
 
   const onAuthStateChanged = user => {
     setUser(user);
-    history.push('/');
+    history.push('/ClassList');
   };
 
   return (

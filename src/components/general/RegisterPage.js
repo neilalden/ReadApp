@@ -56,23 +56,15 @@ const RegisterPage = () => {
           />
           <Text style={styles.span}>Phone number</Text>
           <View style={[styles.numberInput, {flexDirection: 'row'}]}>
-            <Text
-              style={{
-                margin: 0,
-                padding: 0,
-                textAlignVertical: 'center',
-              }}>
-              (+63)
-            </Text>
             <TextInput
               selectionColor="black"
               style={{
                 margin: 0,
                 padding: 0,
-                width: '90%',
+                width: '100%',
               }}
               value={phoneNumber}
-              placeholder="9876543210"
+              placeholder="09876543210"
               keyboardType="numeric"
               onChangeText={text => setPhoneNumber(text)}
             />
@@ -111,10 +103,8 @@ const RegisterPage = () => {
                 alert('All fields are required');
                 return;
               }
-              if (phoneNumber.length !== 10) {
-                alert(
-                  'Phone number must have 11 digits\nNote* (+63) stands for 0',
-                );
+              if (phoneNumber.length !== 11) {
+                alert('Phone number must have 11 digits');
                 return;
               }
               createAccount(
@@ -151,7 +141,7 @@ const createAccount = (
       id: id,
       name: name,
       isStudent: isStudent,
-      phoneNumber: `+63${phoneNumber}`,
+      phoneNumber: phoneNumber,
       classes: [],
       photoUrl: user.photoURL,
     })

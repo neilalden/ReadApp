@@ -30,6 +30,7 @@ const CreatePostPage = ({userInfo}) => {
   const history = useHistory();
   const [postText, setPostText] = useState('');
   const [postFiles, setPostFiles] = useState([]);
+  const [isPosting, setIsPosting] = useState(false);
 
   /***HOOKS***/
   useEffect(() => {
@@ -57,6 +58,8 @@ const CreatePostPage = ({userInfo}) => {
         classList={classList}
         setClassList={setClassList}
         classNumber={classNumber}
+        isPosting={isPosting}
+        setIsPosting={setIsPosting}
       />
     </ScrollView>
   );
@@ -73,6 +76,8 @@ const PostButton = ({
   classList,
   setClassList,
   classNumber,
+  isPosting,
+  setIsPosting,
 }) => {
   const data = {
     author: userInfo.id,
@@ -84,6 +89,7 @@ const PostButton = ({
   return (
     <TouchableOpacity
       style={styles.submitButton}
+      disabled={isPosting}
       onPress={() => {
         validatePost(
           data,
@@ -92,6 +98,7 @@ const PostButton = ({
           setPostText,
           setPostFiles,
           setClassList,
+          setIsPosting,
         );
       }}>
       <Text>Post</Text>
@@ -190,14 +197,16 @@ const validatePost = async (
   setPostText,
   setPostFiles,
   setClassList,
+  setIsPosting,
 ) => {
   const classId = classList[classNumber].classId;
   const filePath = `${classId}/posts/`;
 
   if (data.body === '' && data.files.length === 0) {
-    alert('nothing to post', 'please write anything');
+    alert('nothing to post', 'please write or upload anything');
   } else {
     ToastAndroid.show('Posting...', ToastAndroid.SHORT);
+    setIsPosting(true);
     let files = data.files;
     let urls = [];
     if (files.length !== 0) {
@@ -219,6 +228,7 @@ const validatePost = async (
                 copyClassList[classNumber].posts = [data];
               }
               setClassList(copyClassList);
+              setIsPosting(false);
 
               setPostText('');
               setPostFiles([]);
@@ -241,11 +251,12 @@ const validatePost = async (
         copyClassList[classNumber].posts = [data];
       }
       setClassList(copyClassList);
+      setIsPosting(false);
 
       setPostText('');
       setPostFiles([]);
 
-      ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
+      ToastAndroid.show('Post succesful!', ToastAndroid.SHORT);
       return;
     }
   }

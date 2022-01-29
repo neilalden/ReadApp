@@ -14,7 +14,7 @@ import {useHistory} from 'react-router';
 import {ClassContext, fetchPosts} from '../../context/ClassContext';
 import {AuthContext} from '../../context/AuthContext';
 import IconAddClass from '../../../assets/addClass.svg';
-import IconSend from '../../../assets/send.svg';
+import firestore from '@react-native-firebase/firestore';
 import ClassroomHeader from './ClassroomHeader';
 import ClassroomNav from './ClassroomNav';
 import ViewPostPage from './ViewPostPage';
@@ -30,11 +30,17 @@ const FeedPage = ({userInfo}) => {
   /***HOOKS***/
 
   useEffect(() => {
-    if (
-      classList[classNumber].posts === undefined ||
-      classList[classNumber].posts.length === 0
-    ) {
-      fetchPosts(classNumber, classList, setClassList);
+    if (userInfo.id !== undefined && user) {
+      firestore()
+        .collection(`classes/${classList[classNumber].classId}/posts`)
+        .orderBy('createdAt', 'desc')
+        .onSnapshot(snapShot => {
+          if (snapShot == undefined) {
+            return;
+          } else {
+            fetchPosts(classNumber, classList, setClassList);
+          }
+        });
     }
     BackHandler.addEventListener('hardwareBackPress', () => {
       if (viewPost) {
@@ -56,7 +62,6 @@ const FeedPage = ({userInfo}) => {
   const wait = timeout => {
     return new Promise(resolve => setTimeout(resolve, timeout));
   };
-
   return (
     <>
       <ScrollView
@@ -64,12 +69,7 @@ const FeedPage = ({userInfo}) => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-        {!viewPost && (
-          <ClassroomHeader
-            subject={classList[classNumber].subject}
-            section={classList[classNumber].section}
-          />
-        )}
+        {!viewPost && <ClassroomHeader classroom={classList[classNumber]} />}
         {!viewPost && <Segment history={history} />}
         {viewPost ? (
           <ViewPostPage
@@ -117,7 +117,7 @@ const PostList = ({posts, setPost, setViewPost, classNumber, classList}) => {
   const classId = classList[classNumber].classId;
 
   return (
-    <ScrollView>
+    <ScrollView style={{marginTop: 10}}>
       {posts && posts.length > 0 ? (
         <ScrollView>
           {posts.map((post, index) => {
@@ -167,7 +167,11 @@ const PostList = ({posts, setPost, setViewPost, classNumber, classList}) => {
                 </View>
                 {post.body !== '' && (
                   <View style={styles.cardBodyContainer}>
-                    <Text style={styles.cardBodyText}>{post.body}</Text>
+                    <Text style={styles.cardBodyText}>
+                      {post.body.length > 255
+                        ? `${post.body.substring(0, 255)}...`
+                        : post.body}
+                    </Text>
                   </View>
                 )}
                 <View style={styles.filesCardContainer}>

@@ -186,7 +186,10 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
             })}
         </View>
       </View>
-      {submission.submittedAt &&
+      {submission.work !== '' &&
+        submission.files &&
+        submission.files.length !== 0 &&
+        submission.submittedAt &&
         classwork &&
         new Date(
           submission.submittedAt.toDate
@@ -220,12 +223,14 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
           );
         } else if (!userInfo.isStudent) {
           return (
-            <>
-              {submission.work && submission.work != '' && (
+            <View>
+              {submission.work && submission.work != '' ? (
                 <View style={styles.questionContainer}>
                   <Text style={styles.header}>Answer</Text>
                   <Text style={styles.item}>{submission.work}</Text>
                 </View>
+              ) : (
+                <></>
               )}
               {submission.files && submission.files.length !== 0 ? (
                 <View style={{marginHorizontal: 10}}>
@@ -310,7 +315,7 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
               ) : (
                 <></>
               )}
-            </>
+            </View>
           );
         } else if (
           submission &&

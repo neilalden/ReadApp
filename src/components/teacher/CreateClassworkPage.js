@@ -17,7 +17,11 @@ import IconGoBack from '../../../assets/goback.svg';
 import IconRemove from '../../../assets/x-circle.svg';
 import {useHistory} from 'react-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import {ClassContext, createClasswork} from '../../context/ClassContext';
+import {
+  ClassContext,
+  createClasswork,
+  createLecture,
+} from '../../context/ClassContext';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import DocumentPicker from 'react-native-document-picker';
@@ -27,7 +31,7 @@ const CreateClassworkPage = () => {
   const {classList, setClassList, classNumber, classworkNumber} =
     useContext(ClassContext);
   const history = useHistory();
-  const [isQuiz, setIsQuiz] = useState(true);
+  const [tab, setTab] = useState(0);
   //
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date());
@@ -36,6 +40,7 @@ const CreateClassworkPage = () => {
   const [closeOnDeadline, setCloseOnDeadline] = useState(false);
   const [instruction, setInstruction] = useState('');
   const [pointsPerRight, setPointsPerRight] = useState(5);
+  const [isPosting, setIsPosting] = useState(false);
   // Quiz specific states
   const [pointsPerWrong, setPointsPerWrong] = useState(0);
   const [quizItems, setQuizItems] = useState([]);
@@ -46,6 +51,10 @@ const CreateClassworkPage = () => {
   const [option, setOption] = useState('');
   // Activity specific states
   const [files, setFiles] = useState([]);
+  // Lecture states
+  const [lectureTitle, setLectureTitle] = useState('');
+  const [lectureInstruction, setLectureInstruction] = useState('');
+  const [lecturefiles, setLecturefiles] = useState([]);
 
   const classId = classList[classNumber].classId;
   const filePath = `${classId}/classworks/`;
@@ -96,10 +105,10 @@ const CreateClassworkPage = () => {
             style={[
               styles.button,
               styles.toggleLeft,
-              isQuiz ? styles.toggleHighlight : styles.toggleUnhighlight,
+              tab === 0 ? styles.toggleHighlight : styles.toggleUnhighlight,
             ]}
             onPress={() => {
-              setIsQuiz(true);
+              setTab(0);
               setPointsPerRight(5);
             }}>
             <Text style={styles.buttonText}>Quiz</Text>
@@ -108,14 +117,27 @@ const CreateClassworkPage = () => {
           <TouchableOpacity
             style={[
               styles.button,
-              styles.toggleRight,
-              isQuiz ? styles.toggleUnhighlight : styles.toggleHighlight,
+              styles.toggleMiddle,
+              tab === 1 ? styles.toggleHighlight : styles.toggleUnhighlight,
             ]}
             onPress={() => {
-              setIsQuiz(false);
+              setTab(1);
               setPointsPerRight(100);
             }}>
             <Text style={styles.buttonText}>Activity</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.toggleRight,
+              tab === 2 ? styles.toggleHighlight : styles.toggleUnhighlight,
+            ]}
+            onPress={() => {
+              setTab(2);
+              setPointsPerRight(100);
+            }}>
+            <Text style={styles.buttonText}>Lectures</Text>
           </TouchableOpacity>
         </View>
 
@@ -123,7 +145,7 @@ const CreateClassworkPage = () => {
           <IconGoBack height={30} width={30} style={styles.goback} />
         </TouchableOpacity>
       </View>
-      {isQuiz ? (
+      {tab === 0 ? (
         <QuizWork
           classNumber={classNumber}
           classList={classList}
@@ -156,8 +178,10 @@ const CreateClassworkPage = () => {
           setOptions={setOptions}
           option={option}
           setOption={setOption}
+          isPosting={isPosting}
+          setIsPosting={setIsPosting}
         />
-      ) : (
+      ) : tab === 1 ? (
         <ActivityWork
           files={files}
           setFiles={setFiles}
@@ -179,8 +203,217 @@ const CreateClassworkPage = () => {
           pointsPerRight={pointsPerRight}
           setPointsPerRight={setPointsPerRight}
           filePath={filePath}
+          isPosting={isPosting}
+          setIsPosting={setIsPosting}
+        />
+      ) : (
+        <Lecture
+          lectureTitle={lectureTitle}
+          setLectureTitle={setLectureTitle}
+          lectureInstruction={lectureInstruction}
+          setLectureInstruction={setLectureInstruction}
+          lecturefiles={lecturefiles}
+          setLecturefiles={setLecturefiles}
+          isPosting={isPosting}
+          setIsPosting={setIsPosting}
+          classList={classList}
+          setClassList={setClassList}
+          classNumber={classNumber}
         />
       )}
+    </ScrollView>
+  );
+};
+
+const Lecture = ({
+  lectureTitle,
+  setLectureTitle,
+  lectureInstruction,
+  setLectureInstruction,
+  lecturefiles,
+  setLecturefiles,
+  isPosting,
+  setIsPosting,
+  classList,
+  setClassList,
+  classNumber,
+}) => {
+  const openFile = () => {
+    PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+    )
+      .then(async response => {
+        if (response) {
+          DocumentPicker.pickMultiple({
+            type: [DocumentPicker.types.allFiles],
+            mode: 'open',
+            copyTo: 'cachesDirectory',
+          })
+            .then(res => {
+              setLecturefiles(prev => [
+                ...prev,
+                {fileName: res[0].name, uri: res[0].fileCopyUri},
+              ]);
+            })
+            .catch(e => alert(`${e}`));
+        } else {
+          const permission = await requestStoragePermission();
+          if (permission) {
+            DocumentPicker.pickMultiple({
+              type: [DocumentPicker.types.allFiles],
+              mode: 'open',
+              copyTo: 'cachesDirectory',
+            })
+              .then(res => {
+                setLecturefiles(prev => [
+                  ...prev,
+                  {fileName: res[0].name, uri: res[0].fileCopyUri},
+                ]);
+              })
+              .catch(e => alert(`${e}`));
+          } else {
+            alert('Alert', 'Unable to upload file');
+          }
+        }
+      })
+      .catch(e => alert('Alert', `${e}`));
+  };
+
+  const handleAddLecture = () => {
+    setIsPosting(true);
+
+    if (lectureTitle === '') {
+      alert('Lecture title is not filled properly');
+      setIsPosting(false);
+      return;
+    }
+    const addLecture = async () => {
+      ToastAndroid.show('Posting lecture...', ToastAndroid.SHORT);
+      let urls = [];
+      const filePath = `${classList[classNumber].classId}/lectures/`;
+      if (lecturefiles.length !== 0) {
+        for (const i in lecturefiles) {
+          const reference = storage().ref(filePath + lecturefiles[i].fileName);
+          reference
+            .putFile(lecturefiles[i].uri)
+            .then(() => {
+              urls.push(filePath + lecturefiles[i].fileName);
+              if (urls.length === lecturefiles.length) {
+                let data = {
+                  createdAt: firestore.Timestamp.fromDate(new Date()),
+                  title: lectureTitle,
+                  instruction: lectureInstruction,
+                  files: urls,
+                };
+                createLecture(data, classList, classNumber);
+                ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
+                let copyClassList = [...classList];
+                copyClassList[classNumber].lectures.push(data);
+                setIsPosting(false);
+                setClassList(copyClassList);
+                setLectureTitle('');
+                setLectureInstruction('');
+                setLecturefiles([]);
+                return;
+              }
+            })
+            .catch(e => {
+              alert(`${e}`);
+              setIsPosting(false);
+            });
+        }
+      } else {
+        let data = {
+          createdAt: firestore.Timestamp.fromDate(new Date()),
+          title: lectureTitle,
+          instruction: lectureInstruction,
+        };
+        createLecture(data, classList, classNumber);
+
+        ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
+        let copyClassList = [...classList];
+        copyClassList[classNumber].lectures.push(data);
+        setIsPosting(false);
+        setClassList(copyClassList);
+        setLectureTitle('');
+        setLectureInstruction('');
+        return;
+      }
+    };
+    addLecture();
+  };
+
+  return (
+    <ScrollView style={styles.workContainer}>
+      <View
+        style={[
+          styles.card,
+          {
+            marginTop: 0,
+          },
+        ]}>
+        <Text style={styles.header}>Lecture title</Text>
+        <TextInput
+          placeholder="Lecture 1"
+          multiline={true}
+          style={styles.item}
+          value={lectureTitle}
+          onChangeText={text => setLectureTitle(text)}
+        />
+        <Text style={styles.header}>Instruction</Text>
+        <TextInput
+          placeholder="Review the following..."
+          multiline={true}
+          style={styles.item}
+          value={lectureInstruction}
+          onChangeText={text => setLectureInstruction(text)}
+        />
+      </View>
+
+      {lecturefiles.map((item, index) => {
+        return (
+          <TouchableOpacity
+            style={styles.fileItem}
+            key={index}
+            onPress={() => {
+              let lecturefilesCopy = [...lecturefiles];
+              lecturefilesCopy.splice(index, 1);
+              setLecturefiles(lecturefilesCopy);
+            }}>
+            <Text style={{maxWidth: '90%'}}>{item.fileName}</Text>
+            <IconRemove height={30} width={30} color={'red'} />
+          </TouchableOpacity>
+        );
+      })}
+      <Text style={[styles.subtitle, {paddingHorizontal: 10}]}>
+        Reminder: Most devices only support images, videos, text, and PDF files.
+        Any other file types would require students to have the neccesarry
+        application to open them
+      </Text>
+      <TouchableOpacity
+        onPress={openFile}
+        style={[
+          styles.submitButton,
+          {
+            padding: 12,
+            borderWidth: 3,
+            borderColor: '#ADD8E6',
+            backgroundColor: '#FFF',
+            justifyContent: 'center',
+            flexDirection: 'row',
+          },
+        ]}>
+        <Text>Upload file</Text>
+        <IconUpload style={styles.uploadIcon} />
+      </TouchableOpacity>
+      <View style={styles.marginBottom}>
+        <TouchableOpacity
+          disabled={isPosting}
+          style={styles.submitButton}
+          onPress={handleAddLecture}>
+          <Text>Post Lecture</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 };
@@ -217,6 +450,8 @@ const QuizWork = ({
   setOptions,
   option,
   setOption,
+  isPosting,
+  setIsPosting,
 }) => {
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -282,22 +517,33 @@ const QuizWork = ({
     setOption('');
   };
   const handleAddQuiz = () => {
+    setIsPosting(true);
     const parsedPointsPerRight = parseInt(pointsPerRight);
     const parsedPointsPerWrong = parseInt(pointsPerWrong);
     if (title == '') {
       alert('Quiz title is not filled properly');
+
+      setIsPosting(false);
       return;
     } else if (instruction === '') {
       alert('Quiz instruction is not filled properly');
+
+      setIsPosting(false);
       return;
     } else if (isNaN(parsedPointsPerRight)) {
       alert('Points per right on this quiz is not filled properly');
+
+      setIsPosting(false);
       return;
     } else if (isNaN(parsedPointsPerWrong)) {
       alert('Points per wrong on this quiz is not filled properly');
+
+      setIsPosting(false);
       return;
     } else if (quizItems.length == 0) {
       alert('There are no questions for this quiz');
+
+      setIsPosting(false);
       return;
     }
     const addQuiz = () => {
@@ -322,14 +568,13 @@ const QuizWork = ({
       let copyClassList = [...classList];
       copyClassList[classNumber].classworkList.push(data);
       setClassList(copyClassList);
-
+      setIsPosting(false);
       setTitle('');
       setInstruction('');
       setDate(new Date());
       setQuizItems([]);
       setPointsPerRight(5);
       setPointsPerWrong(0);
-      alert('Classwork posted!');
 
       return;
     };
@@ -661,7 +906,10 @@ const QuizWork = ({
         )}
       </ScrollView>
       <View style={styles.marginBottom}>
-        <TouchableOpacity style={styles.submitButton} onPress={handleAddQuiz}>
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleAddQuiz}
+          disabled={isPosting}>
           <Text>Post quiz</Text>
         </TouchableOpacity>
       </View>
@@ -689,6 +937,8 @@ const ActivityWork = ({
   pointsPerRight,
   setPointsPerRight,
   filePath,
+  isPosting,
+  setIsPosting,
 }) => {
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -787,16 +1037,23 @@ const ActivityWork = ({
   };
 
   const handleAddActivity = () => {
+    setIsPosting(true);
     const parsedPointsPerRight = parseInt(pointsPerRight);
 
     if (title === '') {
       alert('Activity title is not filled properly');
+
+      setIsPosting(false);
       return;
     } else if (instruction == '') {
       alert('Activity instruction is not filled properly');
+
+      setIsPosting(false);
       return;
     } else if (isNaN(parsedPointsPerRight)) {
       alert('Points for this activity is not filled properly');
+
+      setIsPosting(false);
       return;
     }
     const addActivity = async () => {
@@ -805,7 +1062,6 @@ const ActivityWork = ({
       let urls = [];
       if (files.length !== 0) {
         for (const i in files) {
-          const documentUri = await getPathForFirebaseStorage(files[i].uri);
           const reference = storage().ref(filePath + files[i].fileName);
           reference
             .putFile(files[i].uri)
@@ -826,13 +1082,13 @@ const ActivityWork = ({
                 ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
                 let copyClassList = [...classList];
                 copyClassList[classNumber].classworkList.push(data);
+                setIsPosting(false);
                 setClassList(copyClassList);
                 setTitle('');
                 setDate(new Date());
                 setInstruction('');
                 setPointsPerRight(100);
                 setFiles([]);
-                alert('Classwork posted!');
                 return;
               }
             })
@@ -855,13 +1111,13 @@ const ActivityWork = ({
         ToastAndroid.show('Post succesful!', ToastAndroid.LONG);
         let copyClassList = [...classList];
         copyClassList[classNumber].classworkList.push(data);
+        setIsPosting(false);
         setClassList(copyClassList);
         setTitle('');
         setDate(new Date());
         setInstruction('');
         setPointsPerRight(100);
         setFiles([]);
-        alert('Classwork posted!');
         return;
       }
     };
@@ -1035,6 +1291,7 @@ const ActivityWork = ({
       </TouchableOpacity>
       <View style={styles.marginBottom}>
         <TouchableOpacity
+          disabled={isPosting}
           style={styles.submitButton}
           onPress={handleAddActivity}>
           <Text>Post activity</Text>
@@ -1052,7 +1309,6 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 5,
   },
   workContainer: {},
   card: {
@@ -1090,7 +1346,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#ADD8E6',
     alignItems: 'center',
-    minWidth: 100,
+    minWidth: 90,
     padding: 10,
     margin: 10,
     borderRadius: 10,
@@ -1108,10 +1364,14 @@ const styles = StyleSheet.create({
     borderBottomEndRadius: 0,
     marginRight: 0,
   },
+  toggleMiddle: {
+    borderRadius: 0,
+    marginHorizontal: 0,
+  },
   toggleRight: {
     borderTopStartRadius: 0,
     borderBottomStartRadius: 0,
-    marginLeft: 0,
+    marginHorizontal: 0,
   },
   toggleHighlight: {backgroundColor: '#63b4cf'},
   toggleUnhighlight: {
@@ -1140,6 +1400,7 @@ const styles = StyleSheet.create({
 
     alignSelf: 'center',
     padding: 5,
+    marginRight: 10,
   },
   goback: {
     color: '#fff',

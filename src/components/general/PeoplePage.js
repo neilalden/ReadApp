@@ -117,10 +117,7 @@ const PeoplePage = ({userInfo}) => {
   return (
     <>
       <ScrollView style={{backgroundColor: '#fff'}}>
-        <ClassroomHeader
-          subject={classList[classNumber].subject}
-          section={classList[classNumber].section}
-        />
+        <ClassroomHeader classroom={classList[classNumber]} />
         <View style={styles.itemSubtitleContainer}>
           <Text style={[styles.header, {padding: 13}]}>Teachers</Text>
           {!userInfo.isStudent && (
@@ -153,6 +150,7 @@ const PeoplePage = ({userInfo}) => {
                   <View>
                     <Text>{item.name}</Text>
                     <Text style={styles.subtitle}>{item.id}</Text>
+                    <Text style={styles.subtitle}>{item.phoneNumber}</Text>
                   </View>
                 </View>
               </View>
@@ -192,6 +190,7 @@ const PeoplePage = ({userInfo}) => {
                     <View>
                       <Text>{item.name}</Text>
                       <Text style={styles.subtitle}>{item.id}</Text>
+                      <Text style={styles.subtitle}>{item.phoneNumber}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -438,6 +437,7 @@ const deletePersonFromClass = (
           const classId = classList[classNumber].classId;
           let students = [...classList[classNumber].students];
           let teachers = [...classList[classNumber].teachers];
+
           // UPDATE CLASS COLLECTION
           if (toDeleteIsStudent) {
             for (const i in students) {
@@ -612,9 +612,12 @@ const addPersonToClass = (
                 const userClasses = res.data().classes
                   ? res.data().classes
                   : [];
-                const userData = photoUrl
-                  ? {id: accountId, name: res.data().name, photoUrl: photoUrl}
-                  : {id: accountId, name: res.data().name};
+                const userData = {
+                  id: accountId,
+                  name: res.data().name,
+                  phoneNumber: res.data().phoneNumber,
+                  photoUrl: photoUrl,
+                };
                 const data = isStudent
                   ? {
                       students: [...students, userData],
@@ -646,6 +649,7 @@ const addPersonToClass = (
                               id: accountId,
                               name: res.data().name,
                               photoUrl: res.data().photoUrl,
+                              phoneNumber: res.data().phoneNumber,
                             },
                           ];
                         } else {
@@ -655,6 +659,7 @@ const addPersonToClass = (
                               id: accountId,
                               name: res.data().name,
                               photoUrl: res.data().photoUrl,
+                              phoneNumber: res.data().phoneNumber,
                             },
                           ];
                         }
@@ -742,6 +747,8 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     justifyContent: 'center',
     margin: 10,
+    marginRight: 10.65,
+    marginTop: 9.7,
   },
   addPeopleContainer: {
     alignItems: 'center',

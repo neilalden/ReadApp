@@ -27,7 +27,14 @@ const AddClassForm = ({
       return;
     }
     const id = firestore().collection('classes').doc().id;
+    const classHeader = randomNumberGenerator();
     let classes = userInfo.classes;
+    const data = {
+      id: userInfo.id,
+      name: userInfo.name,
+      phoneNumber: userInfo.phoneNumber,
+      photoUrl: user.photoURL,
+    };
 
     classes.push(id);
     firestore()
@@ -37,9 +44,8 @@ const AddClassForm = ({
         classId: id,
         subject: subject,
         section: section,
-        teachers: [
-          {id: userInfo.id, name: userInfo.name, photoUrl: user.photoURL},
-        ],
+        classHeader: classHeader,
+        teachers: [data],
         students: [],
         queues: [],
       })
@@ -60,9 +66,8 @@ const AddClassForm = ({
           classId: id,
           subject: subject,
           section: section,
-          teachers: [
-            {id: userInfo.id, name: userInfo.name, photoUrl: user.photoURL},
-          ],
+          classHeader: classHeader,
+          teachers: [data],
           students: [],
           queues: [],
         });
@@ -107,6 +112,9 @@ const AddClassForm = ({
       </TouchableOpacity>
     </View>
   );
+};
+const randomNumberGenerator = () => {
+  return Math.floor(Math.random() * 16) + 1;
 };
 const styles = StyleSheet.create({
   header: {

@@ -19,9 +19,8 @@ import {
 import firestore from '@react-native-firebase/firestore';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import {useHistory} from 'react-router-native';
-import {AuthContext} from '../../context/AuthContext';
+import {AuthContext, signOut} from '../../context/AuthContext';
 import {ClassContext, fetchClassList} from '../../context/ClassContext';
-import {signOut} from '../../context/AuthContext';
 import IconAddClass from '../../../assets/addClass.svg';
 import IconLeave from '../../../assets/leave.svg';
 import Nav from './Nav';
@@ -34,11 +33,12 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
   /***STATES***/
   const history = useHistory();
   const refRBSheet = useRef();
-  const {classList, setClassList, setClassNumber} = useContext(ClassContext);
+  const {classList, setClassList} = useContext(ClassContext);
   const {user} = useContext(AuthContext);
   // FOR THE TEXT INPUT OF CREATING A NEW CLASS
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   /***HOOKS***/
   useEffect(() => {
@@ -49,13 +49,33 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
       history.push('/Login');
     } else if (Object.keys(userInfo).length === 0 && user) {
       // user logged in but no information on them
-
       fetchUser(user.displayName);
-    } else if (userInfo && user && classList.length === 0) {
-      // user logged in and has the information on them but classes is not loaded yet
+    } else if (
+      Object.keys(userInfo).length !== 0 &&
+      user &&
+      classList.length === 0
+    ) {
+      setClassList([]);
       fetchClassList(userInfo, setClassList);
+    } else if (Object.keys(userInfo).length !== 0 && user) {
+      if (userInfo.id == undefined) {
+        return;
+      }
+      firestore()
+        .collection('users')
+        .doc(userInfo.id)
+        .onSnapshot(snapshot => {
+          if (snapshot == undefined) {
+            return;
+          }
+          if (
+            snapshot.data().classes &&
+            userInfo.classes.length !== snapshot.data().classes.length
+          ) {
+            onRefresh();
+          }
+        });
     }
-
     BackHandler.addEventListener('hardwareBackPress', () => {
       alert('Do you want to leave?', 'Exit?');
       return true;
@@ -63,6 +83,18 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchUser(user.displayName);
+    setClassList([]);
+    wait(1000).then(() => {
+      fetchClassList(userInfo, setClassList);
+      setRefreshing(false);
+    });
+  }, []);
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
 
   /***FUNCTIONS***/
   const fetchUser = id => {
@@ -87,20 +119,33 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
       .catch(e => alert(e.message, e.code));
   };
 
-  if (!user) {
+  if (!user || !userInfo) {
     return <></>;
   }
 
   return (
     <>
-      <ScrollView style={{backgroundColor: '#fff'}}>
+      <ScrollView
+        style={{backgroundColor: '#fff'}}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         <ClassListPageHeader
           user={user}
           userInfo={userInfo}
           history={history}
+          setUserInfo={setUserInfo}
         />
         <Segment userInfo={userInfo} refRBSheet={refRBSheet} />
-        {userInfo.isStudent ? <StudentClassList /> : <TeacherClassList />}
+        {userInfo.classes && userInfo.classes.length > 0 ? (
+          userInfo.isStudent ? (
+            <StudentClassList />
+          ) : (
+            <TeacherClassList />
+          )
+        ) : (
+          <Text style={styles.itemSubtitle}>No classes yet</Text>
+        )}
         <RBSheet
           ref={refRBSheet}
           closeOnDragDown={true}
@@ -141,13 +186,14 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
   );
 };
 
-const ClassListPageHeader = ({user, userInfo, history}) => {
+const ClassListPageHeader = ({user, userInfo, history, setUserInfo}) => {
   const handleLogout = () => {
     Alert.alert('Logout?', `Are you sure you want to logout your account?`, [
       {
         text: 'Yes',
         onPress: () => {
           history.push('/Login');
+          setUserInfo({});
           signOut();
         },
       },
@@ -180,7 +226,10 @@ const ClassListPageHeader = ({user, userInfo, history}) => {
           <View style={styles.profileNameContainer}>
             <Text style={styles.profileName}>{userInfo.name}</Text>
           </View>
-          <Text style={styles.itemSubtitle}>{userInfo.id}</Text>
+          <Text style={styles.profileSubtitle}>
+            {userInfo.isStudent ? 'Student ID : ' : 'Teacher ID : '}
+            {userInfo.id}
+          </Text>
         </View>
       </View>
     </View>
@@ -204,7 +253,6 @@ const Segment = ({userInfo, refRBSheet}) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   classListPageHeader: {
     backgroundColor: '#ADD8E6',
@@ -236,12 +284,11 @@ const styles = StyleSheet.create({
     color: 'white',
     minWidth: '75%',
   },
-  itemSubtitle: {
+  profileSubtitle: {
     fontFamily: 'Lato-Regular',
     fontSize: 16,
     marginTop: 5,
     color: '#000',
-    textAlign: 'left',
   },
   curvedSegment: {
     backgroundColor: '#ffffff',
@@ -273,6 +320,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignSelf: 'flex-start',
     padding: 5,
+  },
+  itemSubtitle: {
+    fontFamily: 'Lato-Regular',
+    marginTop: 5,
+    marginRight: 5,
+    color: '#000',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
 

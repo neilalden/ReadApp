@@ -36,13 +36,59 @@ export default ClassContextProvider = props => {
   );
 };
 
+export const createLecture = (data, classList, classNumber) => {
+  const classId = classList[classNumber].classId;
+  firestore()
+    .collection(`classes/${classId}/lectures`)
+    .add(data)
+    .then(() => {})
+    .catch(e => alert(e, 'You may have disconnected'));
+};
+
+export const fetchLectures = (classNumber, classList, setClassList) => {
+  NetInfo.fetch().then(state => {
+    if (!state.isConnected) {
+      getData('classList', setClassList);
+    } else {
+      const classId = classList[classNumber].classId;
+      let classListCopy = [...classList];
+      let lectures = [];
+      firestore()
+        .collection(`classes/${classId}/lectures`)
+        .orderBy('createdAt', 'desc')
+        .get()
+        .then(documentSnapshot => {
+          documentSnapshot.forEach(res => {
+            lectures.push({
+              id: res.id,
+              title: res.data().title,
+              instruction: res.data().instruction,
+              files: res.data().files,
+            });
+          });
+
+          for (const i in classListCopy) {
+            if (
+              classListCopy[classNumber].classId == classListCopy[i].classId
+            ) {
+              classListCopy[classNumber].lectures = lectures;
+            }
+          }
+          setClassList(classListCopy);
+          storeData('classList', {classList: classListCopy});
+        })
+        .catch(e => alert(e, 'You may have disconnected'));
+    }
+  });
+};
+
 export const fetchClassList = async (userInfo, setClassList) => {
   NetInfo.fetch().then(state => {
     if (!state.isConnected) {
       getData('classList', setClassList);
     } else {
       const classes = userInfo.classes;
-      let classListCopy = [];
+      let classListTemp = [];
       for (let i in classes) {
         firestore()
           .collection('classes')
@@ -51,16 +97,17 @@ export const fetchClassList = async (userInfo, setClassList) => {
           .then(res => {
             const data = {
               classId: res.data().classId,
+              classHeader: res.data().classHeader,
               subject: res.data().subject,
               section: res.data().section,
               students: res.data().students,
               teachers: res.data().teachers,
               queues: res.data().queues,
             };
-            classListCopy.push(data);
-            setClassList(prev => [...prev, data]);
-            if (classListCopy.length === classes.length) {
-              storeData('classList', {classList: classListCopy});
+            classListTemp.push(data);
+            if (classListTemp.length === classes.length) {
+              storeData('classList', {classList: classListTemp});
+              setClassList(classListTemp);
             }
           })
           .catch(e => alert(e, 'You may have disconnected'));
@@ -116,25 +163,6 @@ export const fetchClassworkList = (classNumber, classList, setClassList) => {
     }
   });
 };
-function shuffle(array) {
-  var currentIndex = array.length,
-    randomIndex;
-
-  // While there remain elements to shuffle...
-  while (currentIndex != 0) {
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex],
-      array[currentIndex],
-    ];
-  }
-
-  return array;
-}
 export const fetchSubmissionList = (
   classNumber,
   classworkNumber,
@@ -273,7 +301,7 @@ export const fetchPosts = (classNumber, classList, setClassList) => {
           setClassList(classListCopy);
           storeData('classList', {classList: classListCopy});
         })
-        .catch(e => alert(e, 'You may have disconnected'));
+        .catch(e => alert(e, 'Fetch post error'));
     }
   });
 };
@@ -304,7 +332,7 @@ export const createComment = (postId, data, classList, classNumber) => {
     .update({comments: data})
     .then()
     .catch(e => {
-      alert(e, 'Line 308');
+      alert(e.message, e.code);
     });
 };
 
@@ -329,10 +357,10 @@ export const addPersonToQueue = (personInfo, classQueues) => {
               .update({queues: classQueues})
               .then()
               .catch(e => {
-                alert(e, 'Line 229');
+                alert(e.message, e.code);
               });
           })
-          .catch(e => alert(e, 'Line 231'));
+          .catch(e => alert(e.message, e.code));
       } else {
         // person has been queued before
         let queuedClasses = res.data().classes;
@@ -347,9 +375,9 @@ export const addPersonToQueue = (personInfo, classQueues) => {
               .doc(personInfo.classes[0])
               .update({queues: classQueues})
               .then()
-              .catch(e => alert(e, 'Line 246'));
+              .catch(e => alert(e.message, e.code));
           })
-          .catch(e => alert(e, 'Line 248'));
+          .catch(e => alert(e.message, e.code));
       }
     })
     .catch(e => alert(e, 'Line'));
@@ -370,6 +398,25 @@ const getData = async (key, setFunction) => {
     })
     .catch(e => alert(e.message));
 };
+function shuffle(array) {
+  var currentIndex = array.length,
+    randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ];
+  }
+
+  return array;
+}
 
 const alert = (msg, title = 'Error') => {
   Alert.alert(`${title}`, `${msg ? msg : 'Fill up the form properly'}`, [

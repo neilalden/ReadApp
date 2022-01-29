@@ -10,17 +10,24 @@ import {
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
+  ToastAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
+import FileViewer from 'react-native-file-viewer';
+import RNFS from 'react-native-fs';
 import {Link, useHistory} from 'react-router-native';
 import IconGoBack from '../../../assets/goback.svg';
 import IconAddClass from '../../../assets/addClass.svg';
 import IconDrafts from '../../../assets/archive.svg';
 import IconDelete from '../../../assets/trash.svg';
 
-import {ClassContext, fetchClassworkList} from '../../context/ClassContext';
+import {
+  ClassContext,
+  fetchClassworkList,
+  fetchLectures,
+} from '../../context/ClassContext';
 import ClassroomHeader from './ClassroomHeader';
 import ClassroomNav from './ClassroomNav';
 
@@ -33,6 +40,7 @@ const ClassroomPage = ({userInfo}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showDrafts, setShowDrafts] = useState(false);
   const [drafts, setDrafts] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
 
   /***HOOKS***/
   useEffect(() => {
@@ -40,12 +48,8 @@ const ClassroomPage = ({userInfo}) => {
       setIsConnected(state.isConnected);
     });
     // FETCH CLASSWORKLIST OF THE OPENNED CLASS IF IT DOES NOT EXIST YET
-    fetchClassworkList(
-      classNumber,
-      classList,
-      setClassList,
-      setClassworkNumber,
-    );
+    // fetchClassworkList(classNumber, classList, setClassList);
+    // fetchLectures(classNumber, classList, setClassList);
 
     // TO STOP THE BACK BUTTON FROM CLOSING THE APP
     BackHandler.addEventListener('hardwareBackPress', () => {
@@ -55,16 +59,69 @@ const ClassroomPage = ({userInfo}) => {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
+  useEffect(() => {
+    const classId = classList[classNumber].classId;
+    let classListCopy = [...classList];
+    let classworkList = [];
+    const subscriber = firestore()
+      .collection(`classes/${classId}/classworks`)
+      .orderBy('createdAt', 'desc')
+      .onSnapshot(documentSnapshot => {
+        // FETCH CLASSWORKLIST OF THE OPENNED CLASS IF IT DOES NOT EXIST YET
+        fetchClassworkList(classNumber, classList, setClassList);
+        fetchLectures(classNumber, classList, setClassList);
+        // documentSnapshot.forEach(res => {
+        //   let questions = undefined;
+        //   if (res.data().questions) {
+        //     questions = shuffle(res.data().questions);
+        //   }
+        //   classworkList.push({
+        //     id: res.id,
+        //     title: res.data().title,
+        //     deadline: res.data().deadline,
+        //     closeOnDeadline: res.data().closeOnDeadline,
+        //     instruction: res.data().instruction,
+        //     points: res.data().points,
+        //     isActivity: res.data().isActivity,
+        //     files: res.data().files,
+        //     questions: questions,
+        //     pointsPerRight: res.data().pointsPerRight,
+        //     pointsPerWrong: res.data().pointsPerWrong,
+        //   });
+        // });
+
+        // classListCopy[classNumber].classworkList = classworkList;
+        // setClassList(classworkList);
+      });
+
+    function shuffle(array) {
+      var currentIndex = array.length,
+        randomIndex;
+
+      // While there remain elements to shuffle...
+      while (currentIndex != 0) {
+        // Pick a remaining element...
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+
+        // And swap it with the current element.
+        [array[currentIndex], array[randomIndex]] = [
+          array[randomIndex],
+          array[currentIndex],
+        ];
+      }
+
+      return array;
+    }
+    // Stop listening for updates when no longer required
+    return () => subscriber();
+  }, []);
 
   /***FUNCTIONS***/
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchClassworkList(
-      classNumber,
-      classList,
-      setClassList,
-      setClassworkNumber,
-    );
+    fetchClassworkList(classNumber, classList, setClassList);
+    fetchLectures(classNumber, classList, setClassList);
     wait(1000).then(() => setRefreshing(false));
   }, []);
   const wait = timeout => {
@@ -77,10 +134,7 @@ const ClassroomPage = ({userInfo}) => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-        <ClassroomHeader
-          subject={classList[classNumber].subject}
-          section={classList[classNumber].section}
-        />
+        <ClassroomHeader classroom={classList[classNumber]} />
         <Segment
           userInfo={userInfo}
           setShowDrafts={setShowDrafts}
@@ -90,6 +144,8 @@ const ClassroomPage = ({userInfo}) => {
           classList={classList}
           classNumber={classNumber}
           history={history}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
         {showDrafts ? (
           <DraftsList
@@ -106,6 +162,7 @@ const ClassroomPage = ({userInfo}) => {
             classList={classList}
             classNumber={classNumber}
             setClassworkNumber={setClassworkNumber}
+            activeTab={activeTab}
           />
         )}
       </ScrollView>
@@ -114,13 +171,24 @@ const ClassroomPage = ({userInfo}) => {
   );
 };
 
-const ClassworkList = ({classList, classNumber, setClassworkNumber}) => {
+const ClassworkList = ({
+  classList,
+  classNumber,
+  setClassworkNumber,
+  activeTab,
+}) => {
   return (
     <ScrollView>
-      {classList[classNumber].classworkList &&
+      {(activeTab === 0 || activeTab === 1) &&
+      classList[classNumber].classworkList &&
       classList[classNumber].classworkList.length !== 0 ? (
         <ScrollView>
           {classList[classNumber].classworkList.map((item, index) => {
+            if (item.isActivity && activeTab === 0) {
+              return;
+            } else if (!item.isActivity && activeTab === 1) {
+              return;
+            }
             let dt = new Date(
               item.deadline.toDate
                 ? item.deadline.toDate()
@@ -159,6 +227,46 @@ const ClassworkList = ({classList, classNumber, setClassworkNumber}) => {
             );
           })}
         </ScrollView>
+      ) : activeTab == 2 &&
+        classList[classNumber].lectures &&
+        classList[classNumber].lectures.length !== 0 ? (
+        <ScrollView>
+          {classList[classNumber].lectures.map((item, index) => {
+            return (
+              <View key={index} style={styles.card}>
+                <View style={styles.cardBodyContainer}>
+                  <Text style={styles.cardTitleText}>{item.title}</Text>
+                  {item.instruction !== '' && (
+                    <Text style={styles.cardBodyText}>{item.instruction}</Text>
+                  )}
+                </View>
+                <View style={styles.filesCardContainer}>
+                  {item.files &&
+                    item.files.map((file, index) => {
+                      return (
+                        <TouchableOpacity
+                          key={index}
+                          onPress={() =>
+                            viewFile(file, classList[classNumber].classId)
+                          }
+                          style={[
+                            styles.card,
+                            {marginHorizontal: 2, backgroundColor: '#E8EAED'},
+                          ]}>
+                          <Text>
+                            {file.replace(
+                              `${classList[classNumber].classId}/lectures/`,
+                              '',
+                            )}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
       ) : (
         <Text style={styles.itemTextSubs}>No classworks yet</Text>
       )}
@@ -175,11 +283,81 @@ const Segment = ({
   classList,
   classNumber,
   history,
+  activeTab,
+  setActiveTab,
+}) => {
+  const classId = classList[classNumber].classId;
+  return (
+    <View style={styles.segmentContainer}>
+      {!showDrafts ? (
+        <View style={styles.tabButtonContainer}>
+          <TouchableOpacity
+            onPress={() => setActiveTab(0)}
+            style={[
+              styles.tabButton,
+              styles.tabButtonLeft,
+              activeTab === 0 && styles.activeTab,
+            ]}>
+            <Text style={styles.tabButtonText}>Quizes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setActiveTab(1)}
+            style={[styles.tabButton, activeTab === 1 && styles.activeTab]}>
+            <Text style={styles.tabButtonText}>Activities</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setActiveTab(2)}
+            style={[
+              styles.tabButton,
+              styles.tabButtonRight,
+              activeTab === 2 && styles.activeTab,
+            ]}>
+            <Text style={styles.tabButtonText}>Lectures</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View></View>
+      )}
+      {!userInfo.isStudent ? (
+        <CreateClassworkButton history={history} />
+      ) : (
+        <ShowDraftsButton
+          showDrafts={showDrafts}
+          setShowDrafts={setShowDrafts}
+          drafts={drafts}
+          setDrafts={setDrafts}
+          classId={classId}
+        />
+      )}
+    </View>
+  );
+};
+
+const CreateClassworkButton = ({history}) => {
+  return (
+    <TouchableOpacity
+      style={styles.addButton}
+      onPress={() => {
+        history.push('/CreateClasswork');
+      }}>
+      <IconAddClass height={30} width={30} style={styles.addIcon} />
+    </TouchableOpacity>
+  );
+};
+
+const ShowDraftsButton = ({
+  showDrafts,
+  setShowDrafts,
+  drafts,
+  setDrafts,
+  classId,
 }) => {
   const handleShowDrafts = () => {
     setShowDrafts(!showDrafts);
     if (drafts.length === 0) {
-      AsyncStorage.getItem(`drafts-${classList[classNumber].classId}`)
+      AsyncStorage.getItem(`drafts-${classId}`)
         .then(jsonValue => {
           if (jsonValue !== null) {
             setDrafts(JSON.parse(jsonValue).drafts);
@@ -189,37 +367,25 @@ const Segment = ({
     }
   };
   return (
-    <>
-      {!userInfo.isStudent ? (
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            history.push('/CreateClasswork');
-          }}>
-          <IconAddClass height={30} width={30} style={styles.addIcon} />
-        </TouchableOpacity>
+    <TouchableOpacity
+      style={[
+        showDrafts ? styles.addButton : styles.archiveButton,
+        {flexDirection: 'row'},
+      ]}
+      onPress={handleShowDrafts}>
+      {showDrafts ? (
+        <IconGoBack height={30} width={30} style={styles.addIcon} />
       ) : (
-        <TouchableOpacity
-          style={[
-            showDrafts ? styles.addButton : styles.archiveButton,
-            {flexDirection: 'row'},
-          ]}
-          onPress={handleShowDrafts}>
-          {showDrafts ? (
-            <IconGoBack height={30} width={30} style={styles.addIcon} />
-          ) : (
-            <IconDrafts
-              height={20}
-              width={20}
-              style={{
-                color: '#fff',
-                alignSelf: 'center',
-              }}
-            />
-          )}
-        </TouchableOpacity>
+        <IconDrafts
+          height={20}
+          width={20}
+          style={{
+            color: '#fff',
+            alignSelf: 'center',
+          }}
+        />
       )}
-    </>
+    </TouchableOpacity>
   );
 };
 
@@ -274,6 +440,8 @@ const DraftsList = ({
     </ScrollView>
   );
 };
+
+/***FUNCTIONS***/
 
 const submitDraft = (
   drafts,
@@ -424,6 +592,36 @@ const removeDraft = (drafts, setDrafts, index, classId) => {
     })
     .catch(e => alert(e.message));
 };
+const viewFile = (file, classId) => {
+  ToastAndroid.showWithGravity(
+    'Loading...',
+    ToastAndroid.SHORT,
+    ToastAndroid.CENTER,
+  );
+  const filePath = `${classId}/lectures/`;
+  storage()
+    .ref(file)
+    .getDownloadURL()
+    .then(url => {
+      const localFile = `${RNFS.DocumentDirectoryPath}/${file.replace(
+        filePath,
+        '',
+      )}`;
+      const options = {
+        fromUrl: url,
+        toFile: localFile,
+      };
+      RNFS.downloadFile(options)
+        .promise.then(() => FileViewer.open(localFile))
+        .then(() => {
+          // success
+        })
+        .catch(error => {
+          alert('ERROR', error);
+        });
+    })
+    .catch(e => alert(e.code, e.message));
+};
 
 const styles = StyleSheet.create({
   addButton: {
@@ -478,6 +676,68 @@ const styles = StyleSheet.create({
     padding: 5,
     backgroundColor: '#fff',
     borderRadius: 50,
+  },
+  segmentContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  tabButtonContainer: {
+    flexDirection: 'row',
+    marginLeft: 10,
+  },
+  tabButton: {
+    justifyContent: 'center',
+    backgroundColor: '#E8EAED',
+    // paddingHorizontal: 10,
+    width: 80,
+    alignItems: 'center',
+  },
+  tabButtonLeft: {
+    borderTopStartRadius: 10,
+    borderBottomStartRadius: 10,
+  },
+  tabButtonRight: {
+    borderTopEndRadius: 10,
+    borderBottomEndRadius: 10,
+  },
+  tabButtonText: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 16,
+  },
+  activeTab: {
+    backgroundColor: '#63b4cf',
+  },
+  card: {
+    backgroundColor: '#ADD8E6',
+    borderRadius: 10,
+    padding: 10,
+    marginHorizontal: 10,
+    marginVertical: 5,
+  },
+
+  cardTitleText: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 20,
+  },
+
+  cardBodyContainer: {
+    backgroundColor: '#E8EAED',
+    borderRadius: 10,
+    margin: 2,
+    padding: 10,
+  },
+  cardBodyText: {
+    fontFamily: 'Lato-Regular',
+    fontSize: 16,
+    marginTop: 10,
+  },
+
+  filesCardContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginHorizontal: 10,
   },
 });
 

@@ -1,10 +1,12 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, Image, ImageBackground} from 'react-native';
 import {Link} from 'react-router-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import IconGoBack from '../../../assets/goback.svg';
-
-const ClassroomHeader = ({subject = 'undefined', section = 'undefined'}) => {
+const ClassroomHeader = ({classroom}) => {
+  const subject = classroom.subject;
+  const section = classroom.section;
+  const header = classroom.classHeader;
   return (
     <View style={styles.header}>
       <View style={styles.headerTextContainer}>
@@ -12,28 +14,44 @@ const ClassroomHeader = ({subject = 'undefined', section = 'undefined'}) => {
           <Text style={styles.headerText}>{subject}</Text>
           <Text style={styles.subtitle}>{section}</Text>
         </View>
-        <Link to="/ClassList" style={styles.back} underlayColor="#C1E1EC">
-          <IconGoBack height={30} width={30} style={styles.goback} />
+      </View>
+      <View>
+        <Image
+          style={styles.imageHeader}
+          source={{uri: `asset:/image_headers/${header}.png`}}
+        />
+
+        <Link to="/ClassList" style={styles.back} underlayColor="#fff">
+          <IconGoBack height={20} width={20} style={styles.goback} />
         </Link>
       </View>
     </View>
   );
 };
+
 const styles = StyleSheet.create({
+  imageHeader: {
+    resizeMode: 'center',
+    height: 100,
+    width: 100,
+    marginRight: 10,
+  },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     backgroundColor: '#ADD8E6',
     borderRadius: 10,
-    padding: 10,
     margin: 5,
+    height: 100,
   },
   headerText: {
+    flexGrow: 1,
+    flexShrink: 1,
     fontSize: 24,
     fontFamily: 'Lato-Regular',
   },
   headerTextContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 5,
+    padding: 15,
     paddingBottom: 0,
   },
 
@@ -43,13 +61,17 @@ const styles = StyleSheet.create({
   },
   back: {
     borderRadius: 50,
-    backgroundColor: '#fff',
-    height: 40,
-    width: 40,
+    borderColor: '#fff',
+    borderWidth: 1,
+    height: 30,
+    width: 30,
     justifyContent: 'center', //Centered horizontally
+    position: 'absolute',
+    marginLeft: 70,
+    marginTop: 10,
   },
   goback: {
-    color: '#ADD8E6',
+    color: '#fff',
     borderRadius: 50,
     alignSelf: 'center',
   },

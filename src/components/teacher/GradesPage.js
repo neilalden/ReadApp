@@ -65,7 +65,7 @@ const GradesPage = ({userInfo}) => {
       const headerWidArr = [];
       for (const i in headerArr) {
         const val = headerArr[i].length * 8;
-        headerWidArr.push(val > 100 ? 100 : val);
+        headerWidArr.push(val < 100 ? val + 30 : val);
       }
       copyTableHeader.tableHead = headerArr;
       copyTableHeader.widthArr = headerWidArr;
@@ -167,10 +167,7 @@ const GradesPage = ({userInfo}) => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }>
-          <ClassroomHeader
-            subject={classList[classNumber].subject}
-            section={classList[classNumber].section}
-          />
+          <ClassroomHeader classroom={classList[classNumber]} />
           <Text style={styles.subtitle}>No students or classworks yet</Text>
         </ScrollView>
 
@@ -186,10 +183,7 @@ const GradesPage = ({userInfo}) => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }>
-          <ClassroomHeader
-            subject={classList[classNumber].subject}
-            section={classList[classNumber].section}
-          />
+          <ClassroomHeader classroom={classList[classNumber]} />
           <Text style={styles.subtitle}>Loading, please wait</Text>
         </ScrollView>
 
@@ -199,10 +193,7 @@ const GradesPage = ({userInfo}) => {
   }
   return (
     <>
-      <ClassroomHeader
-        subject={classList[classNumber].subject}
-        section={classList[classNumber].section}
-      />
+      <ClassroomHeader classroom={classList[classNumber]} />
       <View style={styles.container}>
         <ScrollView
           style={{backgroundColor: '#fff', marginHorizontal: 1}}
@@ -222,18 +213,20 @@ const GradesPage = ({userInfo}) => {
             <ScrollView style={styles.dataWrapper}>
               <Table borderStyle={{borderWidth: 1}}>
                 {tableData &&
-                  tableData.map((rowData, index) => (
-                    <Row
-                      key={index}
-                      data={rowData}
-                      widthArr={tableHeader.widthArr}
-                      style={[
-                        styles.row,
-                        index % 2 && {backgroundColor: '#ebf6f9'},
-                      ]}
-                      textStyle={styles.text}
-                    />
-                  ))}
+                  tableData.map((rowData, index) => {
+                    return (
+                      <Row
+                        key={index}
+                        data={rowData}
+                        widthArr={tableHeader.widthArr}
+                        style={[
+                          styles.row,
+                          index % 2 && {backgroundColor: '#ebf6f9'},
+                        ]}
+                        textStyle={styles.text}
+                      />
+                    );
+                  })}
               </Table>
             </ScrollView>
           </View>

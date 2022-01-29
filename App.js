@@ -30,9 +30,28 @@ import FeedPage from './src/components/general/FeedPage';
 
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
-  const [subjects, setSubjects] = useState([]);
   const [currentFolder, setCurrentFolder] = useState({});
   const [headerImageRandNum, setHeaderImageRandNum] = useState(1);
+  const [topics, setTopics] = useState([
+    {
+      name: 'English 1',
+      files: ["The king lion's friend.mp4"],
+    },
+    {
+      name: 'Filipino 1',
+      files: [
+        'Ang himutok ni Isay.mp4',
+        'Ang puso ng mamang may higanteng mga paa.mp4',
+      ],
+    },
+    {
+      name: 'Science 1',
+      files: [
+        'Relate triangles to quadrilaterals and one quadrilateral to another quadrilateral.pptx',
+        'Our journey to Sci-Math Museum.pptx',
+      ],
+    },
+  ]);
 
   useEffect(async () => {
     const libRandNum = Math.floor(Math.random() * 16) + 1;
@@ -89,10 +108,9 @@ const App = () => {
           path="/"
           component={() => (
             <LibraryPage
-              subjects={subjects}
-              setSubjects={setSubjects}
               setCurrentFolder={setCurrentFolder}
-              headerImageRandNum={headerImageRandNum}
+              topics={topics}
+              setTopics={setTopics}
             />
           )}
         />
