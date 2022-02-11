@@ -1,7 +1,6 @@
 import React, {useContext, useEffect} from 'react';
 import {View, Text, StyleSheet, Image, ScrollView} from 'react-native';
 import {ClassContext, fetchClassList} from '../../context/ClassContext';
-import firestore from '@react-native-firebase/firestore';
 
 import {Link} from 'react-router-native';
 

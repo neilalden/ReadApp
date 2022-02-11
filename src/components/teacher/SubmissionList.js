@@ -11,6 +11,8 @@ import {
   Image,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+
 import {useHistory} from 'react-router';
 import {ClassContext, fetchSubmissionList} from '../../context/ClassContext';
 import ActivitySubmission from '../general/ActivitySubmission';
@@ -84,7 +86,21 @@ const SubmissionList = ({userInfo}) => {
                 )
                 .delete()
                 .then(() => {
-                  history.push('/Classroom');
+                  const classworkFiles =
+                    classList[classNumber].classworkList[classworkNumber].files;
+                  for (const i in classworkFiles) {
+                    storage()
+                      .ref(`${classworkFiles[i]}`)
+                      .delete()
+                      .then(() => {
+                        if (i == classworkFiles.length - 1) {
+                          history.push('/Classroom');
+                        }
+                      })
+                      .catch(e => {
+                        alert(e.code, e.message);
+                      });
+                  }
                 })
                 .catch(e => {
                   alert(e.message, e.code);

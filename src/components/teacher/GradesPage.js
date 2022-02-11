@@ -21,6 +21,7 @@ import ClassroomNav from '../general/ClassroomNav';
 import {ClassContext, fetchSubmissionList} from '../../context/ClassContext';
 
 import NetInfo from '@react-native-community/netinfo';
+import PushNotification from 'react-native-push-notification';
 const GradesPage = ({userInfo}) => {
   const [data, setData] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -57,25 +58,43 @@ const GradesPage = ({userInfo}) => {
     const classId = classList[classNumber].classId;
     const renderData = () => {
       const grades = classListGrades[classId];
-
       setData(grades);
       // setting the table header
       let copyTableHeader = {...tableHeader};
       const headerArr = Object.keys(grades[0]);
       const headerWidArr = [];
       for (const i in headerArr) {
-        const val = headerArr[i].length * 8;
-        headerWidArr.push(val < 100 ? val + 30 : val);
+        const val =
+          headerArr[i].length < 20
+            ? headerArr[i].length * 5
+            : headerArr[i].length + 100;
+        if (i === '0') {
+          headerWidArr.push(150);
+        } else if (i === '1') {
+          headerWidArr.push(60);
+        } else {
+          headerWidArr.push(val);
+        }
       }
       copyTableHeader.tableHead = headerArr;
       copyTableHeader.widthArr = headerWidArr;
       setTableHeader(copyTableHeader);
       // setting the table data
       setTableData([]);
+
       for (const i in grades) {
         const temp = [];
         for (const j in Object.keys(grades[i])) {
-          temp.push(grades[i][Object.keys(grades[i])[j]]);
+          if (Object.keys(grades[i])[j] === 'Student') {
+            for (const k in students) {
+              if (students[k].id === grades[i][Object.keys(grades[i])[j]]) {
+                temp.push(`${students[k].name}\n(${students[k].id})`);
+                break;
+              }
+            }
+          } else {
+            temp.push(grades[i][Object.keys(grades[i])[j]]);
+          }
         }
         setTableData(prev => [...prev, temp]);
       }
@@ -84,15 +103,21 @@ const GradesPage = ({userInfo}) => {
 
     const getAVG = data => {
       let newData = [];
+      let total = 0;
       for (const i in data) {
         const keys = Object.keys(data[i]);
         let score = 0;
         for (const j in keys) {
           if (keys[j] !== 'Student') {
             score += data[i][keys[j]];
+            const start = keys[j].search(/[(]/g);
+            const end = keys[j].search(/[)]/g);
+            const val = keys[j].substring(start + 1, end - 7);
+            total += parseInt(val);
           }
         }
-        score /= keys.length - 1;
+        score /= total;
+        score = score * 100;
         let temp = {};
         temp.Student = data[i].Student;
         temp.Average = score.toFixed(2);
@@ -117,7 +142,7 @@ const GradesPage = ({userInfo}) => {
           for (const k in data) {
             if (data[k].Student === submissionList[j].submittedBy.id) {
               let copyData = [...data];
-              const work_title = `${classworkList[i].title} (${classworkList[i].points} points)`;
+              const work_title = `${classworkList[i].title}\n(${classworkList[i].points} points)`;
               const score = submissionList[j].score || 0;
               let obj = Object.assign(copyData[k], {[work_title]: score});
               copyData.splice(k, 1, obj);
@@ -196,7 +221,7 @@ const GradesPage = ({userInfo}) => {
       <ClassroomHeader classroom={classList[classNumber]} />
       <View style={styles.container}>
         <ScrollView
-          style={{backgroundColor: '#fff', marginHorizontal: 1}}
+          style={{backgroundColor: '#fff', marginHorizontal: 5}}
           horizontal={true}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -235,19 +260,16 @@ const GradesPage = ({userInfo}) => {
       <TouchableOpacity
         style={styles.saveButton}
         disabled={!isLoaded}
-        onPress={() => {
-          const fileName = `${classList[classNumber].subject}-${classList[classNumber].section}.xlsx`;
-          PermissionsAndroid.check(
-            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-          )
-            .then(res => {
-              if (res) {
-                saveFile(fileName, data);
-              } else {
-                requestStoragePermission(fileName, data);
-              }
-            })
-            .catch(e => alert('Alert', `${e}`));
+        onPress={async () => {
+          try {
+            const fileName = `${classList[classNumber].subject} ${classList[classNumber].section}.xlsx`;
+            const permission = await requestStoragePermission(fileName, data);
+            if (permission) {
+              saveFile(fileName, data);
+            }
+          } catch (e) {
+            alert('Alert', `${e}`);
+          }
         }}>
         <Text style={styles.marginH5}>Save grades as excel file</Text>
         <IconDownload
@@ -270,10 +292,16 @@ const saveFile = (fileName = 'ReadApp.xlsx', data) => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
   const wbout = XLSX.write(wb, {type: 'binary', bookType: 'xlsx'});
-  const file = RNFS.ExternalStorageDirectoryPath + '/' + fileName;
+  const file = RNFS.ExternalStorageDirectoryPath + '/Download/' + fileName;
   writeFile(file, wbout, 'ascii')
     .then(() => {
-      alert('File saved!', `Look for the file "${fileName}" in your storage`);
+      // alert(`${fileName} saved!`, `See your Downloads folder`);
+
+      PushNotification.localNotification({
+        channelId: 'channel-id',
+        message: `Look for ${fileName} in your Download folder`,
+        title: `File saved!`,
+      });
     })
     .catch(e => {
       alert('Error', `${e}`);
@@ -338,6 +366,6 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   dataWrapper: {marginTop: -1},
-  row: {height: 40, backgroundColor: '#c4e3ed'},
+  row: {height: 60, backgroundColor: '#c4e3ed'},
 });
 export default GradesPage;

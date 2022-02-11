@@ -39,7 +39,7 @@ const RegisterPage = () => {
         <KeyboardAvoidingView>
           <Text style={styles.span}>ID</Text>
           <TextInput
-            selectionColor="black"
+            selectionColor="#ADD8E6"
             style={styles.numberInput}
             value={id}
             placeholder="04210001"
@@ -48,7 +48,7 @@ const RegisterPage = () => {
           />
           <Text style={styles.span}>Full name</Text>
           <TextInput
-            selectionColor="black"
+            selectionColor="#ADD8E6"
             style={styles.numberInput}
             value={name}
             placeholder="Juan Dela Cruz"
@@ -57,7 +57,7 @@ const RegisterPage = () => {
           <Text style={styles.span}>Phone number</Text>
           <View style={[styles.numberInput, {flexDirection: 'row'}]}>
             <TextInput
-              selectionColor="black"
+              selectionColor="#ADD8E6"
               style={{
                 margin: 0,
                 padding: 0,
@@ -126,7 +126,7 @@ const RegisterPage = () => {
 };
 
 const createAccount = (
-  id,
+  old_id,
   name,
   isStudent,
   phoneNumber,
@@ -134,94 +134,108 @@ const createAccount = (
   history,
   setReload,
 ) => {
+  const id = old_id.replace(/[^a-z0-9]/gi, '');
+  // check if user exist
   firestore()
     .collection('users')
     .doc(id)
-    .set({
-      id: id,
-      name: name,
-      isStudent: isStudent,
-      phoneNumber: phoneNumber,
-      classes: [],
-      photoUrl: user.photoURL,
-    })
-    .then(() => {
-      user
-        .updateProfile({
-          displayName: id,
-        })
-        .then(() => {
-          // needs stable connection, move to cloud functions
-          firestore()
-            .collection(`queues`)
-            .doc(id)
-            .get()
-            .then(res => {
-              if (res.data()) {
-                let queuedClasses = res.data().classes;
-                for (let i in queuedClasses) {
-                  firestore()
-                    .collection(`classes`)
-                    .doc(queuedClasses[i])
-                    .get()
-                    .then(res => {
-                      let qs = res.data().queues;
-                      for (let i in qs) {
-                        if (qs[i].id == id) {
-                          qs.splice(i, 1);
-                        }
-                      }
-                      let people = isStudent
-                        ? res.data().students
-                        : res.data().teachers;
-                      people.push({
-                        id: id,
-                        name: name,
-                        photoUrl: user.photoURL,
-                      });
-                      firestore()
-                        .collection(`classes`)
-                        .doc(queuedClasses[i])
-                        .update(
-                          isStudent
-                            ? {students: people, queues: qs}
-                            : {teachers: people, queues: qs},
-                        )
-                        .then()
-                        .catch(e => alert(e));
-                    })
-                    .catch(e => alert(e));
-                }
+    .get()
+    .then(res => {
+      if (res.data()) {
+        alert(`${id} is already in use`, 'ID taken');
+      } else {
+        // user does not exist
+        firestore()
+          .collection('users')
+          .doc(id)
+          .set({
+            id: id,
+            name: name,
+            isStudent: isStudent,
+            phoneNumber: phoneNumber,
+            classes: [],
+            photoUrl: user.photoURL,
+          })
+          .then(() => {
+            user
+              .updateProfile({
+                displayName: id,
+              })
+              .then(() => {
+                // needs stable connection, move to cloud functions
                 firestore()
                   .collection(`queues`)
                   .doc(id)
-                  .delete()
-                  .then(() => {
-                    firestore()
-                      .collection('users')
-                      .doc(id)
-                      .update({classes: queuedClasses})
-                      .then()
-                      .catch(e => alert(e));
-                  })
-                  .catch(e => alert(e));
-              }
-            });
-          setReload(prev => !prev);
+                  .get()
+                  .then(res => {
+                    if (res.data()) {
+                      let queuedClasses = res.data().classes;
+                      for (let i in queuedClasses) {
+                        firestore()
+                          .collection(`classes`)
+                          .doc(queuedClasses[i])
+                          .get()
+                          .then(res => {
+                            let qs = res.data().queues;
+                            for (let i in qs) {
+                              if (qs[i].id == id) {
+                                qs.splice(i, 1);
+                              }
+                            }
+                            let people = isStudent
+                              ? res.data().students
+                              : res.data().teachers;
+                            people.push({
+                              id: id,
+                              name: name,
+                              photoUrl: user.photoURL,
+                            });
+                            firestore()
+                              .collection(`classes`)
+                              .doc(queuedClasses[i])
+                              .update(
+                                isStudent
+                                  ? {students: people, queues: qs}
+                                  : {teachers: people, queues: qs},
+                              )
+                              .then()
+                              .catch(e => alert(e));
+                          })
+                          .catch(e => alert(e));
+                      }
+                      firestore()
+                        .collection(`queues`)
+                        .doc(id)
+                        .delete()
+                        .then(() => {
+                          firestore()
+                            .collection('users')
+                            .doc(id)
+                            .update({classes: queuedClasses})
+                            .then()
+                            .catch(e => alert(e));
+                        })
+                        .catch(e => alert(e));
+                    }
+                  });
+                setReload(prev => !prev);
 
-          history.push('/');
-        })
-        .catch(e => {
-          alert(`Error in making profile ${e}`);
-        });
+                history.push('/');
+              })
+              .catch(e => {
+                alert(`Error in making profile ${e}`);
+              });
+          })
+          .catch(e => {
+            alert(e);
+          });
+      }
     })
-    .catch(e => {
-      alert(e);
-    });
+    .catch(e => alert(`${e}`));
 };
 
-const alert = e =>
-  Alert.alert('Error', `${e ? e : 'Fill up the form properly'}`, [
+const alert = (e, title = 'Alert') =>
+  Alert.alert(title, `${e ? e : 'Fill up the form properly'}`, [
     {text: 'OK', onPress: () => true},
   ]);
 const styles = StyleSheet.create({

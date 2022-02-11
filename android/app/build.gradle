@@ -132,7 +132,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.readapp"
+        applicationId "com.readappv1"
         minSdkVersion rootProject.ext.minSdkVersion
         multiDexEnabled true
         targetSdkVersion rootProject.ext.targetSdkVersion

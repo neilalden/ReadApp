@@ -6,15 +6,13 @@ import {
   StyleSheet,
   ScrollView,
   BackHandler,
+  TouchableOpacity,
 } from 'react-native';
-import {useHistory} from 'react-router';
-import {AuthContext, onGoogleButtonPress} from '../../context/AuthContext';
+import {onGoogleButtonPress} from '../../context/AuthContext';
 import IconLib from '../../../assets/login.svg';
 import Nav from './Nav';
 
-const LoginPage = ({userInfo, setUserInfo}) => {
-  const {user} = useContext(AuthContext);
-  const history = useHistory();
+const LoginPage = () => {
   useEffect(() => {
     BackHandler.addEventListener('hardwareBackPress', () => true);
     return () =>
@@ -30,16 +28,13 @@ const LoginPage = ({userInfo, setUserInfo}) => {
         </View>
 
         <View style={styles.container}>
-          <View style={styles.button}>
-            <Button
-              color="#ADD8E6"
-              title="Google Sign-In"
-              onPress={onGoogleButtonPress}
-            />
-            <Text style={styles.span}>
-              Open your google account to login or sign up in ReadApp
-            </Text>
-          </View>
+          <TouchableOpacity onPress={onGoogleButtonPress} style={styles.button}>
+            <Text>GOOGLE SIGN-IN</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.span}>
+            Open your google account to login or sign up in ReadApp
+          </Text>
         </View>
       </ScrollView>
       <Nav />
@@ -59,6 +54,10 @@ const styles = StyleSheet.create({
   button: {
     marginHorizontal: 20,
     marginVertical: 10,
+    backgroundColor: '#ADD8E6',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 5,
   },
 
   iconLogin: {

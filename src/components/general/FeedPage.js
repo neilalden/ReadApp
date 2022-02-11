@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   cardTitleText: {
     fontFamily: 'Lato-Regular',
-    fontSize: 20,
+    fontSize: 18,
   },
   cardSubtitleText: {
     fontFamily: 'Lato-Regular',

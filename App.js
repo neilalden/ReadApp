@@ -100,6 +100,7 @@ const App = () => {
     });
     return unsubscribe;
   }, []);
+
   return (
     <NativeRouter>
       <AuthContextProvider>
@@ -107,11 +108,7 @@ const App = () => {
           exact
           path="/"
           component={() => (
-            <LibraryPage
-              setCurrentFolder={setCurrentFolder}
-              topics={topics}
-              setTopics={setTopics}
-            />
+            <LibraryPage setCurrentFolder={setCurrentFolder} topics={topics} />
           )}
         />
         <Route
@@ -119,12 +116,7 @@ const App = () => {
           component={() => <MaterialsPage currentFolder={currentFolder} />}
         />
         <Route path="/Register" component={RegisterPage} />
-        <Route
-          path="/Login"
-          component={() => (
-            <LoginPage userInfo={userInfo} setUserInfo={setUserInfo} />
-          )}
-        />
+        <Route path="/Login" component={() => <LoginPage />} />
         <ClassContextProvider>
           <Route
             path="/ClassList"

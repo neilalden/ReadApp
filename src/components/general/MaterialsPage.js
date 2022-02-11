@@ -37,18 +37,22 @@ const MaterialsPage = ({currentFolder}) => {
         files={currentFolder.files}
       />
       <ScrollView>
-        {filesCopy.map((file, index) => {
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.item}
-              onPress={() => openFile(file)}>
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemText}>{file}</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+        {filesCopy.length > 0 ? (
+          filesCopy.map((file, index) => {
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.item}
+                onPress={() => openFile(file)}>
+                <View style={styles.itemTextContainer}>
+                  <Text style={styles.itemText}>{file}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        ) : (
+          <Text style={styles.subtitle}>No files found</Text>
+        )}
       </ScrollView>
     </>
   );
@@ -79,7 +83,7 @@ const SearchComponent = ({filesCopy, setFilesCopy, files}) => {
     <View style={styles.searchBarContainer}>
       <TextInput
         style={styles.searchBar}
-        placeholder="Look for a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
+        placeholder="Look for a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
         onChangeText={text => {
           text = text.toLowerCase();
           if (text === '') {
@@ -122,16 +126,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   searchBar: {
-    width: '70%',
-    padding: 2,
-    borderBottomWidth: 2,
-    borderBottomColor: '#ADD8E6',
     fontSize: 16,
   },
   searchBarContainer: {
-    alignItems: 'center',
+    width: '80%',
     marginTop: 5,
     marginBottom: 20,
+    backgroundColor: '#E8EAED',
+    borderRadius: 10,
+    padding: 5,
+    alignSelf: 'center',
   },
   item: {
     backgroundColor: '#ADD8E6',
@@ -159,13 +163,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     padding: 15,
   },
-  subtitleContainer: {
-    backgroundColor: '#3d3d3d',
-    justifyContent: 'center',
-    width: 'auto',
-    marginHorizontal: 15,
-    marginVertical: 10,
-    borderRadius: 10,
+  subtitle: {
+    fontFamily: 'Lato-Regular',
+    marginTop: 5,
+    marginRight: 5,
+    color: '#000',
+    fontSize: 12,
+    textAlign: 'center',
   },
   back: {
     borderRadius: 50,

@@ -274,43 +274,51 @@ const getPathForFirebaseStorage = async uri => {
   }
 };
 
-const openFile = setPostFiles => {
-  PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE)
-    .then(async response => {
-      if (response) {
-        DocumentPicker.pickMultiple({
-          type: [DocumentPicker.types.allFiles],
-          mode: 'open',
-          copyTo: 'cachesDirectory',
+const openFile = async setPostFiles => {
+  try {
+    const permission = await requestStoragePermission();
+    if (permission) {
+      DocumentPicker.pickMultiple({
+        type: [DocumentPicker.types.allFiles],
+        mode: 'open',
+        copyTo: 'cachesDirectory',
+      })
+        .then(res => {
+          setPostFiles(prev => [
+            ...prev,
+            {fileName: res[0].name, uri: res[0].fileCopyUri},
+          ]);
         })
-          .then(res => {
-            setPostFiles(prev => [
-              ...prev,
-              {fileName: res[0].name, uri: res[0].fileCopyUri},
-            ]);
-          })
-          .catch(e => alert('Alert', `${e}`));
-      } else {
-        const permission = await requestStoragePermission();
-        if (permission) {
-          DocumentPicker.pickMultiple({
-            type: [DocumentPicker.types.allFiles],
-            mode: 'open',
-            copyTo: 'cachesDirectory',
-          })
-            .then(res => {
-              setPostFiles(prev => [
-                ...prev,
-                {fileName: res[0].name, uri: res[0].fileCopyUri},
-              ]);
-            })
-            .catch(e => alert('Alert', `${e}`));
-        } else {
-          alert('Alert', 'Unable to upload file');
-        }
-      }
-    })
-    .catch(e => alert('Alert', `${e}`));
+        .catch(e => alert('Alert', `${e}`));
+    } else {
+      alert('Alert', 'Unable to upload file');
+    }
+  } catch (e) {
+    alert('Alert', `${e}`);
+  }
+};
+const requestStoragePermission = async () => {
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+      {
+        title: 'ReadApp Storage Permission',
+        message:
+          'ReadApp needs access to your storage ' +
+          'so you can upload files from your storage',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+    );
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    alert('Error', `${err}`);
+  }
 };
 
 const styles = StyleSheet.create({

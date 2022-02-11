@@ -17,12 +17,10 @@ import IconLib from '../../../assets/books.svg';
 
 import {useHistory} from 'react-router';
 
-const LibraryPage = ({topics, setTopics, setCurrentFolder}) => {
+const LibraryPage = ({topics, setCurrentFolder}) => {
   /***STATES***/
   let history = useHistory();
   const [refreshing, setRefreshing] = useState(false);
-  const [showDownloadableFiles, setShowDownloadableFiles] = useState(false);
-  const [text, setText] = useState('');
   const [topicsCopy, setTopicsCopy] = useState([...topics]);
 
   /***HOOKS***/
@@ -33,7 +31,7 @@ const LibraryPage = ({topics, setTopics, setCurrentFolder}) => {
     });
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
-  }, [showDownloadableFiles]);
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -52,27 +50,18 @@ const LibraryPage = ({topics, setTopics, setCurrentFolder}) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
         <LibraryHeader />
-        <SearchComponent
-          topics={topics}
-          setTopics={setTopics}
-          text={text}
-          setText={setText}
-          topicsCopy={topicsCopy}
-          setTopicsCopy={setTopicsCopy}
-        />
+        <SearchComponent topics={topics} setTopicsCopy={setTopicsCopy} />
         <MaterialsFolderList
-          topics={topics}
           setCurrentFolder={setCurrentFolder}
           topicsCopy={topicsCopy}
-          setTopicsCopy={setTopicsCopy}
           history={history}
         />
       </ScrollView>
+
       <Nav />
     </>
   );
 };
-
 /***COMPONENTS***/
 
 const LibraryHeader = () => {
@@ -85,19 +74,12 @@ const LibraryHeader = () => {
   );
 };
 
-const SearchComponent = ({
-  topics,
-  setTopics,
-  text,
-  setText,
-  topicsCopy,
-  setTopicsCopy,
-}) => {
+const SearchComponent = ({topics, setTopicsCopy}) => {
   return (
     <View style={styles.searchBarContainer}>
       <TextInput
         style={styles.searchBar}
-        placeholder="Look for a subject or a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
+        placeholder="Look for a subject or a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
         onChangeText={text => {
           text = text.toLowerCase();
           if (text === '') {
@@ -124,13 +106,7 @@ const SearchComponent = ({
   );
 };
 
-const MaterialsFolderList = ({
-  topics,
-  setCurrentFolder,
-  history,
-  topicsCopy,
-  setTopicsCopy,
-}) => {
+const MaterialsFolderList = ({setCurrentFolder, history, topicsCopy}) => {
   const openFolder = item => {
     setCurrentFolder(item);
 
@@ -138,17 +114,21 @@ const MaterialsFolderList = ({
   };
   return (
     <ScrollView>
-      {topicsCopy.map((topic, index) => {
-        return (
-          <View key={index}>
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => openFolder(topic)}>
-              <Text>{topic.name}</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      })}
+      {topicsCopy.length > 0 ? (
+        topicsCopy.map((topic, index) => {
+          return (
+            <View key={index}>
+              <TouchableOpacity
+                style={styles.item}
+                onPress={() => openFolder(topic)}>
+                <Text>{topic.name}</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })
+      ) : (
+        <Text style={styles.subtitle}>No subject of files found</Text>
+      )}
     </ScrollView>
   );
 };
@@ -173,16 +153,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   searchBar: {
-    width: '70%',
-    padding: 2,
-    borderBottomWidth: 2,
-    borderBottomColor: '#ADD8E6',
     fontSize: 16,
   },
   searchBarContainer: {
-    alignItems: 'center',
+    width: '80%',
     marginTop: 5,
     marginBottom: 20,
+    backgroundColor: '#E8EAED',
+    borderRadius: 10,
+    padding: 5,
+    alignSelf: 'center',
   },
   item: {
     height: 60,
@@ -194,6 +174,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center', //vertical align text center
     justifyContent: 'center',
+  },
+  subtitle: {
+    fontFamily: 'Lato-Regular',
+    marginTop: 5,
+    marginRight: 5,
+    color: '#000',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
 

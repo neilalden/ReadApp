@@ -61,59 +61,14 @@ const ClassroomPage = ({userInfo}) => {
   }, []);
   useEffect(() => {
     const classId = classList[classNumber].classId;
-    let classListCopy = [...classList];
-    let classworkList = [];
     const subscriber = firestore()
       .collection(`classes/${classId}/classworks`)
       .orderBy('createdAt', 'desc')
       .onSnapshot(documentSnapshot => {
-        // FETCH CLASSWORKLIST OF THE OPENNED CLASS IF IT DOES NOT EXIST YET
         fetchClassworkList(classNumber, classList, setClassList);
         fetchLectures(classNumber, classList, setClassList);
-        // documentSnapshot.forEach(res => {
-        //   let questions = undefined;
-        //   if (res.data().questions) {
-        //     questions = shuffle(res.data().questions);
-        //   }
-        //   classworkList.push({
-        //     id: res.id,
-        //     title: res.data().title,
-        //     deadline: res.data().deadline,
-        //     closeOnDeadline: res.data().closeOnDeadline,
-        //     instruction: res.data().instruction,
-        //     points: res.data().points,
-        //     isActivity: res.data().isActivity,
-        //     files: res.data().files,
-        //     questions: questions,
-        //     pointsPerRight: res.data().pointsPerRight,
-        //     pointsPerWrong: res.data().pointsPerWrong,
-        //   });
-        // });
-
-        // classListCopy[classNumber].classworkList = classworkList;
-        // setClassList(classworkList);
       });
 
-    function shuffle(array) {
-      var currentIndex = array.length,
-        randomIndex;
-
-      // While there remain elements to shuffle...
-      while (currentIndex != 0) {
-        // Pick a remaining element...
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-
-        // And swap it with the current element.
-        [array[currentIndex], array[randomIndex]] = [
-          array[randomIndex],
-          array[currentIndex],
-        ];
-      }
-
-      return array;
-    }
-    // Stop listening for updates when no longer required
     return () => subscriber();
   }, []);
 
@@ -481,7 +436,7 @@ const submitDraft = (
                   JSON.stringify({drafts: draftsArr}),
                 )
                   .then(() => {})
-                  .catch(e => alert(e.message));
+                  .catch(e => alert(e.message, e.code));
                 alert(`You have already complied in this classwork`);
               } else {
                 // check for files
@@ -524,13 +479,13 @@ const submitDraft = (
                                   onRefresh();
                                   alert(`Success`);
                                 })
-                                .catch(e => alert(e.message));
+                                .catch(e => alert(e.message, e.code));
                             })
-                            .catch(e => alert(e));
+                            .catch(e => alert(e.message, e.code));
                         }
                       })
                       .catch(e => {
-                        alert(e);
+                        alert(e.message, e.code);
                       });
                   }
                 } else {
@@ -566,15 +521,15 @@ const submitDraft = (
                           onRefresh();
                           alert(`Success`);
                         })
-                        .catch(e => alert(e.message));
+                        .catch(e => alert(e.message, e.code));
                     })
-                    .catch(e => alert(e));
+                    .catch(e => alert(e.message, e.code));
                 }
 
                 // save to firestore
               }
             })
-            .catch(e => alert(e.message));
+            .catch(e => alert(e.message, e.code));
         }
       }
     });
@@ -590,7 +545,7 @@ const removeDraft = (drafts, setDrafts, index, classId) => {
     .then(() => {
       setDrafts(copyDrafts);
     })
-    .catch(e => alert(e.message));
+    .catch(e => alert(e.message, e.code));
 };
 const viewFile = (file, classId) => {
   ToastAndroid.showWithGravity(
@@ -598,29 +553,33 @@ const viewFile = (file, classId) => {
     ToastAndroid.SHORT,
     ToastAndroid.CENTER,
   );
-  const filePath = `${classId}/lectures/`;
-  storage()
-    .ref(file)
-    .getDownloadURL()
-    .then(url => {
-      const localFile = `${RNFS.DocumentDirectoryPath}/${file.replace(
-        filePath,
-        '',
-      )}`;
-      const options = {
-        fromUrl: url,
-        toFile: localFile,
-      };
-      RNFS.downloadFile(options)
-        .promise.then(() => FileViewer.open(localFile))
-        .then(() => {
-          // success
-        })
-        .catch(error => {
-          alert('ERROR', error);
-        });
-    })
-    .catch(e => alert(e.code, e.message));
+  try {
+    const filePath = `${classId}/lectures/`;
+    storage()
+      .ref(file)
+      .getDownloadURL()
+      .then(url => {
+        const localFile = `${RNFS.TemporaryDirectoryPath}/${file.replace(
+          filePath,
+          '',
+        )}`;
+        const options = {
+          fromUrl: url,
+          toFile: localFile,
+        };
+        RNFS.downloadFile(options)
+          .promise.then(() => FileViewer.open(localFile))
+          .then(() => {
+            // success
+          })
+          .catch(error => {
+            alert(error.message, error.code);
+          });
+      })
+      .catch(e => alert(e.message, e.code));
+  } catch (e) {
+    alert(`${e}`, 'Alert');
+  }
 };
 
 const styles = StyleSheet.create({

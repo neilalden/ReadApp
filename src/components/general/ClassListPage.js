@@ -44,10 +44,13 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
   useEffect(() => {
     if (!user) {
       // no user;
+      history.push('/Login');
       setUserInfo({});
       setClassList([]);
-      history.push('/Login');
-    } else if (Object.keys(userInfo).length === 0 && user) {
+    } else if (
+      Object.keys(userInfo).length === 0 &&
+      Object.keys(user).length !== 0
+    ) {
       // user logged in but no information on them
       fetchUser(user.displayName);
     } else if (
@@ -57,11 +60,21 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
     ) {
       setClassList([]);
       fetchClassList(userInfo, setClassList);
-    } else if (Object.keys(userInfo).length !== 0 && user) {
+    }
+
+    BackHandler.addEventListener('hardwareBackPress', () => {
+      alert('Do you want to leave?', 'Exit?');
+      return true;
+    });
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', () => true);
+  }, []);
+  useEffect(() => {
+    if (Object.keys(userInfo).length !== 0 && Object.keys(user).length !== 0) {
       if (userInfo.id == undefined) {
         return;
       }
-      firestore()
+      const subscriber = firestore()
         .collection('users')
         .doc(userInfo.id)
         .onSnapshot(snapshot => {
@@ -72,16 +85,19 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
             snapshot.data().classes &&
             userInfo.classes.length !== snapshot.data().classes.length
           ) {
-            onRefresh();
+            const new_userInfo = {
+              classes: snapshot.data().classes,
+              id: snapshot.data().id,
+              isStudent: snapshot.data().isStudent,
+              phoneNumber: snapshot.data().phoneNumber,
+              name: snapshot.data().name,
+            };
+            fetchClassList(new_userInfo, setClassList);
+            setUserInfo(new_userInfo);
           }
         });
+      return () => subscriber();
     }
-    BackHandler.addEventListener('hardwareBackPress', () => {
-      alert('Do you want to leave?', 'Exit?');
-      return true;
-    });
-    return () =>
-      BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
   const onRefresh = useCallback(() => {
     setRefreshing(true);

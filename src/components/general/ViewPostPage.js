@@ -204,8 +204,20 @@ const PostCard = ({
             .doc(post.id)
             .delete()
             .then(() => {
-              setViewPost(false);
-              fetchPosts(classNumber, classList, setClassList);
+              for (const i in post.files) {
+                storage()
+                  .ref(`${post.files[i]}`)
+                  .delete()
+                  .then(() => {
+                    if (i == post.files.length - 1) {
+                      setViewPost(false);
+                      fetchPosts(classNumber, classList, setClassList);
+                    }
+                  })
+                  .catch(e => {
+                    alert(e.code, e.message);
+                  });
+              }
             })
             .catch(e => {
               alert(e.code, e.message);
@@ -364,29 +376,33 @@ const viewFile = (file, classId) => {
     ToastAndroid.SHORT,
     ToastAndroid.CENTER,
   );
-  const filePath = `${classId}/posts/`;
-  storage()
-    .ref(file)
-    .getDownloadURL()
-    .then(url => {
-      const localFile = `${RNFS.DocumentDirectoryPath}/${file.replace(
-        filePath,
-        '',
-      )}`;
-      const options = {
-        fromUrl: url,
-        toFile: localFile,
-      };
-      RNFS.downloadFile(options)
-        .promise.then(() => FileViewer.open(localFile))
-        .then(() => {
-          // success
-        })
-        .catch(error => {
-          alert('ERROR', error);
-        });
-    })
-    .catch(e => alert(e.code, e.message));
+  try {
+    const filePath = `${classId}/posts/`;
+    storage()
+      .ref(file)
+      .getDownloadURL()
+      .then(url => {
+        const localFile = `${RNFS.DocumentDirectoryPath}/${file.replace(
+          filePath,
+          '',
+        )}`;
+        const options = {
+          fromUrl: url,
+          toFile: localFile,
+        };
+        RNFS.downloadFile(options)
+          .promise.then(() => FileViewer.open(localFile))
+          .then(() => {
+            // success
+          })
+          .catch(error => {
+            alert(error.message, error.code);
+          });
+      })
+      .catch(e => alert(e.code, e.message));
+  } catch (e) {
+    alert('Alert', `${e}`);
+  }
 };
 
 const styles = StyleSheet.create({
@@ -410,7 +426,7 @@ const styles = StyleSheet.create({
   },
   cardTitleText: {
     fontFamily: 'Lato-Regular',
-    fontSize: 20,
+    fontSize: 18,
   },
   cardSubtitleText: {
     fontFamily: 'Lato-Regular',

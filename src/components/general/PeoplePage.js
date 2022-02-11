@@ -508,7 +508,7 @@ const deletePersonFromClass = (
 
 const addPersonToClass = (
   isStudent,
-  accountId,
+  old_accountId,
   setAccountId,
   classNumber,
   classList,
@@ -516,6 +516,7 @@ const addPersonToClass = (
   refRBSheet,
   userInfo,
 ) => {
+  const accountId = old_accountId.replace(/[^a-z0-9]/gi, '');
   if (userInfo.isStudent) {
     alert('Stop!', 'Teachers are only allowed to add people to classes');
     return;

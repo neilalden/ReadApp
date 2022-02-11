@@ -656,43 +656,28 @@ const requestStoragePermission = async () => {
   }
 };
 
-const openFile = setFiles => {
-  PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE)
-    .then(async response => {
-      if (response) {
-        DocumentPicker.pickMultiple({
-          type: [DocumentPicker.types.allFiles],
-          mode: 'open',
-          copyTo: 'cachesDirectory',
+const openFile = async setFiles => {
+  try {
+    const permission = await requestStoragePermission();
+    if (permission) {
+      DocumentPicker.pickMultiple({
+        type: [DocumentPicker.types.allFiles],
+        mode: 'open',
+        copyTo: 'cachesDirectory',
+      })
+        .then(res => {
+          setFiles(prev => [
+            ...prev,
+            {fileName: res[0].name, uri: res[0].fileCopyUri},
+          ]);
         })
-          .then(res => {
-            setFiles(prev => [
-              ...prev,
-              {fileName: res[0].name, uri: res[0].fileCopyUri},
-            ]);
-          })
-          .catch(e => alert(`${e}`));
-      } else {
-        const permission = await requestStoragePermission();
-        if (permission) {
-          DocumentPicker.pickMultiple({
-            type: [DocumentPicker.types.allFiles],
-            mode: 'open',
-            copyTo: 'cachesDirectory',
-          })
-            .then(res => {
-              setFiles(prev => [
-                ...prev,
-                {fileName: res[0].name, uri: res[0].fileCopyUri},
-              ]);
-            })
-            .catch(e => alert(`${e}`));
-        } else {
-          alert('Alert', 'Unable to upload file');
-        }
-      }
-    })
-    .catch(e => alert('Alert', `${e}`));
+        .catch(e => alert(`${e}`));
+    } else {
+      alert('Alert', 'Unable to upload file');
+    }
+  } catch (e) {
+    alert(e);
+  }
 };
 
 const saveToDrafts = (
