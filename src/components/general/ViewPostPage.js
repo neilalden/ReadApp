@@ -426,11 +426,11 @@ const styles = StyleSheet.create({
   },
   cardTitleText: {
     fontFamily: 'Lato-Regular',
-    fontSize: 18,
+    fontSize: 16,
   },
   cardSubtitleText: {
     fontFamily: 'Lato-Regular',
-    fontSize: 14,
+    fontSize: 12,
   },
   cardBodyContainer: {
     backgroundColor: '#E8EAED',

@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
   },
   textAlignCenter: {
     alignSelf: 'center',
+    fontFamily: 'Lato-Regular',
   },
   item: {
     backgroundColor: '#ADD8E6',

@@ -17,6 +17,9 @@ export default ClassContextProvider = props => {
   // TO KEEP TRACK OF WHAT CLASSWORK IN THE CLASSWORKLIST ARRAY IS OPEN
   const [classworkNumber, setClassworkNumber] = useState(0);
   const [submissionListNumber, setSubmissionListNumber] = useState(0);
+
+  const [messageList, setMessageList] = useState([]);
+  const [messageNumber, setMessageNumber] = useState(0);
   return (
     <ClassContext.Provider
       value={{
@@ -30,10 +33,85 @@ export default ClassContextProvider = props => {
         setClassListGrades,
         submissionListNumber,
         setSubmissionListNumber,
+        messageList,
+        setMessageList,
+        messageNumber,
+        setMessageNumber,
       }}>
       {props.children}
     </ClassContext.Provider>
   );
+};
+
+export const fetchMessages = async (userInfo, classList, setMessageList) => {
+  const userMessages = [...userInfo.messages];
+  let tempArr = [];
+
+  for (const i in userMessages) {
+    firestore()
+      .collection(`messages`)
+      .doc(userMessages[i])
+      .get()
+      .then(res => {
+        if (!res.data()) {
+          return;
+        }
+        const keys = Object.keys(res.data());
+        let convoWith = '';
+        for (const j in keys) {
+          if (keys[j] !== userInfo.id) {
+            convoWith = keys[j];
+          }
+        }
+        let convo = {
+          convoId: res.id,
+          convoWith: convoWith,
+          messages: [],
+        };
+
+        for (const j in keys) {
+          const msgs = res.data()[keys[j]];
+          for (const k in msgs) {
+            convo.messages.push({
+              sender: keys[j],
+              message: msgs[k].message ? msgs[k].message : [],
+              createdAt: msgs[k].createdAt,
+            });
+          }
+        }
+        tempArr.push(convo);
+
+        if (i == userMessages.length - 1) {
+          for (const j in tempArr) {
+            let senderId = tempArr[j].convoWith;
+            for (const k in classList) {
+              for (const l in classList[k].students) {
+                if (classList[k].students[l].id === senderId) {
+                  tempArr[j].sender = classList[k].students[l];
+                  break;
+                }
+              }
+              for (const l in classList[k].teachers) {
+                if (classList[k].teachers[l].id === senderId) {
+                  tempArr[j].sender = classList[k].teachers[l];
+                  break;
+                }
+              }
+            }
+          }
+
+          for (const j in tempArr) {
+            tempArr[j].messages = tempArr[j].messages.sort(function (a, b) {
+              return b.createdAt.toDate() - a.createdAt.toDate();
+            });
+          }
+          setMessageList(tempArr);
+        }
+      })
+      .catch(e => {
+        alert(e, 'You may have disconnected');
+      });
+  }
 };
 
 export const createLecture = (data, classList, classNumber) => {
@@ -380,9 +458,18 @@ export const addPersonToQueue = (personInfo, classQueues) => {
           .catch(e => alert(e.message, e.code));
       }
     })
-    .catch(e => alert(e, 'Line'));
+    .catch(e => alert(e, 'addPersonToQueue'));
 };
 
+const getMessage = async key => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(key);
+    const val = JSON.parse(jsonValue);
+    return val[key].messages[0] ? val[key].messages : [];
+  } catch (e) {
+    alert(e, 'Error fetching message from cache');
+  }
+};
 const storeData = async (key, value) => {
   try {
     const jsonValue = JSON.stringify(value);
@@ -398,6 +485,13 @@ const getData = async (key, setFunction) => {
     })
     .catch(e => alert(e.message));
 };
+
+const alert = (msg, title = 'Error') => {
+  Alert.alert(`${title}`, `${msg ? msg : 'Fill up the form properly'}`, [
+    {text: 'OK', onPress: () => true},
+  ]);
+};
+
 function shuffle(array) {
   var currentIndex = array.length,
     randomIndex;
@@ -417,9 +511,3 @@ function shuffle(array) {
 
   return array;
 }
-
-const alert = (msg, title = 'Error') => {
-  Alert.alert(`${title}`, `${msg ? msg : 'Fill up the form properly'}`, [
-    {text: 'OK', onPress: () => true},
-  ]);
-};

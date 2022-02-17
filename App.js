@@ -27,11 +27,13 @@ import PeoplePage from './src/components/general/PeoplePage';
 import CreateClassworkPage from './src/components/teacher/CreateClassworkPage';
 import CreatePostPage from './src/components/general/CreatePostPage';
 import FeedPage from './src/components/general/FeedPage';
+import Messages from './src/components/general/Messages';
+import ViewMessagePage from './src/components/general/ViewMessagePage';
+import CreateMessage from './src/components/general/CreateMessage';
 
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
   const [currentFolder, setCurrentFolder] = useState({});
-  const [headerImageRandNum, setHeaderImageRandNum] = useState(1);
   const [topics, setTopics] = useState([
     {
       name: 'English 1',
@@ -54,8 +56,6 @@ const App = () => {
   ]);
 
   useEffect(async () => {
-    const libRandNum = Math.floor(Math.random() * 16) + 1;
-    setHeaderImageRandNum(libRandNum);
     // TO STOP THE BACK BUTTON FROM CLOSING APP
     try {
       const granted = await PermissionsAndroid.request(
@@ -118,6 +118,20 @@ const App = () => {
         <Route path="/Register" component={RegisterPage} />
         <Route path="/Login" component={() => <LoginPage />} />
         <ClassContextProvider>
+          <Route
+            path="/Messages"
+            component={() => (
+              <Messages userInfo={userInfo} setUserInfo={setUserInfo} />
+            )}
+          />
+          <Route
+            path="/ViewMessage"
+            component={() => <ViewMessagePage userInfo={userInfo} />}
+          />
+          <Route
+            path="/CreateMessage"
+            component={() => <CreateMessage userInfo={userInfo} />}
+          />
           <Route
             path="/ClassList"
             component={() => (

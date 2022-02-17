@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato-Regular',
     color: '#000',
     fontSize: 12,
-    textAlign: 'left',
+    textAlignVertical: 'center',
   },
   itemPic: {
     flexDirection: 'row',

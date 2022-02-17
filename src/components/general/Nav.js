@@ -3,7 +3,7 @@ import {View, Text, StyleSheet} from 'react-native';
 import {Link} from 'react-router-native';
 import IconLib from '../../../assets/books.svg';
 import IconClass from '../../../assets/door-open.svg';
-import IconAccount from '../../../assets/account.svg';
+import IconChat from '../../../assets/chat-dots.svg';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 const Nav = () => {
@@ -19,6 +19,12 @@ const Nav = () => {
         <View style={styles.navItem}>
           <IconClass height={20} width={40} color={Colors.black} />
           <Text style={styles.navText}>Classes</Text>
+        </View>
+      </Link>
+      <Link to="/Messages" underlayColor="#f0f4f7">
+        <View style={styles.navItem}>
+          <IconChat height={20} width={40} color={Colors.black} />
+          <Text style={styles.navText}>Messages</Text>
         </View>
       </Link>
     </View>
@@ -40,7 +46,7 @@ const styles = StyleSheet.create({
   navItem: {
     alignItems: 'center',
     paddingVertical: 15,
-    minWidth: '50%',
+    minWidth: '33.3%',
   },
 });
 

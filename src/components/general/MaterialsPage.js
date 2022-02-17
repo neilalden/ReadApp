@@ -83,7 +83,7 @@ const SearchComponent = ({filesCopy, setFilesCopy, files}) => {
     <View style={styles.searchBarContainer}>
       <TextInput
         style={styles.searchBar}
-        placeholder="Look for a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
+        placeholder="Look for a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
         onChangeText={text => {
           text = text.toLowerCase();
           if (text === '') {
@@ -127,13 +127,15 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     fontSize: 16,
+    fontFamily: 'Lato-Regular',
+    marginLeft: 10,
   },
   searchBarContainer: {
-    width: '80%',
+    width: '90%',
     marginTop: 5,
     marginBottom: 20,
     backgroundColor: '#E8EAED',
-    borderRadius: 10,
+    borderRadius: 50,
     padding: 5,
     alignSelf: 'center',
   },

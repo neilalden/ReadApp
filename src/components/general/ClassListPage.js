@@ -32,9 +32,9 @@ import AddClassForm from '../teacher/AddClassForm';
 const ClassListPage = ({userInfo, setUserInfo}) => {
   /***STATES***/
   const history = useHistory();
-  const refRBSheet = useRef();
   const {classList, setClassList} = useContext(ClassContext);
   const {user} = useContext(AuthContext);
+  const refRBSheet = useRef();
   // FOR THE TEXT INPUT OF CREATING A NEW CLASS
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
@@ -91,6 +91,7 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
               isStudent: snapshot.data().isStudent,
               phoneNumber: snapshot.data().phoneNumber,
               name: snapshot.data().name,
+              messages: snapshot.data().messages,
             };
             fetchClassList(new_userInfo, setClassList);
             setUserInfo(new_userInfo);
@@ -129,13 +130,14 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
             isStudent: res.data().isStudent,
             phoneNumber: res.data().phoneNumber,
             name: res.data().name,
+            messages: res.data().messages ? res.data().messages : [],
           });
         }
       })
       .catch(e => alert(e.message, e.code));
   };
 
-  if (!user || !userInfo) {
+  if (Object.keys(userInfo).length === 0 || Object.keys(user).length === 0) {
     return <></>;
   }
 

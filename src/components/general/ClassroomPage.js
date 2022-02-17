@@ -208,7 +208,7 @@ const ClassworkList = ({
                             styles.card,
                             {marginHorizontal: 2, backgroundColor: '#E8EAED'},
                           ]}>
-                          <Text>
+                          <Text style={[styles.itemTextSubs, {fontSize: 14}]}>
                             {file.replace(
                               `${classList[classNumber].classId}/lectures/`,
                               '',
