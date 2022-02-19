@@ -33,8 +33,7 @@ const Messages = ({userInfo, setUserInfo}) => {
     setMessageNumber,
   } = useContext(ClassContext);
   const history = useHistory();
-  const [associates, setAssociates] = useState([]);
-  const [associatesCopy, setAssociatesCopy] = useState([]);
+  const [messageListCopy, setMessageListCopy] = useState([]);
   const [text, setText] = useState('');
   useEffect(() => {
     if (!user) {
@@ -71,18 +70,9 @@ const Messages = ({userInfo, setUserInfo}) => {
             setUserInfo(new_userInfo);
           }
           fetchMessages(userInfo, classList, setMessageList);
-          for (const i in classList) {
-            setAssociates(prev => [
-              ...prev,
-              {
-                subject: classList[i].subject,
-                teachers: classList[i].teachers,
-                students: classList[i].students,
-              },
-            ]);
-          }
         });
     }
+
     BackHandler.addEventListener('hardwareBackPress', () => {
       alert('Do you want to leave?', 'Exit?');
       return true;
@@ -90,7 +80,11 @@ const Messages = ({userInfo, setUserInfo}) => {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
-
+  useEffect(() => {
+    if (messageList.length > 0 && messageListCopy.length == 0 && text == '') {
+      setMessageListCopy(messageList);
+    }
+  }, [messageList]);
   const fetchUser = id => {
     firestore()
       .collection('users')
@@ -120,22 +114,19 @@ const Messages = ({userInfo, setUserInfo}) => {
       <ScrollView style={{backgroundColor: '#fff'}}>
         <Header user={user} history={history} />
         <SearchComponent
-          setAssociatesCopy={setAssociatesCopy}
-          associates={associates}
-          setText={setText}
           user={user}
+          setText={setText}
+          messageList={messageList}
+          messageListCopy={messageListCopy}
+          setMessageListCopy={setMessageListCopy}
         />
-        {text !== '' ? (
-          <SearchResults associatesCopy={associatesCopy} user={user} />
-        ) : (
-          <MessagesList
-            messageList={messageList}
-            setMessageNumber={setMessageNumber}
-            classList={classList}
-            history={history}
-            user={user}
-          />
-        )}
+        <MessagesList
+          user={user}
+          messageListCopy={messageListCopy}
+          setMessageNumber={setMessageNumber}
+          classList={classList}
+          history={history}
+        />
       </ScrollView>
       <Nav />
     </>
@@ -143,7 +134,7 @@ const Messages = ({userInfo, setUserInfo}) => {
 };
 
 const MessagesList = ({
-  messageList,
+  messageListCopy,
   setMessageNumber,
   classList,
   history,
@@ -151,8 +142,8 @@ const MessagesList = ({
 }) => {
   return (
     <ScrollView>
-      {messageList.length > 0 ? (
-        messageList.map((message, index) => {
+      {messageListCopy.length > 0 ? (
+        messageListCopy.map((message, index) => {
           return (
             <Message
               key={index}
@@ -167,7 +158,7 @@ const MessagesList = ({
         })
       ) : (
         <Text style={[styles.messageSubtitleText, {alignSelf: 'center'}]}>
-          No Messages yet
+          No Messages
         </Text>
       )}
     </ScrollView>
@@ -205,7 +196,9 @@ const Message = ({
   } else if (today.getDate() - day > 7) {
     timeSent = `${MONTHS[month]} ${day}`;
   } else if (today.getDate() - day > 0 && today.getDate() - day <= 7) {
-    timeSent = WEEKDAYS[dt.getDay()];
+    timeSent = `${WEEKDAYS[dt.getDay()]}\n${
+      hour > 12 ? hour - 12 : hour
+    }:${minute} ${ampm}`;
   } else if (today.getDate() == day) {
     timeSent = `${hour > 12 ? hour - 12 : hour}:${minute} ${ampm}`;
   } else {
@@ -268,86 +261,13 @@ const Header = ({user, history}) => {
   );
 };
 
-const SearchResults = ({associatesCopy, user}) => {
-  return (
-    <ScrollView>
-      {associatesCopy.length > 0 ? (
-        associatesCopy.map((associate, index) => {
-          return (
-            <View key={index}>
-              <Text
-                style={[
-                  styles.messageText,
-                  {
-                    backgroundColor: '#E8EAED',
-                    paddingVertical: 5,
-                    paddingHorizontal: 10,
-                  },
-                ]}>
-                {associate.subject}
-              </Text>
-              {associate.students.length > 0 && (
-                <ScrollView>
-                  {associate.students.map((student, index) => {
-                    if (student.id === user.displayName) return;
-                    return (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.imageAndTextContainer}>
-                        <Image
-                          source={{uri: student.photoUrl}}
-                          style={styles.profileImage}
-                        />
-                        <Text
-                          style={[
-                            styles.messageSubtitleText,
-                            {alignSelf: 'center'},
-                          ]}>
-                          {student.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              )}
-
-              {associate.teachers.length > 0 && (
-                <ScrollView>
-                  {associate.teachers.map((teacher, index) => {
-                    if (teacher.id === user.displayName) return;
-
-                    return (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.imageAndTextContainer}>
-                        <Image
-                          source={{uri: teacher.photoUrl}}
-                          style={styles.profileImage}
-                        />
-                        <Text
-                          style={[
-                            styles.messageSubtitleText,
-                            {alignSelf: 'center'},
-                          ]}>
-                          {teacher.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              )}
-            </View>
-          );
-        })
-      ) : (
-        <Text style={[styles.messageSubtitleText, {alignSelf: 'center'}]}>
-          No name or ID matched
-        </Text>
-      )}
-    </ScrollView>
-  );
-};
-const SearchComponent = ({setAssociatesCopy, associates, setText, user}) => {
+const SearchComponent = ({
+  user,
+  messageList,
+  setText,
+  messageListCopy,
+  setMessageListCopy,
+}) => {
   return (
     <View style={styles.searchBarContainer}>
       <TextInput
@@ -356,49 +276,21 @@ const SearchComponent = ({setAssociatesCopy, associates, setText, user}) => {
         onChangeText={text => {
           text = text.toLowerCase();
           setText(text);
-          if (text === '') {
-            setAssociatesCopy([]);
+          if (text == '') {
+            setMessageListCopy(messageList);
             return;
           }
-          let associatesTemp = [];
 
-          for (const i in associates) {
-            const associatesClass = {
-              subject: associates[i].subject,
-              students: [],
-              teachers: [],
-            };
-
-            for (const j in associates[i].students) {
-              if (
-                associates[i].students[j].id.toLowerCase().includes(text) ||
-                associates[i].students[j].name.toLowerCase().includes(text)
-              ) {
-                if (associates[i].students[j].id !== user.displayName) {
-                  associatesClass.students.push(associates[i].students[j]);
-                }
+          setMessageListCopy(messageList);
+          setMessageListCopy(prev =>
+            prev.filter(convo => {
+              let isTrue = convo.convoWith.toLowerCase().includes(text);
+              if (!isTrue) {
+                isTrue = convo.sender.name.toLowerCase().includes(text);
               }
-            }
-
-            for (const j in associates[i].teachers) {
-              if (
-                associates[i].teachers[j].id.toLowerCase().includes(text) ||
-                associates[i].teachers[j].name.toLowerCase().includes(text)
-              ) {
-                if (associates[i].teachers[j].id !== user.displayName) {
-                  associatesClass.teachers.push(associates[i].teachers[j]);
-                }
-              }
-            }
-
-            if (
-              associatesClass.students.length > 0 ||
-              associatesClass.teachers.length > 0
-            ) {
-              associatesTemp.push(associatesClass);
-            }
-          }
-          setAssociatesCopy(associatesTemp);
+              return isTrue;
+            }),
+          );
         }}
       />
     </View>

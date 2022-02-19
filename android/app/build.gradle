@@ -195,6 +195,8 @@ android {
 
 dependencies {
     compile project(':react-native-file-viewer')
+    
+    implementation project(':react-native-push-notification')
     // Import the BoM for the Firebase platform
     implementation platform('com.google.firebase:firebase-bom:28.3.0')
 

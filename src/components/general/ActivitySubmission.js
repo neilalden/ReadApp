@@ -179,7 +179,10 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                 <TouchableOpacity
                   key={index}
                   style={styles.fileItem}
-                  onPress={() => viewFile(item, classId, classwork, true)}>
+                  onPress={() => {
+                    const className = `${classList[classNumber].subject} ${classList[classNumber].section}`;
+                    viewFile(item, classId, classwork, true, className);
+                  }}>
                   <Text>{item.replace(`${classId}/classworks/`, '')}</Text>
                 </TouchableOpacity>
               );
@@ -241,9 +244,16 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                         <TouchableOpacity
                           style={styles.fileItem}
                           key={index}
-                          onPress={() =>
-                            viewFile(item, classId, classwork, false)
-                          }>
+                          onPress={() => {
+                            const className = `${classList[classNumber].subject} ${classList[classNumber].section}`;
+                            viewFile(
+                              item,
+                              classId,
+                              classwork,
+                              false,
+                              className,
+                            );
+                          }}>
                           <Text>{item.replace(filePath, '')}</Text>
                         </TouchableOpacity>
                       );
@@ -450,9 +460,16 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                             <TouchableOpacity
                               key={index}
                               style={styles.fileItem}
-                              onPress={() =>
-                                viewFile(item, classId, classwork, false)
-                              }>
+                              onPress={() => {
+                                const className = `${classList[classNumber].subject} ${classList[classNumber].section}`;
+                                viewFile(
+                                  item,
+                                  classId,
+                                  classwork,
+                                  false,
+                                  className,
+                                );
+                              }}>
                               <Text>{item.replace(filePath, '')}</Text>
                             </TouchableOpacity>
                           );
@@ -610,9 +627,16 @@ const ActivitySubmission = ({userInfo, student, setStudent, setRefresh}) => {
                         <TouchableOpacity
                           key={index}
                           style={styles.fileItem}
-                          onPress={() =>
-                            viewFile(item, classId, classwork, false)
-                          }>
+                          onPress={() => {
+                            const className = `${classList[classNumber].subject} ${classList[classNumber].section}`;
+                            viewFile(
+                              item,
+                              classId,
+                              classwork,
+                              false,
+                              className,
+                            );
+                          }}>
                           <Text>{item.replace(filePath, '')}</Text>
                         </TouchableOpacity>
                       );
@@ -848,38 +872,66 @@ const submit = async (
   }
 };
 
-const viewFile = (file, classId, classwork, fromInstructions) => {
-  ToastAndroid.showWithGravity(
-    'Loading...',
-    ToastAndroid.SHORT,
-    ToastAndroid.CENTER,
+const viewFile = async (
+  file,
+  classId,
+  classwork,
+  fromInstructions,
+  className,
+) => {
+  const permission = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+    {
+      title: 'ReadApp Storage Permission',
+      message: 'ReadApp needs access to your storage to save files',
+      buttonNeutral: 'Ask Me Later',
+      buttonNegative: 'Cancel',
+      buttonPositive: 'OK',
+    },
   );
-  const filePath = fromInstructions
-    ? `${classId}/classworks/`
-    : `${classId}/classworks/${classwork.id}/`;
+  if (permission) {
+    ToastAndroid.showWithGravity(
+      'Loading...',
+      ToastAndroid.SHORT,
+      ToastAndroid.CENTER,
+    );
+    const filePath = fromInstructions
+      ? `${classId}/classworks/`
+      : `${classId}/classworks/${classwork.id}/`;
+    const localFile = `${
+      RNFS.DownloadDirectoryPath
+    }/${className}/${file.replace(filePath, '')}`;
 
-  storage()
-    .ref(file)
-    .getDownloadURL()
-    .then(url => {
-      const localFile = `${RNFS.DocumentDirectoryPath}/${file.replace(
-        filePath,
-        '',
-      )}`;
-      const options = {
-        fromUrl: url,
-        toFile: localFile,
-      };
-      RNFS.downloadFile(options)
-        .promise.then(() => FileViewer.open(localFile))
-        .then(() => {
-          // success
-        })
-        .catch(error => {
-          alert(error);
-        });
-    })
-    .catch(e => alert(e));
+    RNFS.exists(localFile).then(exists => {
+      if (exists) {
+        FileViewer.open(localFile);
+      } else {
+        storage()
+          .ref(file)
+          .getDownloadURL()
+          .then(url => {
+            const options = {
+              fromUrl: url,
+              toFile: localFile,
+            };
+            RNFS.exists(`${RNFS.DownloadDirectoryPath}/${className}`).then(
+              x => {
+                if (!x) {
+                  RNFS.mkdir(`${RNFS.DownloadDirectoryPath}/${className}`);
+                }
+                RNFS.downloadFile(options)
+                  .promise.then(() => FileViewer.open(localFile))
+                  .then(() => {})
+                  .catch(error => {
+                    alert(error);
+                  });
+              },
+            );
+          })
+          .catch(e => alert(e));
+      }
+    });
+  }
 };
 
 const handleDeleteFile = (

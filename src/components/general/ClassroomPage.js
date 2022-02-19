@@ -11,6 +11,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ToastAndroid,
+  PermissionsAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
@@ -201,9 +202,14 @@ const ClassworkList = ({
                       return (
                         <TouchableOpacity
                           key={index}
-                          onPress={() =>
-                            viewFile(file, classList[classNumber].classId)
-                          }
+                          onPress={() => {
+                            const className = `${classList[classNumber].subject} ${classList[classNumber].section}`;
+                            viewFile(
+                              file,
+                              classList[classNumber].classId,
+                              className,
+                            );
+                          }}
                           style={[
                             styles.card,
                             {marginHorizontal: 2, backgroundColor: '#E8EAED'},
@@ -547,38 +553,60 @@ const removeDraft = (drafts, setDrafts, index, classId) => {
     })
     .catch(e => alert(e.message, e.code));
 };
-const viewFile = (file, classId) => {
-  ToastAndroid.showWithGravity(
-    'Loading...',
-    ToastAndroid.SHORT,
-    ToastAndroid.CENTER,
+const viewFile = async (file, classId, className) => {
+  const permission = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+    {
+      title: 'ReadApp Storage Permission',
+      message: 'ReadApp needs access to your storage to save files',
+      buttonNeutral: 'Ask Me Later',
+      buttonNegative: 'Cancel',
+      buttonPositive: 'OK',
+    },
   );
-  try {
-    const filePath = `${classId}/lectures/`;
-    storage()
-      .ref(file)
-      .getDownloadURL()
-      .then(url => {
-        const localFile = `${RNFS.TemporaryDirectoryPath}/${file.replace(
-          filePath,
-          '',
-        )}`;
-        const options = {
-          fromUrl: url,
-          toFile: localFile,
-        };
-        RNFS.downloadFile(options)
-          .promise.then(() => FileViewer.open(localFile))
-          .then(() => {
-            // success
-          })
-          .catch(error => {
-            alert(error.message, error.code);
-          });
-      })
-      .catch(e => alert(e.message, e.code));
-  } catch (e) {
-    alert(`${e}`, 'Alert');
+  if (permission) {
+    try {
+      ToastAndroid.showWithGravity(
+        'Loading...',
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+      );
+      const filePath = `${classId}/lectures/`;
+      const localFile = `${
+        RNFS.DownloadDirectoryPath
+      }/${className}/${file.replace(filePath, '')}`;
+      RNFS.exists(localFile).then(exists => {
+        if (exists) {
+          FileViewer.open(localFile);
+        } else {
+          storage()
+            .ref(file)
+            .getDownloadURL()
+            .then(url => {
+              const options = {
+                fromUrl: url,
+                toFile: localFile,
+              };
+              RNFS.exists(`${RNFS.DownloadDirectoryPath}/${className}`).then(
+                x => {
+                  if (!x) {
+                    RNFS.mkdir(`${RNFS.DownloadDirectoryPath}/${className}`);
+                  }
+                  RNFS.downloadFile(options)
+                    .promise.then(() => FileViewer.open(localFile))
+                    .then(() => {})
+                    .catch(error => {
+                      alert(error.message, error.code);
+                    });
+                },
+              );
+            })
+            .catch(e => alert(e.message, e.code));
+        }
+      });
+    } catch (e) {
+      alert(`${e}`, 'Alert');
+    }
   }
 };
 

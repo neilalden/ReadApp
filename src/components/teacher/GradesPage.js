@@ -292,14 +292,12 @@ const saveFile = (fileName = 'ReadApp.xlsx', data) => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
   const wbout = XLSX.write(wb, {type: 'binary', bookType: 'xlsx'});
-  const file = RNFS.ExternalStorageDirectoryPath + '/Download/' + fileName;
+  const file = `${RNFS.DownloadDirectoryPath}/${fileName}`;
   writeFile(file, wbout, 'ascii')
     .then(() => {
-      // alert(`${fileName} saved!`, `See your Downloads folder`);
-
       PushNotification.localNotification({
         channelId: 'channel-id',
-        message: `Look for ${fileName} in your Download folder`,
+        message: `Look for ${fileName} in your downloads folder`,
         title: `File saved!`,
       });
     })

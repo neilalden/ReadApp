@@ -43,9 +43,9 @@ const MaterialsPage = ({currentFolder}) => {
               <TouchableOpacity
                 key={index}
                 style={styles.item}
-                onPress={() => openFile(file)}>
+                onPress={() => openFile(file, currentFolder.name)}>
                 <View style={styles.itemTextContainer}>
-                  <Text style={styles.itemText}>{file}</Text>
+                  <Text style={styles.itemText}>{file.name}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -83,7 +83,7 @@ const SearchComponent = ({filesCopy, setFilesCopy, files}) => {
     <View style={styles.searchBarContainer}>
       <TextInput
         style={styles.searchBar}
-        placeholder="Look for a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
+        placeholder="Look for a file &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔎"
         onChangeText={text => {
           text = text.toLowerCase();
           if (text === '') {
@@ -193,11 +193,18 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 });
-const openFile = file => {
-  const dest = `${RNFS.DocumentDirectoryPath}/${file}`;
-  RNFS.copyFileAssets(file, dest)
+const openFile = (file, folder) => {
+  if (file.isDownloaded) {
+    // const path = filePath.replace(file.name, '');
+    const dest = `${RNFS.DocumentDirectoryPath}/${file.name}`;
+    RNFS.copyFile(`${RNFS.ExternalDirectoryPath}/${folder}/${file.name}`, dest)
+      .then(() => FileViewer.open(dest))
+      .catch(e => alert(e));
+    return;
+  }
+  const dest = `${RNFS.DocumentDirectoryPath}/${file.name}`;
+  RNFS.copyFileAssets(file.name, dest)
     .then(() => FileViewer.open(dest))
-    .then(() => {})
     .catch(error => {
       alert(error.message, "Can't open file");
     });

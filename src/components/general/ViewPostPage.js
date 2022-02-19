@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   ToastAndroid,
+  PermissionsAndroid,
 } from 'react-native';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
@@ -50,7 +51,11 @@ const ViewPostPage = ({userInfo, post, setPost, setViewPost}) => {
           setViewPost={setViewPost}
           setClassList={setClassList}
         />
-        <FilesContainer files={post.files} classId={classId} />
+        <FilesContainer
+          files={post.files}
+          classList={classList}
+          classNumber={classNumber}
+        />
         <CommentBox
           userInfo={userInfo}
           postId={post.id}
@@ -149,19 +154,38 @@ const CommentBox = ({
     </View>
   );
 };
-const FilesContainer = ({files, classId}) => {
+const FilesContainer = ({files, classList, classNumber}) => {
   return (
     <View style={styles.filesCardContainer}>
       {files &&
         files.map((file, index) => (
-          <FileCard file={file} classId={classId} key={index} />
+          <FileCard
+            file={file}
+            classList={classList}
+            classNumber={classNumber}
+            key={index}
+          />
         ))}
     </View>
   );
 };
-const FileCard = ({file, classId}) => {
-  const handleViewFile = () => {
-    viewFile(file, classId);
+const FileCard = ({file, classList, classNumber}) => {
+  const classId = classList[classNumber].classId;
+
+  const handleViewFile = async () => {
+    const permission = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      {
+        title: 'ReadApp Storage Permission',
+        message: 'ReadApp needs access to your storage to save files',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+    );
+    if (permission) {
+      viewFile(file, classList, classNumber);
+    }
   };
   return (
     <TouchableOpacity
@@ -370,39 +394,46 @@ const findAuthor = (post, students, teachers) => {
   return author;
 };
 
-const viewFile = (file, classId) => {
+const viewFile = (file, classList, classNumber) => {
   ToastAndroid.showWithGravity(
     'Loading...',
     ToastAndroid.SHORT,
     ToastAndroid.CENTER,
   );
-  try {
-    const filePath = `${classId}/posts/`;
-    storage()
-      .ref(file)
-      .getDownloadURL()
-      .then(url => {
-        const localFile = `${RNFS.DocumentDirectoryPath}/${file.replace(
-          filePath,
-          '',
-        )}`;
-        const options = {
-          fromUrl: url,
-          toFile: localFile,
-        };
-        RNFS.downloadFile(options)
-          .promise.then(() => FileViewer.open(localFile))
-          .then(() => {
-            // success
-          })
-          .catch(error => {
-            alert(error.message, error.code);
+  const classId = classList[classNumber].classId;
+  const className = `${classList[classNumber].subject} ${classList[classNumber].section}`;
+  const filePath = `${classId}/posts/`;
+  const localFile = `${RNFS.DownloadDirectoryPath}/${className}/${file.replace(
+    filePath,
+    '',
+  )}`;
+  RNFS.exists(localFile).then(exists => {
+    if (exists) {
+      FileViewer.open(localFile);
+    } else {
+      storage()
+        .ref(file)
+        .getDownloadURL()
+        .then(url => {
+          const options = {
+            fromUrl: url,
+            toFile: localFile,
+          };
+          RNFS.exists(`${RNFS.DownloadDirectoryPath}/${className}`).then(x => {
+            if (!x) {
+              RNFS.mkdir(`${RNFS.DownloadDirectoryPath}/${className}`);
+            }
+            RNFS.downloadFile(options)
+              .promise.then(() => FileViewer.open(localFile))
+              .then(() => {})
+              .catch(error => {
+                alert(error.message, error.code);
+              });
           });
-      })
-      .catch(e => alert(e.code, e.message));
-  } catch (e) {
-    alert('Alert', `${e}`);
-  }
+        })
+        .catch(e => alert(e.code, e.message));
+    }
+  });
 };
 
 const styles = StyleSheet.create({

@@ -65,7 +65,9 @@ const ViewMessagePage = ({userInfo}) => {
     } else if (today.getDate() - day > 7) {
       timeSent = `${MONTHS[month]} ${day}`;
     } else if (today.getDate() - day > 0 && today.getDate() - day <= 7) {
-      timeSent = WEEKDAYS[dt.getDay()];
+      timeSent = `${WEEKDAYS[dt.getDay()]} ${
+        hour > 12 ? hour - 12 : hour
+      }:${minute} ${ampm}`;
     } else if (today.getDate() == day) {
       timeSent = `${hour > 12 ? hour - 12 : hour}:${minute} ${ampm}`;
     } else {

@@ -8,6 +8,7 @@
 import React, {useEffect, useState} from 'react';
 import {NativeRouter, Route, Link} from 'react-router-native';
 import {Alert, BackHandler, PermissionsAndroid} from 'react-native';
+import RNFS from 'react-native-fs';
 
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
@@ -37,20 +38,22 @@ const App = () => {
   const [topics, setTopics] = useState([
     {
       name: 'English 1',
-      files: ["The king lion's friend.mp4"],
+      files: [{name: "The king lion's friend.mp4"}],
     },
     {
       name: 'Filipino 1',
       files: [
-        'Ang himutok ni Isay.mp4',
-        'Ang puso ng mamang may higanteng mga paa.mp4',
+        {name: 'Ang himutok ni Isay.mp4'},
+        {name: 'Ang puso ng mamang may higanteng mga paa.mp4'},
       ],
     },
     {
       name: 'Science 1',
       files: [
-        'Relate triangles to quadrilaterals and one quadrilateral to another quadrilateral.pptx',
-        'Our journey to Sci-Math Museum.pptx',
+        {
+          name: 'Relate triangles to quadrilaterals and one quadrilateral to another quadrilateral.pptx',
+        },
+        {name: 'Our journey to Sci-Math Museum.pptx'},
       ],
     },
   ]);
@@ -89,7 +92,44 @@ const App = () => {
     } catch (err) {
       alert('Error', `${err}`);
     }
+    RNFS.readDir(RNFS.ExternalDirectoryPath)
+      .then(subject => {
+        for (const i in subject) {
+          RNFS.readDir(`${RNFS.ExternalDirectoryPath}/${subject[i].name}`)
+            .then(files => {
+              let topic = {
+                name: subject[i].name,
+                files: [],
+              };
+              for (const j in files) {
+                topic.files.push({name: files[j].name, isDownloaded: true});
+              }
+              for (const j in topics) {
+                if (topics[j].name.toLowerCase() == topic.name.toLowerCase()) {
+                  let topicsCopy = [...topics];
+                  topicsCopy[j].files = topicsCopy[j].files.concat(topic.files);
+                  setTopics(topicsCopy);
+                  return;
+                }
 
+                if (topics.length - 1 == j) {
+                  setTopics(prev => [...prev, topic]);
+                }
+              }
+            })
+            .catch(e => alert(e.message));
+        }
+      })
+      .catch(e => alert(e.message));
+    PushNotification.createChannel({
+      channelId: 'channel-id', // (required)
+      channelName: 'My channel', // (required)
+      channelDescription: 'A channel to categorise your notifications', // (optional) default: undefined.
+      playSound: false, // (optional) default: true
+      soundName: 'default', // (optional) See `soundName` parameter of `localNotification` function
+      importance: 4, // (optional) default: 4. Int value of the Android notification importance
+      vibrate: true, // (optional) default: true. Creates the default vibration patten if true.
+    });
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       PushNotification.localNotification({
         message: remoteMessage.notification.body,
