@@ -71,9 +71,8 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
   }, []);
   useEffect(() => {
     if (Object.keys(userInfo).length !== 0 && Object.keys(user).length !== 0) {
-      if (userInfo.id == undefined) {
-        return;
-      }
+      if (userInfo.id == undefined) return;
+
       const subscriber = firestore()
         .collection('users')
         .doc(userInfo.id)

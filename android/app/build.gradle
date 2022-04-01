@@ -129,6 +129,8 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+        // sourceCompatibility 1.8
+        // targetCompatibility 1.8
     }
 
     defaultConfig {
@@ -136,8 +138,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         multiDexEnabled true
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "2.0"
+        versionCode 4
+        versionName "3.1"
     }
     splits {
         abi {
@@ -196,6 +198,8 @@ android {
 dependencies {
     compile project(':react-native-file-viewer')
     
+   implementation 'com.android.support:multidex:2.0.1' 
+
     implementation project(':react-native-push-notification')
     // Import the BoM for the Firebase platform
     implementation platform('com.google.firebase:firebase-bom:28.3.0')

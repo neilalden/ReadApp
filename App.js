@@ -7,17 +7,18 @@
  */
 import React, {useEffect, useState} from 'react';
 import {NativeRouter, Route, Link} from 'react-router-native';
-import {Alert, BackHandler, PermissionsAndroid} from 'react-native';
+import {Alert, Linking, BackHandler, PermissionsAndroid} from 'react-native';
 import RNFS from 'react-native-fs';
 
+import firestore from '@react-native-firebase/firestore';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
+import VersionCheck from 'react-native-version-check';
 
 import AuthContextProvider from './src/context/AuthContext';
 import ClassContextProvider from './src/context/ClassContext';
-
+import StoryPage from './src/components/general/StoryPage';
 import LibraryPage from './src/components/general/LibraryPage';
-import MaterialsPage from './src/components/general/MaterialsPage';
 import LoginPage from './src/components/general/LoginPage';
 import RegisterPage from './src/components/general/RegisterPage';
 import ClassListPage from './src/components/general/ClassListPage';
@@ -34,32 +35,21 @@ import CreateMessage from './src/components/general/CreateMessage';
 
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
-  const [currentFolder, setCurrentFolder] = useState({});
-  const [topics, setTopics] = useState([
-    {
-      name: 'English 1',
-      files: [{name: "The king lion's friend.mp4"}],
-    },
-    {
-      name: 'Filipino 1',
-      files: [
-        {name: 'Ang himutok ni Isay.mp4'},
-        {name: 'Ang puso ng mamang may higanteng mga paa.mp4'},
-      ],
-    },
-    {
-      name: 'Science 1',
-      files: [
-        {
-          name: 'Relate triangles to quadrilaterals and one quadrilateral to another quadrilateral.pptx',
-        },
-        {name: 'Our journey to Sci-Math Museum.pptx'},
-      ],
-    },
-  ]);
+  const [stories, setStories] = useState({});
+  const [dailyTest, setDailyTest] = useState([]);
 
   useEffect(async () => {
-    // TO STOP THE BACK BUTTON FROM CLOSING APP
+    checkUpdateNeeded();
+    const arr = [];
+    firestore()
+      .collection('library')
+      .get()
+      .then(querySnapshot => {
+        querySnapshot.forEach(doc => {
+          arr.push(doc.data());
+        });
+        setDailyTest(arr);
+      });
     try {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
@@ -141,23 +131,56 @@ const App = () => {
     return unsubscribe;
   }, []);
 
+  const checkUpdateNeeded = async () => {
+    // const latestVersion = await VersionCheck.getLatestVersion();
+    // const currentVersion = VersionCheck.getCurrentVersion();
+    try {
+      let updateNeeded = await VersionCheck.needUpdate();
+      if (updateNeeded && updateNeeded.isNeeded) {
+        Alert.alert(
+          'Please update',
+          'You will have to update ReadApp to the latest version to use it.',
+          [
+            {
+              text: 'Update',
+              onPress: () => {
+                BackHandler.exitApp();
+                Linking.openURL(updateNeeded.storeUrl);
+              },
+            },
+          ],
+          {cancelable: false},
+        );
+      }
+    } catch (e) {
+      alert(`${e}`);
+    }
+  };
+
   return (
     <NativeRouter>
       <AuthContextProvider>
-        <Route
-          exact
-          path="/"
-          component={() => (
-            <LibraryPage setCurrentFolder={setCurrentFolder} topics={topics} />
-          )}
-        />
-        <Route
-          path="/Materials"
-          component={() => <MaterialsPage currentFolder={currentFolder} />}
-        />
         <Route path="/Register" component={RegisterPage} />
         <Route path="/Login" component={() => <LoginPage />} />
         <ClassContextProvider>
+          <Route
+            exact
+            path="/"
+            component={() => (
+              <LibraryPage
+                setStories={setStories}
+                userInfo={userInfo}
+                setUserInfo={setUserInfo}
+                dailyTest={dailyTest}
+              />
+            )}
+          />
+          <Route
+            path="/Story"
+            component={() => (
+              <StoryPage stories={stories} userInfo={userInfo} />
+            )}
+          />
           <Route
             path="/Messages"
             component={() => (
