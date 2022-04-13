@@ -84,16 +84,8 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
             snapshot.data().classes &&
             userInfo.classes.length !== snapshot.data().classes.length
           ) {
-            const new_userInfo = {
-              classes: snapshot.data().classes,
-              id: snapshot.data().id,
-              isStudent: snapshot.data().isStudent,
-              phoneNumber: snapshot.data().phoneNumber,
-              name: snapshot.data().name,
-              messages: snapshot.data().messages,
-            };
-            fetchClassList(new_userInfo, setClassList);
-            setUserInfo(new_userInfo);
+            fetchClassList(snapshot.data(), setClassList);
+            setUserInfo(snapshot.data());
           }
         });
       return () => subscriber();
@@ -123,14 +115,7 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
           // USER DOES NOT EXIST
           history.push('/Register');
         } else {
-          setUserInfo({
-            classes: res.data().classes,
-            id: res.data().id,
-            isStudent: res.data().isStudent,
-            phoneNumber: res.data().phoneNumber,
-            name: res.data().name,
-            messages: res.data().messages ? res.data().messages : [],
-          });
+          setUserInfo(res.data());
         }
       })
       .catch(e => alert(e.message, e.code));

@@ -35,6 +35,7 @@ const Messages = ({userInfo, setUserInfo}) => {
   const history = useHistory();
   const [messageListCopy, setMessageListCopy] = useState([]);
   const [text, setText] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   useEffect(() => {
     if (!user) {
       history.push('/Login');
@@ -58,16 +59,8 @@ const Messages = ({userInfo, setUserInfo}) => {
             snapshot.data().messages &&
             userInfo.messages.length !== snapshot.data().messages.length
           ) {
-            const new_userInfo = {
-              classes: snapshot.data().classes,
-              id: snapshot.data().id,
-              isStudent: snapshot.data().isStudent,
-              phoneNumber: snapshot.data().phoneNumber,
-              name: snapshot.data().name,
-              messages: snapshot.data().messages,
-            };
-            fetchClassList(new_userInfo, setClassList);
-            setUserInfo(new_userInfo);
+            fetchClassList(snapshot.data(), setClassList);
+            setUserInfo(snapshot.data());
           }
           fetchMessages(userInfo, classList, setMessageList);
         });
@@ -85,6 +78,18 @@ const Messages = ({userInfo, setUserInfo}) => {
       setMessageListCopy(messageList);
     }
   }, [messageList]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchUser(user.displayName);
+    setMessageList([]);
+    wait(1000).then(() => {
+      fetchMessages(userInfo, classList, setMessageList);
+      setRefreshing(false);
+    });
+  }, []);
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
   const fetchUser = id => {
     firestore()
       .collection('users')
@@ -94,14 +99,7 @@ const Messages = ({userInfo, setUserInfo}) => {
         if (!res.data()) {
           history.push('/Register');
         } else {
-          setUserInfo({
-            classes: res.data().classes,
-            id: res.data().id,
-            isStudent: res.data().isStudent,
-            phoneNumber: res.data().phoneNumber,
-            name: res.data().name,
-            messages: res.data().messages ? res.data().messages : [],
-          });
+          setUserInfo(res.data());
         }
       })
       .catch(e => alert(e.message, e.code));
@@ -111,7 +109,11 @@ const Messages = ({userInfo, setUserInfo}) => {
   }
   return (
     <>
-      <ScrollView style={{backgroundColor: '#fff'}}>
+      <ScrollView
+        style={{backgroundColor: '#fff'}}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         <Header user={user} history={history} />
         <SearchComponent
           user={user}

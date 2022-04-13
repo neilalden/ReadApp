@@ -2,22 +2,30 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   BackHandler,
   Image,
+  PermissionsAndroid,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  ToastAndroid,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Video from 'react-native-video';
 import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 import {useHistory} from 'react-router';
 
-const StoryPage = ({stories, userInfo}) => {
+const StoryPage = ({stories, userInfo, setUserInfo}) => {
   const [story, setStory] = useState({});
   const [storyKeys, setStoryKeys] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [score, setScore] = useState(0);
   const [current, setCurrent] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [hasTaken, setHasTaken] = useState(false);
   const [rand, setRand] = useState(1);
+  const [url, setUrl] = useState('');
   let history = useHistory();
   useEffect(() => {
     setRand(Math.floor(Math.random() * 3 + 1));
@@ -32,13 +40,29 @@ const StoryPage = ({stories, userInfo}) => {
     let storiesCopy = {...stories[keys[current]]};
     const quiz = [...storiesCopy['quiz']];
     for (const i in quiz) {
-      let options = quiz[i].options
-        ? [...quiz[i].options, quiz[i].answer]
-        : undefined;
+      let willShuffle = true;
+      for (const j in quiz[i].options) {
+        if (quiz[i].options[j] == quiz[i].answer) {
+          willShuffle = false;
+          break;
+        }
+      }
+      let options = quiz[i].options;
+      if (willShuffle) {
+        options = quiz[i].options
+          ? [...quiz[i].options, quiz[i].answer]
+          : undefined;
+      }
       if (options) options.sort(() => Math.random() - 0.5);
       quiz[i].options = options;
     }
     storiesCopy['quiz'] = quiz;
+    let temp = 0;
+    for (const i in keys) {
+      if (keys[i] !== 'order') temp += stories[keys[i]].quiz.length;
+    }
+    setTotal(temp);
+    if (userInfo[stories.id]) setScore(userInfo[stories.id].score);
     setStory(storiesCopy);
     firestore()
       .collection('users')
@@ -71,10 +95,21 @@ const StoryPage = ({stories, userInfo}) => {
     <>
       <ScrollView ref={scrollRef}>
         {story.directions && (
-          <Directions directions={story.directions} rand={rand} />
+          <Directions
+            directions={story.directions}
+            rand={rand}
+            hasTaken={hasTaken}
+            score={score}
+            total={total}
+          />
         )}
-        {(story.story_content || story.story_title) && (
-          <Story content={story.story_content} title={story.story_title} />
+        {story.story ? (
+          <VideoStory story={story.story} url={url} setUrl={setUrl} />
+        ) : (
+          <WrittenStory
+            content={story.story_content}
+            title={story.story_title}
+          />
         )}
         <Quiz
           quiz={story.quiz}
@@ -93,18 +128,22 @@ const StoryPage = ({stories, userInfo}) => {
             scrollUp={scrollUp}
           />
         )}
-        <NextButton
-          stories={stories}
-          current={current}
-          setCurrent={setCurrent}
-          storyKeys={storyKeys}
-          setStory={setStory}
-          scrollUp={scrollUp}
-          userAnswers={userAnswers}
-          userInfo={userInfo}
-          setHasTaken={setHasTaken}
-          setRand={setRand}
-        />
+        {(!hasTaken || stories.id == 'Pre-test') && (
+          <NextButton
+            userInfo={userInfo}
+            stories={stories}
+            scrollUp={scrollUp}
+            current={current}
+            setCurrent={setCurrent}
+            storyKeys={storyKeys}
+            setStory={setStory}
+            userAnswers={userAnswers}
+            hasTaken={hasTaken}
+            setHasTaken={setHasTaken}
+            setRand={setRand}
+            setScore={setScore}
+          />
+        )}
       </ScrollView>
     </>
   );
@@ -199,7 +238,9 @@ const Quiz = ({quiz, userAnswers, setUserAnswers, hasTaken}) => {
                             quizItem.question,
                           );
                         }}>
-                        <Text>{option}</Text>
+                        <Text style={[styles.itemText, {textAlign: 'center'}]}>
+                          {option}
+                        </Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -207,8 +248,9 @@ const Quiz = ({quiz, userAnswers, setUserAnswers, hasTaken}) => {
               ) : (
                 <TextInput
                   placeholder="Write your answers here.."
-                  editable={hasTaken}
-                  style={styles.item}
+                  editable={!hasTaken}
+                  multiline={true}
+                  style={styles.textBox}
                   value={userAnswers[quizItem.question]}
                   onChangeText={text => {
                     handleAnswer(
@@ -228,24 +270,81 @@ const Quiz = ({quiz, userAnswers, setUserAnswers, hasTaken}) => {
   }
 };
 
-const Directions = ({directions, rand}) => {
-  return (
-    <View style={[styles.item, {flexDirection: 'row', minHeight: 130}]}>
-      <Image
-        style={styles.imageHeader}
-        source={{uri: `asset:/image_headers/teacher${rand}.png`}}
-      />
-      <Text
-        style={
-          (styles.itemText,
-          {fontWeight: 'bold', textAlign: 'justify', paddingLeft: 70})
-        }>
-        {directions}
-      </Text>
-    </View>
-  );
+const Directions = ({directions, rand, hasTaken, score, total}) => {
+  if (directions.length <= 300) {
+    return (
+      <View style={[styles.item, {minHeight: 130}]}>
+        <Image
+          style={styles.imageHeader}
+          source={{uri: `asset:/image_headers/teacher${rand}.png`}}
+        />
+        <Text
+          style={[
+            styles.itemText,
+            {
+              fontWeight: 'bold',
+              textAlign: 'justify',
+              paddingLeft: 70,
+              flex: 1,
+              textAlignVertical: 'center',
+            },
+          ]}>
+          {directions}
+        </Text>
+        {hasTaken && (
+          <Text style={[styles.itemText, {color: '#000'}]}>
+            Score : {`${score}/${total}`}
+          </Text>
+        )}
+      </View>
+    );
+  } else {
+    let cutIndex = 265;
+    for (let i = 260; i <= 270; i++) {
+      if (directions[i] == ' ' || directions[i] == '-') cutIndex = i + 1;
+    }
+    return (
+      <View style={[styles.item, {minHeight: 130}]}>
+        <View style={{flexDirection: 'row', width: '100%'}}>
+          <Image
+            style={{
+              resizeMode: 'center',
+              height: 120,
+              width: 79,
+              marginTop: 10,
+            }}
+            source={{uri: `asset:/image_headers/teacher${rand}.png`}}
+          />
+          <Text
+            style={[
+              styles.itemText,
+              {fontWeight: 'bold', textAlign: 'justify', flex: 1},
+            ]}>
+            {directions.substring(0, cutIndex)}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.itemText,
+            {
+              fontWeight: 'bold',
+              textAlign: 'justify',
+              flex: 1,
+              marginBottom: 5,
+            },
+          ]}>
+          {directions.substring(cutIndex, directions.length)}
+        </Text>
+        {hasTaken && (
+          <Text style={[styles.itemText, {color: '#000'}]}>
+            Score : {`${score}/${total}`}
+          </Text>
+        )}
+      </View>
+    );
+  }
 };
-const Story = ({content, title}) => {
+const WrittenStory = ({content, title}) => {
   return (
     <View style={styles.item}>
       <Text style={styles.header}>{title}</Text>
@@ -254,6 +353,43 @@ const Story = ({content, title}) => {
         {content.replace('  ', '\n')}
       </Text>
     </View>
+  );
+};
+const VideoStory = ({story, url, setUrl}) => {
+  try {
+    ToastAndroid.showWithGravity(
+      'Loading video...',
+      ToastAndroid.SHORT,
+      ToastAndroid.CENTER,
+    );
+    storage()
+      .ref(story)
+      .getDownloadURL()
+      .then(link => {
+        setUrl(link);
+      })
+      .catch(e => alert(e.message, e.code));
+  } catch (e) {
+    alert(`${e}`, 'Alert');
+  }
+  return (
+    <Video
+      source={{
+        uri: url,
+      }} // Can be a URL or a local file.
+      // Store reference
+      // onBuffer={this.onBuffer} // Callback when remote video is buffering
+      // onError={this.videoError} // Callback when video cannot be loaded
+      style={{
+        aspectRatio: 3.5 / 2,
+        width: '95%',
+        position: 'relative',
+        alignSelf: 'center',
+        borderRadius: 15,
+      }}
+      resizeMode={'contain'}
+      controls={true}
+    />
   );
 };
 const NextButton = ({
@@ -265,15 +401,18 @@ const NextButton = ({
   scrollUp,
   userAnswers,
   userInfo,
+  hasTaken,
   setHasTaken,
   setRand,
+  setScore,
 }) => {
-  const endOfDay = storyKeys.length - 1 == current;
+  const endOfQuiz = storyKeys.length - 2 == current;
+  if (hasTaken && endOfQuiz) return <></>;
   return (
     <TouchableOpacity
       style={styles.button}
       onPress={() => {
-        if (!endOfDay) {
+        if (!endOfQuiz) {
           setCurrent(current + 1);
           let storiesCopy = {...stories[storyKeys[current + 1]]};
           const quiz = [...storiesCopy['quiz']];
@@ -318,7 +457,7 @@ const NextButton = ({
               }
             }
           }
-
+          setScore(score);
           firestore()
             .collection('users')
             .doc(userInfo.id)
@@ -329,7 +468,7 @@ const NextButton = ({
             .catch(e => alert(`${e}`));
         }
       }}>
-      <Text style={styles.buttonText}>{endOfDay ? 'Submit' : 'Next'}</Text>
+      <Text style={styles.buttonText}>{endOfQuiz ? 'Submit' : 'Next'}</Text>
     </TouchableOpacity>
   );
 };
@@ -362,10 +501,10 @@ const handleAnswer = (userAnswers, setUserAnswers, value, index) => {
 const styles = StyleSheet.create({
   imageHeader: {
     resizeMode: 'center',
-    height: 120,
-    width: 120,
     position: 'absolute',
-    right: 240,
+    right: 255,
+    height: 120,
+    width: 79,
   },
   item: {
     minHeight: 60,
@@ -400,6 +539,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     marginVertical: 3,
     padding: 3,
+    flex: 1,
+    textAlign: 'justify',
   },
   questionContainer: {
     backgroundColor: '#ADD8E6',
@@ -408,5 +549,23 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     paddingVertical: 10,
   },
+  textBox: {
+    justifyContent: 'space-between',
+    backgroundColor: '#E8EAED',
+    fontFamily: 'Lato-Regular',
+    marginHorizontal: 15,
+    marginVertical: 3,
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    fontSize: 15,
+  },
+  // backgroundVideo: {
+  //   position: 'absolute',
+  //   top: 0,
+  //   left: 0,
+  //   bottom: 0,
+  //   right: 0,
+  // },
 });
 export default StoryPage;

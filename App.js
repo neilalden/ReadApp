@@ -43,6 +43,7 @@ const App = () => {
     const arr = [];
     firestore()
       .collection('library')
+      .orderBy('order', 'asc')
       .get()
       .then(querySnapshot => {
         querySnapshot.forEach(doc => {
@@ -178,7 +179,11 @@ const App = () => {
           <Route
             path="/Story"
             component={() => (
-              <StoryPage stories={stories} userInfo={userInfo} />
+              <StoryPage
+                stories={stories}
+                userInfo={userInfo}
+                setUserInfo={setUserInfo}
+              />
             )}
           />
           <Route

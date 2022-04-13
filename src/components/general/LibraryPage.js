@@ -15,6 +15,7 @@ import RNFS from 'react-native-fs';
 import Nav from './Nav';
 import IconLib from '../../../assets/books.svg';
 import IconGoBack from '../../../assets/goback.svg';
+import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import {useHistory} from 'react-router';
 import {AuthContext} from '../../context/AuthContext';
@@ -25,6 +26,7 @@ const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
   const {classList, setClassList} = useContext(ClassContext);
   const {user} = useContext(AuthContext);
   let history = useHistory();
+  const [refreshing, setRefreshing] = useState(false);
 
   /***HOOKS***/
   useEffect(() => {
@@ -33,6 +35,8 @@ const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
       history.push('/Login');
       setUserInfo({});
       setClassList([]);
+    } else {
+      return;
     }
     BackHandler.addEventListener('hardwareBackPress', () => {
       alert('Do you want to leave?', 'Exit?');
@@ -41,18 +45,33 @@ const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
     return () =>
       BackHandler.removeEventListener('hardwareBackPress', () => true);
   }, []);
-  if (!userInfo['Pre-test']) {
-    for (const i in dailyTest) {
-      if (dailyTest[i].id == 'Pre-test') {
-        setStories(dailyTest[i]);
-        history.push('/Story');
-      }
-    }
-  }
   /***FUNCTIONS***/
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    firestore()
+      .collection('users')
+      .doc(userInfo.id)
+      .get()
+      .then(res => {
+        if (res.data()) setUserInfo(res.data());
+      })
+      .catch(e => alert(e.message, e.code));
+    setClassList([]);
+    wait(1000).then(() => {
+      fetchClassList(userInfo, setClassList);
+      setRefreshing(false);
+    });
+  }, []);
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
   return (
     <>
-      <ScrollView style={{backgroundColor: '#ffffff'}}>
+      <ScrollView
+        style={{backgroundColor: '#ffffff'}}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         <LibraryHeader />
         {dailyTest.length <= 0 ? (
           <View>
@@ -60,11 +79,13 @@ const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
           </View>
         ) : (
           dailyTest.map((item, index) => {
-            if (item.id == 'Pre-test') return;
+            let disabled = false;
+            if (index > 0) disabled = !userInfo[dailyTest[index - 1].id];
             return (
               <TouchableOpacity
                 key={index}
-                style={styles.item}
+                disabled={disabled}
+                style={[styles.item, disabled && {backgroundColor: '#E8EAED'}]}
                 onPress={() => {
                   setStories(item);
                   history.push('/Story');
