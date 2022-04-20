@@ -31,6 +31,7 @@
     "react-native-table-component": "^1.2.1",
     "react-native-version-check": "^3.4.2",
     "react-native-video": "^2.3.1",
+    "react-native-video-controls": "^2.8.1",
     "react-router-dom": "^5.2.1",
     "react-router-native": "^5.2.1",
     "rn-fetch-blob": "^0.12.0",

@@ -2,7 +2,6 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   BackHandler,
   Image,
-  PermissionsAndroid,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Video from 'react-native-video';
+import VideoPlayer from 'react-native-video-controls';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import {useHistory} from 'react-router';
@@ -90,7 +89,10 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
       animated: false,
     });
   };
-  if (!story || !story.directions) return <></>;
+  if (!story || !story.quiz)
+    return (
+      <Text style={[styles.itemText, {textAlign: 'center'}]}>Loading</Text>
+    );
   return (
     <>
       <ScrollView ref={scrollRef}>
@@ -103,13 +105,15 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
             total={total}
           />
         )}
-        {story.story ? (
-          <VideoStory story={story.story} url={url} setUrl={setUrl} />
-        ) : (
+        {!!story.story_content && (
           <WrittenStory
             content={story.story_content}
             title={story.story_title}
           />
+        )}
+
+        {story.story && (
+          <VideoStory story={story.story} url={url} setUrl={setUrl} />
         )}
         <Quiz
           quiz={story.quiz}
@@ -356,24 +360,32 @@ const WrittenStory = ({content, title}) => {
   );
 };
 const VideoStory = ({story, url, setUrl}) => {
-  try {
-    ToastAndroid.showWithGravity(
-      'Loading video...',
-      ToastAndroid.SHORT,
-      ToastAndroid.CENTER,
-    );
-    storage()
-      .ref(story)
-      .getDownloadURL()
-      .then(link => {
-        setUrl(link);
-      })
-      .catch(e => alert(e.message, e.code));
-  } catch (e) {
-    alert(`${e}`, 'Alert');
+  if (!url) {
+    try {
+      ToastAndroid.showWithGravity(
+        'Loading...',
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+      );
+      storage()
+        .ref(story)
+        .getDownloadURL()
+        .then(link => {
+          if (link !== url) setUrl(link);
+        })
+        .catch(e => alert(e.message, e.code));
+    } catch (e) {
+      alert(`${e}`, 'Alert');
+    }
   }
+  if (!url)
+    return (
+      <Text style={(styles.header, {textAlign: 'center', marginVertical: 10})}>
+        Loading video
+      </Text>
+    );
   return (
-    <Video
+    <VideoPlayer
       source={{
         uri: url,
       }} // Can be a URL or a local file.
@@ -386,9 +398,11 @@ const VideoStory = ({story, url, setUrl}) => {
         position: 'relative',
         alignSelf: 'center',
         borderRadius: 15,
+        marginTop: 10,
       }}
-      resizeMode={'contain'}
-      controls={true}
+      disableBack={true}
+      disableVolume={true}
+      disableFullscreen={true}
     />
   );
 };
@@ -502,9 +516,10 @@ const styles = StyleSheet.create({
   imageHeader: {
     resizeMode: 'center',
     position: 'absolute',
-    right: 255,
     height: 120,
     width: 79,
+    left: 10,
+    alignSelf: 'flex-start',
   },
   item: {
     minHeight: 60,
