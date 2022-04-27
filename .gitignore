@@ -21,6 +21,7 @@ DerivedData
 *.ipa
 *.xcuserstate
 
+.mp4
 
 # Android/IntelliJ
 #
