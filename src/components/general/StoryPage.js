@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   BackHandler,
+  Dimensions,
   Image,
   ScrollView,
   StyleSheet,
@@ -10,10 +11,35 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Orientation from 'react-native-orientation';
+import Video from 'react-native-video';
 import VideoPlayer from 'react-native-video-controls';
 import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
 import {useHistory} from 'react-router';
+
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import Day1 from '../../materials/DAY1.mp4';
+import Day2 from '../../materials/DAY2.mp4';
+import Day3 from '../../materials/DAY3.mp4';
+import Day4 from '../../materials/DAY4.mp4';
+import Day5 from '../../materials/DAY5.mp4';
+import Day6 from '../../materials/DAY6.mp4';
+import Day7 from '../../materials/DAY7.mp4';
+import Day8 from '../../materials/DAY8.mp4';
+import Day9 from '../../materials/DAY9.mp4';
+import Day10 from '../../materials/DAY10.mp4';
+import Day11 from '../../materials/DAY11.mp4';
+import Day12 from '../../materials/DAY12.mp4';
+import Day13 from '../../materials/DAY13.mp4';
+import Day14 from '../../materials/DAY14.mp4';
+import Day15 from '../../materials/DAY15.mp4';
+import Day16 from '../../materials/DAY16.mp4';
+import Day17 from '../../materials/DAY17.mp4';
+import Day18 from '../../materials/DAY18.mp4';
+import Day19 from '../../materials/DAY19.mp4';
+import Day20 from '../../materials/DAY20.mp4';
 
 const StoryPage = ({stories, userInfo, setUserInfo}) => {
   const [story, setStory] = useState({});
@@ -24,7 +50,7 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
   const [userAnswers, setUserAnswers] = useState({});
   const [hasTaken, setHasTaken] = useState(false);
   const [rand, setRand] = useState(1);
-  const [url, setUrl] = useState('');
+  const [fullscreen, setFullscreen] = useState(false);
   let history = useHistory();
   useEffect(() => {
     setRand(Math.floor(Math.random() * 3 + 1));
@@ -63,6 +89,7 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
     setTotal(temp);
     if (userInfo[stories.id]) setScore(userInfo[stories.id].score);
     setStory(storiesCopy);
+    if (Object.keys(userInfo).length == 0) return;
     firestore()
       .collection('users')
       .doc(userInfo.id)
@@ -76,6 +103,7 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
 
     BackHandler.addEventListener('hardwareBackPress', () => {
       history.push('/');
+      Orientation.lockToPortrait();
       return true;
     });
     return () =>
@@ -113,7 +141,12 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
         )}
 
         {story.story && (
-          <VideoStory story={story.story} url={url} setUrl={setUrl} />
+          <VideoStory
+            story={story.story}
+            storyBy={story.storyBy}
+            fullscreen={fullscreen}
+            setFullscreen={setFullscreen}
+          />
         )}
         <Quiz
           quiz={story.quiz}
@@ -121,6 +154,7 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
           setUserAnswers={setUserAnswers}
           userAnswers={userAnswers}
           hasTaken={hasTaken}
+          fullscreen={fullscreen}
         />
         {current !== 0 && (
           <PrevButton
@@ -134,7 +168,9 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
         )}
         {(!hasTaken || stories.id == 'Pre-test') && (
           <NextButton
+            history={history}
             userInfo={userInfo}
+            setUserInfo={setUserInfo}
             stories={stories}
             scrollUp={scrollUp}
             current={current}
@@ -148,11 +184,21 @@ const StoryPage = ({stories, userInfo, setUserInfo}) => {
             setScore={setScore}
           />
         )}
+        {storyKeys.length - 2 == current && (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              history.push('/');
+              Orientation.lockToPortrait();
+            }}>
+            <Text>Exit</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </>
   );
 };
-const Quiz = ({quiz, userAnswers, setUserAnswers, hasTaken}) => {
+const Quiz = ({quiz, userAnswers, setUserAnswers, hasTaken, fullscreen}) => {
   if (hasTaken) {
     return (
       <ScrollView>
@@ -359,54 +405,66 @@ const WrittenStory = ({content, title}) => {
     </View>
   );
 };
-const VideoStory = ({story, url, setUrl}) => {
-  if (!url) {
-    try {
-      ToastAndroid.showWithGravity(
-        'Loading...',
-        ToastAndroid.SHORT,
-        ToastAndroid.CENTER,
-      );
-      storage()
-        .ref(story)
-        .getDownloadURL()
-        .then(link => {
-          if (link !== url) setUrl(link);
-        })
-        .catch(e => alert(e.message, e.code));
-    } catch (e) {
-      alert(`${e}`, 'Alert');
-    }
+const VideoStory = ({story, storyBy, fullscreen, setFullscreen}) => {
+  const templates = {
+    Day1,
+    Day2,
+    Day3,
+    Day4,
+    Day5,
+    Day6,
+    Day7,
+    Day8,
+    Day9,
+    Day10,
+    Day11,
+    Day12,
+    Day13,
+    Day14,
+    Day15,
+    Day16,
+    Day17,
+    Day18,
+    Day19,
+    Day20,
+  };
+  function getTemplate(name) {
+    return templates[name];
   }
-  if (!url)
-    return (
-      <Text style={(styles.header, {textAlign: 'center', marginVertical: 10})}>
-        Loading video
-      </Text>
-    );
   return (
-    <VideoPlayer
-      source={{
-        uri: url,
-      }} // Can be a URL or a local file.
-      // Store reference
-      // onBuffer={this.onBuffer} // Callback when remote video is buffering
-      // onError={this.videoError} // Callback when video cannot be loaded
-      style={{
-        aspectRatio: 3.5 / 2,
-        width: '95%',
-        position: 'relative',
-        alignSelf: 'center',
-        borderRadius: 15,
-        marginTop: 10,
-      }}
-      disableBack={true}
-      disableVolume={true}
-      disableFullscreen={true}
-    />
+    <View>
+      <VideoPlayer
+        source={getTemplate(story)}
+        disableBack={true}
+        disableVolume={true}
+        onEnterFullscreen={() => {
+          Orientation.lockToLandscape();
+          setFullscreen(true);
+        }}
+        onExitFullscreen={() => {
+          Orientation.lockToPortrait();
+          setFullscreen(false);
+        }}
+        style={[
+          fullscreen
+            ? {
+                width: Dimensions.get('window').height,
+                height: Dimensions.get('window').width - 25,
+                alignSelf: 'center',
+              }
+            : styles.video,
+        ]}
+      />
+      {storyBy && (
+        <Text style={[styles.buttonText, {marginHorizontal: 10}]}>
+          Story by {storyBy}
+        </Text>
+      )}
+    </View>
   );
 };
 const NextButton = ({
+  history,
   stories,
   current,
   setCurrent,
@@ -415,6 +473,7 @@ const NextButton = ({
   scrollUp,
   userAnswers,
   userInfo,
+  setUserInfo,
   hasTaken,
   setHasTaken,
   setRand,
@@ -472,14 +531,25 @@ const NextButton = ({
             }
           }
           setScore(score);
-          firestore()
-            .collection('users')
-            .doc(userInfo.id)
-            .update({[stories.id]: {score: score, userAnswers}})
-            .then(() => {
-              setHasTaken(true);
-            })
-            .catch(e => alert(`${e}`));
+
+          NetInfo.fetch().then(state => {
+            if (!state.isConnected) {
+              storeData(stories.id, {
+                [stories.id]: {score: score, userAnswers},
+              });
+            } else {
+              firestore()
+                .collection('users')
+                .doc(userInfo.id)
+                .update({[stories.id]: {score: score, userAnswers}})
+                .then(() => {
+                  setUserInfo({});
+                  history.push('/');
+                  setHasTaken(true);
+                })
+                .catch(e => alert(`${e}`));
+            }
+          });
         }
       }}>
       <Text style={styles.buttonText}>{endOfQuiz ? 'Submit' : 'Next'}</Text>
@@ -507,6 +577,16 @@ const PrevButton = ({
     </TouchableOpacity>
   );
 };
+const storeData = async (key, value) => {
+  try {
+    const jsonValue = JSON.stringify(value);
+    await AsyncStorage.setItem(key, jsonValue);
+    console.log('saving log', jsonValue);
+  } catch (e) {
+    alert(e.message, 'storeData');
+  }
+};
+
 const handleAnswer = (userAnswers, setUserAnswers, value, index) => {
   let copyOfUserAnswers = {...userAnswers};
   copyOfUserAnswers[index] = value;
@@ -547,6 +627,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: 'Lato-Regular',
     alignSelf: 'center',
+    textAlign: 'center',
   },
   header: {
     fontSize: 18,
@@ -575,12 +656,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     fontSize: 15,
   },
-  // backgroundVideo: {
-  //   position: 'absolute',
-  //   top: 0,
-  //   left: 0,
-  //   bottom: 0,
-  //   right: 0,
-  // },
+  video: {
+    aspectRatio: 3.5 / 2,
+    width: '95%',
+    position: 'relative',
+    alignSelf: 'center',
+    borderRadius: 15,
+    marginTop: 10,
+    transform: [{rotate: '0deg'}],
+  },
+  videoFullscreen: {
+    width: Dimensions.get('window').height,
+    height: Dimensions.get('window').width - 15,
+    alignSelf: 'center',
+  },
 });
 export default StoryPage;

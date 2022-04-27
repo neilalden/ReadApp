@@ -8,7 +8,6 @@
 import React, {useEffect, useState} from 'react';
 import {NativeRouter, Route, Link} from 'react-router-native';
 import {Alert, Linking, BackHandler, PermissionsAndroid} from 'react-native';
-import RNFS from 'react-native-fs';
 
 import firestore from '@react-native-firebase/firestore';
 import messaging from '@react-native-firebase/messaging';
@@ -33,6 +32,9 @@ import Messages from './src/components/general/Messages';
 import ViewMessagePage from './src/components/general/ViewMessagePage';
 import CreateMessage from './src/components/general/CreateMessage';
 
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const App = () => {
   const [userInfo, setUserInfo] = useState({});
   const [stories, setStories] = useState({});
@@ -40,17 +42,24 @@ const App = () => {
 
   useEffect(async () => {
     checkUpdateNeeded();
-    const arr = [];
-    firestore()
-      .collection('library')
-      .orderBy('order', 'asc')
-      .get()
-      .then(querySnapshot => {
-        querySnapshot.forEach(doc => {
-          arr.push(doc.data());
-        });
-        setDailyTest(arr);
-      });
+    NetInfo.fetch().then(state => {
+      if (!state.isConnected) {
+        getData('dailyTest', setDailyTest);
+      } else {
+        const arr = [];
+        firestore()
+          .collection('library')
+          .orderBy('order', 'asc')
+          .get()
+          .then(querySnapshot => {
+            querySnapshot.forEach(doc => {
+              arr.push(doc.data());
+            });
+            if (arr.length > 0) setDailyTest(arr);
+            storeData('dailyTest', {dailyTest: arr});
+          });
+      }
+    });
     try {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
@@ -65,7 +74,7 @@ const App = () => {
         },
       );
     } catch (err) {
-      alert('Error', `${err}`);
+      // alert('Error', `${err}`);
     }
     try {
       const granted = await PermissionsAndroid.request(
@@ -81,37 +90,8 @@ const App = () => {
         },
       );
     } catch (err) {
-      alert('Error', `${err}`);
+      // alert('Error', `${err}`);
     }
-    RNFS.readDir(RNFS.ExternalDirectoryPath)
-      .then(subject => {
-        for (const i in subject) {
-          RNFS.readDir(`${RNFS.ExternalDirectoryPath}/${subject[i].name}`)
-            .then(files => {
-              let topic = {
-                name: subject[i].name,
-                files: [],
-              };
-              for (const j in files) {
-                topic.files.push({name: files[j].name, isDownloaded: true});
-              }
-              for (const j in topics) {
-                if (topics[j].name.toLowerCase() == topic.name.toLowerCase()) {
-                  let topicsCopy = [...topics];
-                  topicsCopy[j].files = topicsCopy[j].files.concat(topic.files);
-                  setTopics(topicsCopy);
-                  return;
-                }
-
-                if (topics.length - 1 == j) {
-                  setTopics(prev => [...prev, topic]);
-                }
-              }
-            })
-            .catch(e => alert(e.message));
-        }
-      })
-      .catch(e => alert(e.message));
     PushNotification.createChannel({
       channelId: 'channel-id', // (required)
       channelName: 'My channel', // (required)
@@ -131,6 +111,21 @@ const App = () => {
     });
     return unsubscribe;
   }, []);
+  const storeData = async (key, value) => {
+    try {
+      const jsonValue = JSON.stringify(value);
+      await AsyncStorage.setItem(key, jsonValue);
+    } catch (e) {
+      // alert(e.message);
+    }
+  };
+  const getData = async (key, setFunction) => {
+    AsyncStorage.getItem(key)
+      .then(jsonValue => {
+        setFunction(JSON.parse(jsonValue).dailyTest);
+      })
+      .catch(e => alert(e.message));
+  };
 
   const checkUpdateNeeded = async () => {
     // const latestVersion = await VersionCheck.getLatestVersion();
@@ -154,7 +149,7 @@ const App = () => {
         );
       }
     } catch (e) {
-      alert(`${e}`);
+      // alert(`${e}`);
     }
   };
 

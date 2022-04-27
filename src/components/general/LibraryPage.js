@@ -21,23 +21,26 @@ import {useHistory} from 'react-router';
 import {AuthContext} from '../../context/AuthContext';
 import {ClassContext} from '../../context/ClassContext';
 
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
   /***STATES***/
   const {classList, setClassList} = useContext(ClassContext);
   const {user} = useContext(AuthContext);
   let history = useHistory();
   const [refreshing, setRefreshing] = useState(false);
-
+  const [offline, setOffline] = useState({});
   /***HOOKS***/
   useEffect(() => {
+    if (Object.keys(userInfo).length == 0) onRefresh();
     if (!user) {
       // no user;
       history.push('/Login');
       setUserInfo({});
       setClassList([]);
-    } else {
-      return;
     }
+    // if (refetch) onRefresh(setRefetch);
     BackHandler.addEventListener('hardwareBackPress', () => {
       alert('Do you want to leave?', 'Exit?');
       return true;
@@ -48,20 +51,22 @@ const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
   /***FUNCTIONS***/
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    fetchUserData();
+    wait(1000).then(() => {
+      setRefreshing(false);
+    });
+  }, []);
+
+  const fetchUserData = () => {
     firestore()
       .collection('users')
-      .doc(userInfo.id)
+      .doc(user.displayName)
       .get()
       .then(res => {
         if (res.data()) setUserInfo(res.data());
       })
       .catch(e => alert(e.message, e.code));
-    setClassList([]);
-    wait(1000).then(() => {
-      fetchClassList(userInfo, setClassList);
-      setRefreshing(false);
-    });
-  }, []);
+  };
   const wait = timeout => {
     return new Promise(resolve => setTimeout(resolve, timeout));
   };
@@ -80,6 +85,15 @@ const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
         ) : (
           dailyTest.map((item, index) => {
             let disabled = false;
+            AsyncStorage.getItem(item.id)
+              .then(jsonValue => {
+                const x = {
+                  [item.id]: jsonValue,
+                };
+                // setOffline({...offline, ...x});
+              })
+              .catch(e => alert(e.message));
+
             if (index > 0) disabled = !userInfo[dailyTest[index - 1].id];
             return (
               <TouchableOpacity
@@ -96,7 +110,6 @@ const LibraryPage = ({userInfo, setUserInfo, setStories, dailyTest}) => {
           })
         )}
       </ScrollView>
-
       <Nav />
     </>
   );
@@ -111,6 +124,23 @@ const LibraryHeader = () => {
       </View>
     </View>
   );
+};
+
+const storeData = async (key, value) => {
+  try {
+    const jsonValue = JSON.stringify(value);
+    await AsyncStorage.setItem(key, jsonValue);
+  } catch (e) {
+    alert(e.message);
+  }
+};
+const getData = async key => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(key);
+    return JSON.parse(jsonValue);
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 /***STYLES***/

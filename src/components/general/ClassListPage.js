@@ -29,6 +29,9 @@ import StudentClassList from '../student/StudentClassList';
 import TeacherClassList from '../teacher/TeacherClassList';
 import AddClassForm from '../teacher/AddClassForm';
 
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const ClassListPage = ({userInfo, setUserInfo}) => {
   /***STATES***/
   const history = useHistory();
@@ -106,19 +109,41 @@ const ClassListPage = ({userInfo, setUserInfo}) => {
 
   /***FUNCTIONS***/
   const fetchUser = id => {
-    firestore()
-      .collection('users')
-      .doc(id)
-      .get()
-      .then(res => {
-        if (!res.data()) {
-          // USER DOES NOT EXIST
-          history.push('/Register');
-        } else {
-          setUserInfo(res.data());
-        }
+    NetInfo.fetch().then(state => {
+      if (!state.isConnected) {
+        getData('userInfo', setUserInfo);
+      } else {
+        firestore()
+          .collection('users')
+          .doc(id)
+          .get()
+          .then(res => {
+            if (!res.data()) {
+              // USER DOES NOT EXIST
+              history.push('/Register');
+            } else {
+              setUserInfo(res.data());
+              storeData('userInfo', {userInfo: res.data()});
+            }
+          })
+          .catch(e => alert(e.message, e.code));
+      }
+    });
+  };
+  const storeData = async (key, value) => {
+    try {
+      const jsonValue = JSON.stringify(value);
+      await AsyncStorage.setItem(key, jsonValue);
+    } catch (e) {
+      // alert(e.message);
+    }
+  };
+  const getData = async (key, setFunction) => {
+    AsyncStorage.getItem(key)
+      .then(jsonValue => {
+        setFunction(JSON.parse(jsonValue).userInfo);
       })
-      .catch(e => alert(e.message, e.code));
+      .catch(e => alert(e.message));
   };
 
   if (Object.keys(userInfo).length === 0 || Object.keys(user).length === 0) {
